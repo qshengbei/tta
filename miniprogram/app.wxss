@@ -1,27 +1,35 @@
-/**app.wxss**/
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  box-sizing: border-box;
-} 
+/* app.wxss */
 
-button {
-  background: initial;
-}
-
-button:focus{
-  outline: 0;
-}
-
-button::after{
-  border: none;
-}
-
+@import "styles/variables.wxss";
+@import "styles/mixins.wxss";
 
 page {
-  background: #f6f6f6;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  background-color: #ffffff;
+  color: #111111;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+  font-size: 28rpx;
+  box-sizing: border-box;
+}
+
+view,
+text,
+image,
+button {
+  box-sizing: border-box;
+}
+
+.page-root {
+  min-height: 100vh;
+  background-color: #ffffff;
+}
+
+.page-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin: 32rpx 24rpx 16rpx;
+}
+
+.page-content {
+  padding: 0 24rpx 24rpx;
 }

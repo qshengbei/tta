@@ -1,0 +1,39 @@
+/* styles/variables.wxss */
+
+:root {
+  /* 品牌主色（可后续根据视觉规范调整） */
+  --color-primary: #000000;
+  --color-primary-light: #333333;
+  --color-primary-dark: #000000;
+
+  --color-background: #ffffff;
+  --color-background-alt: #f7f7f7;
+
+  --color-text: #111111;
+  --color-text-secondary: #666666;
+  --color-border: #e5e5e5;
+
+  --color-success: #07c160;
+  --color-warning: #ff976a;
+  --color-danger: #ee0a24;
+}
+
+:root {
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial,
+    sans-serif;
+
+  --font-size-xs: 20rpx;
+  --font-size-sm: 24rpx;
+  --font-size-md: 28rpx;
+  --font-size-lg: 32rpx;
+  --font-size-xl: 36rpx;
+}
+
+:root {
+  --space-xs: 8rpx;
+  --space-sm: 16rpx;
+  --space-md: 24rpx;
+  --space-lg: 32rpx;
+  --space-xl: 40rpx;
+}
