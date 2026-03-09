@@ -6,7 +6,7 @@ App({
       // env 参数说明：
       // env 决定 wx.cloud.xxx 调用会请求到哪个云环境
       // TODO: 将此处替换为实际云开发环境 ID，例如 "prod-xxxx"
-      env: ""
+      env: "cloud1-4gs2vu8c6544e586"
     };
 
     if (!wx.cloud) {
