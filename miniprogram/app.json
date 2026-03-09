@@ -4,8 +4,15 @@
     "pages/category/index",
     "pages/cart/index",
     "pages/my/index",
-    "pages/order/list/index",
-    "pages/order/detail/index"
+    "pages/product-list/index",
+    "pages/product-detail/index",
+    "pages/order-confirm/index",
+    "pages/order-list/index",
+    "pages/order-detail/index",
+    "pages/admin/index/index",
+    "pages/admin/product-manage/index",
+    "pages/admin/product-publish/index",
+    "pages/admin/order-manage/index"
   ],
   "window": {
     "backgroundColor": "#F5F5F5",
