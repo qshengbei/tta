@@ -1,35 +1,44 @@
 /* styles/variables.wxss */
 
+/* ===== 设计 Token：色彩、字体、间距 ===== */
+
+/* 色彩 */
 :root {
-  /* 品牌主色（可后续根据视觉规范调整） */
-  --color-primary: #000000;
-  --color-primary-light: #333333;
-  --color-primary-dark: #000000;
+  /* Brand */
+  --color-primary: #1a3d8f;
+  --color-primary-soft: #e5ecfa;
 
-  --color-background: #ffffff;
-  --color-background-alt: #f7f7f7;
+  /* Neutrals */
+  --color-bg: #ffffff;
+  --color-bg-alt: #f5f5f5;
+  --color-bg-elevated: #ffffff;
+  --color-border-subtle: #eaeaea;
 
-  --color-text: #111111;
+  --color-text-main: #111111;
   --color-text-secondary: #666666;
-  --color-border: #e5e5e5;
+  --color-text-muted: #999999;
 
-  --color-success: #07c160;
-  --color-warning: #ff976a;
-  --color-danger: #ee0a24;
+  /* Feedback */
+  --color-success: #0ebc6c;
+  --color-warning: #ff9f40;
+  --color-danger: #e34c4c;
 }
 
+/* 字体 */
 :root {
   --font-family-base: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial,
     sans-serif;
 
-  --font-size-xs: 20rpx;
-  --font-size-sm: 24rpx;
-  --font-size-md: 28rpx;
-  --font-size-lg: 32rpx;
-  --font-size-xl: 36rpx;
+  --font-size-display: 40rpx;
+  --font-size-h1: 32rpx;
+  --font-size-h2: 28rpx;
+  --font-size-body: 26rpx;
+  --font-size-body-sm: 24rpx;
+  --font-size-caption: 22rpx;
 }
 
+/* 间距 */
 :root {
   --space-xs: 8rpx;
   --space-sm: 16rpx;

@@ -1,5 +1,86 @@
 /* styles/mixins.wxss */
 
+/* ===== 全局基础布局 ===== */
+
+.page-root {
+  min-height: 100vh;
+  background-color: var(--color-bg);
+}
+
+.page-section {
+  padding: 0 24rpx;
+  margin-bottom: var(--space-lg);
+}
+
+.page-section--alt {
+  padding: 32rpx 24rpx;
+  margin-bottom: var(--space-lg);
+  background-color: var(--color-bg-alt);
+}
+
+.brand-display {
+  padding: 48rpx 24rpx 32rpx;
+}
+
+.brand-title {
+  font-size: var(--font-size-display);
+  font-weight: 600;
+  letter-spacing: 4rpx;
+}
+
+.brand-tagline {
+  margin-top: var(--space-sm);
+  font-size: var(--font-size-body-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ===== 文本层级 ===== */
+
+.text-h1 {
+  font-size: var(--font-size-h1);
+  font-weight: 600;
+}
+
+.text-h2 {
+  font-size: var(--font-size-h2);
+  font-weight: 500;
+}
+
+.text-body {
+  font-size: var(--font-size-body);
+  font-weight: 400;
+}
+
+.text-body-sm {
+  font-size: var(--font-size-body-sm);
+  font-weight: 400;
+}
+
+.text-caption {
+  font-size: var(--font-size-caption);
+  letter-spacing: 2rpx;
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 布局工具类 ===== */
+
 .flex {
   display: flex;
 }
@@ -20,8 +101,287 @@
   justify-content: center;
 }
 
-.text-ellipsis {
+.flex-space-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 间距工具类 */
+.m-t-xs {
+  margin-top: var(--space-xs);
+}
+.m-t-sm {
+  margin-top: var(--space-sm);
+}
+.m-t-md {
+  margin-top: var(--space-md);
+}
+.m-t-lg {
+  margin-top: var(--space-lg);
+}
+
+.m-b-xs {
+  margin-bottom: var(--space-xs);
+}
+.m-b-sm {
+  margin-bottom: var(--space-sm);
+}
+.m-b-md {
+  margin-bottom: var(--space-md);
+}
+.m-b-lg {
+  margin-bottom: var(--space-lg);
+}
+
+.p-sm {
+  padding: var(--space-sm);
+}
+.p-md {
+  padding: var(--space-md);
+}
+.p-lg {
+  padding: var(--space-lg);
+}
+
+/* ===== 按钮 ===== */
+
+.btn {
+  height: 80rpx;
+  padding: 0 40rpx;
+  border-radius: 999rpx;
+  font-size: var(--font-size-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.btn-primary--disabled {
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-muted);
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-primary);
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background-color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+/* ===== 卡片 & 商品卡片 ===== */
+
+.card {
+  background-color: var(--color-bg-elevated);
+  border-radius: 16rpx;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-subtle);
+  padding: 24rpx 20rpx;
+}
+
+.card-shadow-soft {
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.04);
+}
+
+.product-card {
+  background-color: var(--color-bg-elevated);
+  border-radius: 24rpx;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.product-card__image {
+  width: 100%;
+  height: 360rpx;
+  border-radius: 24rpx;
+  background-color: var(--color-bg-alt);
+}
+
+.product-card__body {
+  padding: 20rpx 16rpx 24rpx;
+}
+
+.product-card__title {
+  font-size: var(--font-size-body);
+  font-weight: 500;
+}
+
+.product-card__price {
+  margin-top: var(--space-xs);
+  font-size: var(--font-size-body);
+  color: var(--color-primary);
+}
+
+.tag {
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: var(--font-size-caption);
+}
+
+.tag-primary {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.tag-outline {
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+/* ===== 商品详情页结构 ===== */
+
+.product-detail__gallery {
+  background-color: var(--color-bg-alt);
+  padding: 32rpx 24rpx 24rpx;
+}
+
+.product-detail__image {
+  width: 100%;
+  border-radius: 24rpx;
+  background-color: var(--color-bg);
+}
+
+.product-detail__info {
+  padding: 24rpx;
+}
+
+.product-detail__title-row {
+  margin-bottom: var(--space-sm);
+}
+
+.product-detail__price {
+  font-size: var(--font-size-h1);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ===== 购物车 UI ===== */
+
+.cart-item {
+  padding: 24rpx 24rpx;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.cart-item__thumb {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 20rpx;
+  background-color: var(--color-bg-alt);
+}
+
+.cart-item__content {
+  flex: 1;
+  margin-left: var(--space-md);
+}
+
+.cart-item__title {
+  font-size: var(--font-size-body);
+  font-weight: 500;
+}
+
+.cart-item__meta {
+  margin-top: var(--space-xs);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.cart-item__footer {
+  margin-top: var(--space-sm);
+}
+
+.quantity-stepper {
+  display: flex;
+  align-items: center;
+}
+
+.quantity-stepper__btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 999rpx;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-stepper__value {
+  min-width: 64rpx;
+  text-align: center;
+  font-size: var(--font-size-body-sm);
+}
+
+.cart-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cart-summary__price {
+  font-size: var(--font-size-h2);
+  font-weight: 600;
+}
+
+/* ===== 我的页面 UI ===== */
+
+.my-header {
+  padding: 40rpx 24rpx 24rpx;
+  background-color: var(--color-bg-alt);
+}
+
+.my-profile-card {
+  margin-top: var(--space-md);
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background-color: var(--color-bg-elevated);
+}
+
+.my-profile__avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 999rpx;
+  background-color: var(--color-bg-alt);
+}
+
+.my-section-list {
+  margin-top: var(--space-lg);
+  background-color: var(--color-bg-elevated);
+  border-radius: 20rpx;
+  overflow: hidden;
+}
+
+.my-section-item {
+  padding: 24rpx;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--color-border-subtle);
+}
+
+.my-section-item:last-child {
+  border-bottom-width: 0;
 }

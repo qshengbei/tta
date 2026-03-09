@@ -8,11 +8,11 @@
     "pages/order/detail/index"
   ],
   "window": {
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "#F5F5F5",
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#000000",
+    "navigationBarBackgroundColor": "#F5F5F5",
     "navigationBarTitleText": "Touch the Aura",
-    "navigationBarTextStyle": "white"
+    "navigationBarTextStyle": "black"
   },
   "tabBar": {
     "color": "#999999",

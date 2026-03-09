@@ -4,11 +4,10 @@
 @import "styles/mixins.wxss";
 
 page {
-  background-color: #ffffff;
-  color: #111111;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica,
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
-  font-size: 28rpx;
+  background-color: var(--color-bg);
+  color: var(--color-text-main);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-body);
   box-sizing: border-box;
 }
 
@@ -17,19 +16,4 @@ text,
 image,
 button {
   box-sizing: border-box;
-}
-
-.page-root {
-  min-height: 100vh;
-  background-color: #ffffff;
-}
-
-.page-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  margin: 32rpx 24rpx 16rpx;
-}
-
-.page-content {
-  padding: 0 24rpx 24rpx;
 }
