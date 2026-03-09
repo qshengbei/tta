@@ -1,0 +1,23 @@
+.quantity-selector {
+  display: flex;
+  align-items: center;
+}
+
+.quantity-selector__btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 999rpx;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-body-sm);
+}
+
+.quantity-selector__value {
+  min-width: 64rpx;
+  text-align: center;
+  font-size: var(--font-size-body-sm);
+}

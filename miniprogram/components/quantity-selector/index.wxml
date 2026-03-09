@@ -1,0 +1,11 @@
+<view class="quantity-selector">
+  <view class="quantity-selector__btn" bindtap="onDecrease">
+    <text>-</text>
+  </view>
+  <view class="quantity-selector__value">
+    <text>{{value}}</text>
+  </view>
+  <view class="quantity-selector__btn" bindtap="onIncrease">
+    <text>+</text>
+  </view>
+</view>

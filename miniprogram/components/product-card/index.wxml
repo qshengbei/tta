@@ -1,0 +1,25 @@
+<view class="product-card {{bordered ? 'product-card--bordered' : ''}}" bindtap="onTap">
+  <image
+    class="product-card__image"
+    mode="aspectFill"
+    src="{{product.coverImage}}"
+  />
+
+  <view class="product-card__body">
+    <view class="product-card__title text-ellipsis">
+      {{product.name}}
+    </view>
+
+    <view class="product-card__meta">
+      <view class="product-card__price">
+        ￥{{(product.price || 0) / 100}}
+      </view>
+
+      <view class="product-card__tags" wx:if="{{product.tags && product.tags.length}}">
+        <block wx:for="{{product.tags}}" wx:key="*this">
+          <view class="tag tag-primary m-l-xs">{{item}}</view>
+        </block>
+      </view>
+    </view>
+  </view>
+</view>

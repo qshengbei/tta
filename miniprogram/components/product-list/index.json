@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "product-card": "/components/product-card/index"
+  }
+}

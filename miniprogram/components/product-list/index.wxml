@@ -1,0 +1,28 @@
+<view class="product-list">
+  <block wx:if="{{layout === 'grid'}}">
+    <view class="product-list__grid">
+      <block wx:for="{{products}}" wx:key="_id">
+        <view class="product-list__grid-item">
+          <product-card
+            product="{{item}}"
+            bind:tap="onProductTap"
+          />
+        </view>
+      </block>
+    </view>
+  </block>
+
+  <block wx:elif="{{layout === 'list'}}">
+    <view class="product-list__list">
+      <block wx:for="{{products}}" wx:key="_id">
+        <view class="product-list__list-item">
+          <product-card
+            product="{{item}}"
+            bordered="{{true}}"
+            bind:tap="onProductTap"
+          />
+        </view>
+      </block>
+    </view>
+  </block>
+</view>

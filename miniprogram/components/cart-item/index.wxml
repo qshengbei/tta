@@ -1,0 +1,35 @@
+<view class="cart-item">
+  <view class="cart-item__left">
+    <checkbox
+      class="cart-item__checkbox"
+      checked="{{checked}}"
+      bindchange="onCheckChange"
+    />
+    <image
+      class="cart-item__thumb"
+      mode="aspectFill"
+      src="{{item.productSnapshot.coverImage || item.coverImage}}"
+    />
+  </view>
+
+  <view class="cart-item__content">
+    <view class="cart-item__title text-ellipsis">
+      {{item.productSnapshot.name || item.name}}
+    </view>
+    <view class="cart-item__meta">
+      <text class="text-secondary">
+        {{item.productSnapshot.category || item.category}}
+      </text>
+    </view>
+
+    <view class="cart-item__footer">
+      <view class="cart-item__price">
+        ￥{{((item.productSnapshot.price || item.price) || 0) / 100}}
+      </view>
+      <quantity-selector
+        value="{{item.quantity}}"
+        bind:change="onQuantityChange"
+      />
+    </view>
+  </view>
+</view>
