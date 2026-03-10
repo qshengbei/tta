@@ -1,2 +1,133 @@
 <!--pages/home/index.wxml-->
-<text>pages/home/index.wxml</text>
+
+<!-- 轮播图 -->
+<view class="swiper-container">
+  <swiper 
+    indicator-dots="{{true}}" 
+    autoplay="{{true}}" 
+    interval="5000" 
+    duration="1000"
+    circular="{{true}}"
+    indicator-color="rgba(255, 255, 255, 0.5)"
+    indicator-active-color="#ffffff"
+  >
+    <swiper-item>
+      <image 
+        class="swiper-image" 
+        src="../../images/bannerImages/玫粉大屏.jpg"
+        mode="aspectFill"
+        lazy-load="true"
+      />
+    </swiper-item>
+    <swiper-item>
+      <image 
+        class="swiper-image" 
+        src="../../images/bannerImages/克莱因蓝大屏.jpg"
+        mode="aspectFill"
+        lazy-load="true"
+      />
+    </swiper-item>
+    <swiper-item>
+      <image 
+        class="swiper-image" 
+        src="../../images/bannerImages/蒂芙尼蓝大屏.jpg"
+        mode="aspectFill"
+        lazy-load="true"
+      />
+    </swiper-item>
+  </swiper>
+</view>
+
+<!-- 新品推荐 -->
+<view class="new-products-section" wx:if="{{newCarouselList.length >= 3}}">
+  <view class="new-products-header">
+    <text class="new-products-title">新品推荐</text>
+  </view>
+  <view class="new-products-container">
+    <block wx:for="{{newCarouselList}}" wx:key="{{item._id}}" wx:for-index="index">
+      <view
+        class="new-product-item {{index === 0 ? 'new-product-item--left' : index === 1 ? 'new-product-item--center' : 'new-product-item--right'}}"
+        bindtap="goToProductDetail"
+        data-id="{{item._id}}"
+      >
+        <image
+          class="new-product-image"
+          src="{{item.coverImage}}"
+          mode="aspectFill"
+          lazy-load="true"
+        />
+      </view>
+    </block>
+  </view>
+</view>
+
+<!-- 骨架屏 -->
+<view wx:if="{{loading}}" class="skeleton-container">
+  <!-- 轮播图骨架 -->
+  <view class="skeleton-banner"></view>
+  
+  <!-- 系列骨架 -->
+  <view wx:for="[1, 2, 3]" wx:key="{{index}}" class="skeleton-series">
+    <view class="skeleton-series-header">
+      <view class="skeleton-series-title"></view>
+      <view class="skeleton-series-subtitle"></view>
+    </view>
+    <view class="skeleton-series-image"></view>
+    <view class="skeleton-products">
+      <view wx:for="[1, 2, 3]" wx:key="{{subIndex}}" class="skeleton-product">
+        <view class="skeleton-product-image"></view>
+        <view class="skeleton-product-name"></view>
+        <view class="skeleton-product-price"></view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{error}}">
+  <!-- 错误状态 -->
+  <view class="error-container">
+    <view class="error-icon">⚠️</view>
+    <text class="error-message">{{errorMessage}}</text>
+    <button class="error-button" bindtap="reloadData">重试</button>
+  </view>
+</view>
+
+<view wx:elif="{{seriesList.length === 0}}">
+  <!-- 空状态 -->
+  <view class="empty-container">
+    <view class="empty-icon">📦</view>
+    <text class="empty-title">暂无系列数据</text>
+    <text class="empty-subtitle">请稍后再来看看吧</text>
+    <button class="empty-button" bindtap="reloadData">刷新</button>
+  </view>
+</view>
+
+<view wx:else>
+  <!-- 系列展示 -->
+  <block wx:for="{{seriesList}}" wx:key="{{item.id}}">
+    <view class="series-section">
+      <view class="series-header">
+        <text class="series-title">{{item.title}}</text>
+        <text class="series-subtitle">{{item.subtitle}}</text>
+      </view>
+      
+      <view class="series-main-image">
+        <image src="{{item.mainImage}}" mode="widthFix" lazy-load="true" />
+        <view class="series-explore">
+          <text class="series-explore-text">探索全部</text>
+          <view class="series-explore-bar"></view>
+        </view>
+      </view>
+      
+      <view class="series-products">
+        <block wx:for="{{item.products}}" wx:key="{{product._id}}" wx:for-item="product">
+          <view class="series-product-item" bindtap="goToProductDetail" data-id="{{product._id}}">
+            <image class="series-product-image" src="{{product.coverImage}}" mode="aspectFill" lazy-load="true" />
+            <text class="series-product-name">{{product.name}}</text>
+            <text class="series-product-price">￥{{product.price || 0}}</text>
+          </view>
+        </block>
+      </view>
+    </view>
+  </block>
+</view>
