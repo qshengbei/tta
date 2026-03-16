@@ -1,0 +1,13 @@
+<view class="product-list">
+  <view class="product-list__header">
+    <text class="product-list__title">商品列表</text>
+  </view>
+  <view class="product-list__content">
+    <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-list__item">
+      <product-card product="{{item}}"/>
+    </view>
+    <view wx:if="{{products.length === 0}}" class="product-list__empty">
+      <text class="product-list__empty-text">暂无商品</text>
+    </view>
+  </view>
+</view>

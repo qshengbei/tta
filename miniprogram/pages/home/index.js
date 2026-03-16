@@ -12,6 +12,7 @@ Page({
     newCarouselList: [],
     newCarouselIndex: 0,
     seriesList: [],
+    bannerList: [],
     loading: false,
     error: false,
     errorMessage: ''
@@ -66,6 +67,7 @@ Page({
         extendedNewProducts: cachedData.extendedNewProducts,
         newCarouselList: carouselList,
         newCarouselIndex: 0,
+        bannerList: cachedData.bannerList || [],
         loading: false
       });
       if (carouselList.length >= 3) {
@@ -79,6 +81,7 @@ Page({
 
     const productsCollection = getCollection('products');
     const categoryCollection = getCollection('category');
+    const bannerCollection = getCollection('banner');
     this.setData({ loading: true });
 
     // 并行加载数据
@@ -86,11 +89,14 @@ Page({
       // 加载系列数据，按创建时间倒序排序
       categoryCollection.orderBy('createTime', 'desc').get(),
       // 加载商品数据
-      productsCollection.get()
+      productsCollection.get(),
+      // 加载轮播图数据，筛选isBanner为true的记录
+      bannerCollection.where({ isBanner: true }).get()
     ])
-    .then(([categoryRes, productsRes]) => {
+    .then(([categoryRes, productsRes, bannerRes]) => {
       const categories = categoryRes.data;
       const products = productsRes.data;
+      const banners = bannerRes.data;
       
       // 构建系列数据，将商品按照系列分组，只取最新的三个系列
       const seriesList = categories.slice(0, 3).map(category => {
@@ -132,6 +138,7 @@ Page({
         extendedNewProducts,
         newCarouselList,
         newCarouselIndex,
+        bannerList: banners,
         loading: false
       });
       
@@ -140,6 +147,7 @@ Page({
         seriesList,
         newProducts,
         extendedNewProducts,
+        bannerList: banners,
         timestamp: Date.now()
       });
       
@@ -169,14 +177,18 @@ Page({
   refreshData() {
     const productsCollection = getCollection('products');
     const categoryCollection = getCollection('category');
+    const bannerCollection = getCollection('banner');
 
     Promise.all([
       categoryCollection.orderBy('createTime', 'desc').get(),
-      productsCollection.get()
+      productsCollection.get(),
+      // 加载轮播图数据，筛选isBanner为true的记录
+      bannerCollection.where({ isBanner: true }).get()
     ])
-    .then(([categoryRes, productsRes]) => {
+    .then(([categoryRes, productsRes, bannerRes]) => {
       const categories = categoryRes.data;
       const products = productsRes.data;
+      const banners = bannerRes.data;
       
       const seriesList = categories.slice(0, 3).map(category => {
         const seriesProducts = products.filter(product => product.categoryId === category._id);
@@ -211,6 +223,7 @@ Page({
         seriesList,
         newProducts,
         extendedNewProducts,
+        bannerList: banners,
         timestamp: Date.now()
       });
       
@@ -222,7 +235,8 @@ Page({
           newProducts,
           extendedNewProducts,
           newCarouselList: this.computeNewCarouselList(newProducts, newCarouselIndex),
-          newCarouselIndex
+          newCarouselIndex,
+          bannerList: banners
         });
         if (newProducts.length >= 3) {
           this.startNewCarousel();

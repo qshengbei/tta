@@ -1,66 +1,44 @@
 // pages/cart/index.js
 Page({
-
-  /**
-   * 页面的初始数据
-   */
   data: {
-
+    cartItems: [
+      {
+        productId: '1',
+        name: 'Aura 克莱因蓝发圈',
+        price: 28,
+        quantity: 2,
+        stock: 100,
+        coverImage: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=blue%20hair%20scrunchie%20accessory&image_size=square'
+      },
+      {
+        productId: '2',
+        name: 'Aura 玫粉发圈',
+        price: 32,
+        quantity: 1,
+        stock: 50,
+        coverImage: 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=pink%20hair%20scrunchie%20accessory&image_size=square'
+      }
+    ],
+    totalPrice: 88
   },
-
-  /**
-   * 生命周期函数--监听页面加载
-   */
   onLoad(options) {
-
+    this.calculateTotalPrice();
   },
-
-  /**
-   * 生命周期函数--监听页面初次渲染完成
-   */
-  onReady() {
-
+  onQuantityChange(e) {
+    const { productId, quantity } = e.detail;
+    const cartItems = this.data.cartItems.map(item => {
+      if (item.productId === productId) {
+        return { ...item, quantity };
+      }
+      return item;
+    });
+    this.setData({ cartItems });
+    this.calculateTotalPrice();
   },
-
-  /**
-   * 生命周期函数--监听页面显示
-   */
-  onShow() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面隐藏
-   */
-  onHide() {
-
-  },
-
-  /**
-   * 生命周期函数--监听页面卸载
-   */
-  onUnload() {
-
-  },
-
-  /**
-   * 页面相关事件处理函数--监听用户下拉动作
-   */
-  onPullDownRefresh() {
-
-  },
-
-  /**
-   * 页面上拉触底事件的处理函数
-   */
-  onReachBottom() {
-
-  },
-
-  /**
-   * 用户点击右上角分享
-   */
-  onShareAppMessage() {
-
+  calculateTotalPrice() {
+    const totalPrice = this.data.cartItems.reduce((total, item) => {
+      return total + item.price * item.quantity;
+    }, 0);
+    this.setData({ totalPrice });
   }
 })

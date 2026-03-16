@@ -1,11 +1,11 @@
 <view class="quantity-selector">
-  <view class="quantity-selector__btn" bindtap="onDecrease">
+  <view class="quantity-btn quantity-btn--minus" bindtap="decreaseQuantity" data-product-id="{{productId}}">
     <text>-</text>
   </view>
-  <view class="quantity-selector__value">
-    <text>{{value}}</text>
+  <view class="quantity-input">
+    <input type="number" value="{{quantity}}" bindinput="onQuantityChange" min="1" max="{{maxQuantity}}" disabled/>
   </view>
-  <view class="quantity-selector__btn" bindtap="onIncrease">
+  <view class="quantity-btn quantity-btn--plus" bindtap="increaseQuantity" data-product-id="{{productId}}">
     <text>+</text>
   </view>
 </view>

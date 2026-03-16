@@ -1,23 +1,11 @@
-<view class="product-card" bindtap="onTap">
-  <image
-    class="product-card__image"
-    mode="aspectFill"
-    src="{{product.coverImage}}"
-  />
-
-  <view class="product-card__body">
-    <view class="product-card__title">
-      {{product.name}}
-    </view>
-
-    <view class="product-card__price">
-      ￥{{(product.price || 0) / 100}}
-    </view>
-
-    <view class="product-card__tags" wx:if="{{product.tags && product.tags.length}}">
-      <block wx:for="{{product.tags}}" wx:key="*this">
-        <view class="tag tag-primary">{{item}}</view>
-      </block>
+<view class="product-card">
+  <image class="product-card__image" src="{{product.coverImage}}" mode="aspectFill"/>
+  <view class="product-card__info">
+    <text class="product-card__name">{{product.name}}</text>
+    <view class="product-card__bottom">
+      <text class="product-card__price">¥{{product.price}}</text>
+      <text class="product-card__stock" wx:if="{{product.stock > 0}}">库存: {{product.stock}}</text>
+      <text class="product-card__stock product-card__stock--soldout" wx:else>售罄</text>
     </view>
   </view>
 </view>

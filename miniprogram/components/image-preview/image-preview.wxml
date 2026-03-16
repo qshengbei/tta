@@ -1,0 +1,45 @@
+<view wx:if="{{show}}" class="image-preview-container" catchtouchmove="handleContainerTouchMove">
+  <view class="image-preview-overlay" bindtap="handleClose"></view>
+  <view class="image-preview-content">
+    <swiper
+      class="image-preview-swiper"
+      current="{{currentIndex}}"
+      bindchange="handleSwiperChange"
+      indicator-dots="false"
+      autoplay="false"
+      circular="{{imageUrls.length > 1}}"
+      catchtouchmove="handleSwiperTouchMove"
+    >
+      <swiper-item wx:for="{{imageUrls}}" wx:key="*this">
+        <view class="image-preview-item">
+          <movable-area class="image-movable-area">
+            <movable-view
+              class="image-movable-view"
+              direction="all"
+              inertia="true"
+              scale="true"
+              scale-min="0.5"
+              scale-max="3"
+              bindscale="handleScale"
+              bindtap="handleDoubleTap"
+              data-index="{{index}}"
+            >
+              <image
+                class="preview-image"
+                src="{{item}}"
+                mode="aspectFit"
+                bindload="handleImageLoad"
+              />
+            </movable-view>
+          </movable-area>
+        </view>
+      </swiper-item>
+    </swiper>
+    <view class="image-preview-indicator">
+      <text class="indicator-text">{{currentIndex + 1}} / {{imageUrls.length}}</text>
+    </view>
+    <view class="image-preview-close" bindtap="handleClose">
+      <view class="close-icon"></view>
+    </view>
+  </view>
+</view>

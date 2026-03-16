@@ -1,0 +1,23 @@
+{
+  "component": true,
+  "usingComponents": {},
+  "properties": {
+    "imageUrls": {
+      "type": "Array",
+      "value": []
+    },
+    "current": {
+      "type": "Number",
+      "value": 0
+    },
+    "show": {
+      "type": "Boolean",
+      "value": false
+    }
+  },
+  "events": {
+    "close": {
+      "desc": "关闭预览"
+    }
+  }
+}

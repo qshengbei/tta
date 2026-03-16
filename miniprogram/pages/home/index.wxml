@@ -11,26 +11,10 @@
     indicator-color="rgba(255, 255, 255, 0.5)"
     indicator-active-color="#ffffff"
   >
-    <swiper-item>
+    <swiper-item wx:for="{{bannerList}}" wx:key="{{item._id}}">
       <image 
         class="swiper-image" 
-        src="../../images/bannerImages/玫粉大屏.jpg"
-        mode="aspectFill"
-        lazy-load="true"
-      />
-    </swiper-item>
-    <swiper-item>
-      <image 
-        class="swiper-image" 
-        src="../../images/bannerImages/克莱因蓝大屏.jpg"
-        mode="aspectFill"
-        lazy-load="true"
-      />
-    </swiper-item>
-    <swiper-item>
-      <image 
-        class="swiper-image" 
-        src="../../images/bannerImages/蒂芙尼蓝大屏.jpg"
+        src="{{item.image}}"
         mode="aspectFill"
         lazy-load="true"
       />

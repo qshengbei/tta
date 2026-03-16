@@ -1,0 +1,21 @@
+<view class="customer-service">
+  <view class="customer-service__header">
+    <view class="customer-service__back" bindtap="goBack">
+      <view class="customer-service__back-icon"></view>
+    </view>
+    <view class="customer-service__title">联系客服</view>
+    <view class="customer-service__placeholder"></view>
+  </view>
+  
+  <view class="customer-service__content">
+    <view class="customer-service__qrcode-container">
+      <image 
+        class="customer-service__qrcode" 
+        src="{{qrcodeUrl}}" 
+        mode="aspectFit" 
+        bindlongpress="scanQRCode"
+      />
+      <text class="customer-service__tip">长按图片扫码添加客服微信</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,340 @@
+<view class="page-root">
+  <view wx:if="{{loading}}" class="pd-loading">
+    <view class="pd-loading__spinner"></view>
+  </view>
+
+  <view wx:elif="{{error}}" class="pd-error">
+    <text class="pd-error__text">{{errorMessage}}</text>
+    <button class="btn btn-secondary" bindtap="reload">重试</button>
+  </view>
+
+  <view wx:else class="pd-wrapper">
+    <scroll-view class="product-detail__scroll" scroll-y="true" enable-back-to-top="true">
+      <!-- 图片区域 -->
+      <view class="product-detail__gallery">
+        <swiper class="product-detail__swiper" bindchange="swiperChange" bindtouchstart="handleSwiperTouchStart" bindtouchend="handleSwiperTouchEnd" circular="true" duration="200" easing-function="ease-out" enable-flex="true">
+          <swiper-item>
+            <image
+              class="product-detail__image"
+              src="{{product.coverImage}}"
+              mode="aspectFill"
+              lazy-load="true"
+              bindtap="handleImageTap"
+              data-index="0"
+            />
+          </swiper-item>
+          <swiper-item wx:for="{{product.images}}" wx:key="*this">
+            <image
+              class="product-detail__image"
+              src="{{item}}"
+              mode="aspectFill"
+              lazy-load="true"
+              bindtap="handleImageTap"
+              data-index="{{index + 1}}"
+            />
+          </swiper-item>
+        </swiper>
+        
+<!-- 图片预览使用微信官方API，不需要自定义组件 -->
+
+        <!-- 数字指示器 -->
+        <view class="product-detail__indicator">
+          <text class="product-detail__indicator-text">{{currentIndex + 1}} / {{totalImages}}</text>
+        </view>
+        <!-- 售罄提示 -->
+        <view wx:if="{{!product.stock || product.stock <= 0}}" class="product-detail__sold-out">
+          售罄
+        </view>
+      </view>
+
+      <!-- 信息区域 -->
+      <view class="product-detail__info">
+        <view class="product-detail__price-row">
+          <view class="product-detail__price">
+            <span class="product-detail__price-symbol">￥</span>
+            <span class="product-detail__price-value">{{displayPrice}}</span>
+          </view>
+          <view class="product-detail__share-btn" bindtap="showShareOptions">
+            <view class="share-icon"></view>
+            <text class="share-text">分享</text>
+          </view>
+        </view>
+
+        <view class="product-detail__title-row">
+          <text class="product-detail__title {{isTitleExpanded ? 'product-detail__title--expanded' : ''}}" bindtap="toggleTitleExpanded">{{product.name}}</text>
+        </view>
+
+        <text class="product-detail__description-text {{isDescExpanded ? 'product-detail__description-text--expanded' : ''}}" bindtap="toggleDescExpanded">
+          {{product.description || '这是一件为日常仪式感设计的 Aura 单品。'}}
+        </text>
+        
+        <!-- 已选区域 -->
+        <view class="product-detail__selected" bindtap="showProductSelector">
+          <view class="product-detail__selected-header">
+            <view class="product-detail__selected-title">已选</view>
+            <view class="product-detail__selected-value">{{product.name}}</view>
+            <view class="product-detail__selected-arrow"></view>
+          </view>
+        </view>
+        
+        <!-- 运费区域 -->
+        <view class="product-detail__shipping" bindtap="showLocationModal">
+          <view class="product-detail__shipping-header">
+            <view class="product-detail__shipping-title">送至</view>
+            <view class="product-detail__shipping-content">
+              <view class="product-detail__shipping-info">
+                <view class="product-detail__shipping-location">{{currentProvince}}</view>
+                <view class="product-detail__shipping-fee">
+                  {{shippingFee > 0 ? '¥' + shippingFee : '包邮'}}
+                </view>
+                <view class="product-detail__shipping-free">
+                  {{shippingFee > 0 ? '满' + freeShippingThreshold + '元包邮' : '已满足包邮条件'}}
+                </view>
+              </view>
+              <view class="product-detail__shipping-select">重新定位/运费规则</view>
+            </view>
+            <view class="product-detail__shipping-arrow"></view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 商品详情区域 -->
+      <view class="product-detail__details">
+        <view class="product-detail__section-title">商品详情</view>
+        <view class="product-detail__images">
+          <block wx:if="{{!product.images || product.images.length === 0}}">
+            <view class="product-detail__no-images">
+              <text>暂无商品详情图片</text>
+            </view>
+          </block>
+          <block wx:else>
+            <image 
+              wx:for="{{product.images}}" 
+              wx:key="*this" 
+              class="product-detail__detail-image"
+              src="{{item}}"
+              mode="aspectFill"
+              lazy-load="true"
+              bindtap="handleDetailImageTap"
+              data-index="{{index + 1}}"
+            />
+          </block>
+        </view>
+      </view>
+      
+      <!-- 购买须知区域 -->
+      <view class="product-detail__notice">
+        <view class="product-detail__section-title">购买须知</view>
+        <view class="product-detail__notice-content">
+          <text class="product-detail__notice-item">亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解</text>
+          <text class="product-detail__notice-item">若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心</text>
+          <text class="product-detail__notice-item">每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象</text>
+          <text class="product-detail__notice-item">如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答</text>
+        </view>
+      </view>
+      
+      <!-- 底部占位，确保内容不被底部操作栏遮挡 -->
+      <view class="product-detail__bottom-placeholder"></view>
+    </scroll-view>
+    
+    <!-- 商品选择弹窗 -->
+    <view wx:if="{{showProductSelectorModal}}" class="product-selector-modal">
+      <view class="product-selector-modal__overlay" bindtap="hideProductSelector"></view>
+      <view class="product-selector-modal__content">
+        <!-- 已选商品信息 -->
+        <view class="product-selector-modal__selected">
+          <image class="product-selector-modal__selected-image" src="{{product.coverImage}}" mode="aspectFill" lazy-load="true" bindtap="handleSelectedImageTap"/>
+          <view class="product-selector-modal__selected-info">
+            <view class="product-selector-modal__selected-price">¥{{product.price}}</view>
+            <view class="product-selector-modal__selected-desc">已选 {{product.name}}</view>
+          </view>
+          <view class="product-selector-modal__close" bindtap="hideProductSelector">×</view>
+        </view>
+        
+        <scroll-view class="product-selector-modal__scroll" scroll-y="true">
+          <!-- 按类型分组显示商品 -->
+          <view wx:for="{{groupedProducts}}" wx:key="type" class="product-selector-modal__section">
+            <view class="product-selector-modal__section-title">{{item.type}}</view>
+            
+            <!-- 处理布料同款分组 -->
+            <view wx:if="{{item.subGroups && item.subGroups.length > 0}}">
+              <view wx:for="{{item.subGroups}}" wx:key="subType" class="product-selector-modal__subsection" wx:for-item="subItem">
+                <view class="product-selector-modal__subsection-title">{{subItem.type}}</view>
+                <view class="product-selector-modal__options">
+                  <view class="product-selector-modal__option {{product._id === productItem._id ? 'product-selector-modal__option--active' : ''}} {{!productItem.stock || productItem.stock <= 0 ? 'product-selector-modal__option--soldout' : ''}}" 
+                        wx:for="{{subItem.products}}" wx:key="{{productItem._id}}"
+                        wx:for-item="productItem"
+                        bindtap="selectProduct" data-product="{{productItem}}">
+                    <view catchtap="handleOptionImageTap" data-product="{{productItem}}" data-index="0">
+                      <image class="product-selector-modal__option-image" src="{{productItem.coverImage}}" mode="aspectFill" lazy-load="true"/>
+                    </view>
+                    <view class="product-selector-modal__option-name">{{productItem.name}}</view>
+                    <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">售罄</view>
+                  </view>
+                </view>
+              </view>
+            </view>
+            
+            <!-- 处理普通分组 -->
+            <view wx:else class="product-selector-modal__options">
+              <view class="product-selector-modal__option {{product._id === productItem._id ? 'product-selector-modal__option--active' : ''}} {{!productItem.stock || productItem.stock <= 0 ? 'product-selector-modal__option--soldout' : ''}}" 
+                    wx:for="{{item.products}}" wx:key="{{productItem._id}}"
+                    wx:for-item="productItem"
+                    bindtap="selectProduct" data-product="{{productItem}}">
+                <view catchtap="handleOptionImageTap" data-product="{{productItem}}" data-index="0">
+                  <image class="product-selector-modal__option-image" src="{{productItem.coverImage}}" mode="aspectFill" lazy-load="true"/>
+                </view>
+                <view class="product-selector-modal__option-name">{{productItem.name}}</view>
+                <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">售罄</view>
+              </view>
+            </view>
+          </view>
+          
+          <!-- 数量选择 -->
+          <view class="product-selector-modal__quantity">
+            <view class="product-selector-modal__quantity-label">数量</view>
+            <view class="product-selector-modal__quantity-control">
+              <quantity-selector 
+                quantity="{{quantity}}" 
+                maxQuantity="{{maxQuantity}}" 
+                productId="{{product._id}}"
+                bind:quantityChange="onQuantityChange"
+              />
+            </view>
+          </view>
+          
+          <!-- 留言输入 -->
+          <view class="product-selector-modal__message">
+            <view class="product-selector-modal__message-label">留言</view>
+            <view class="product-selector-modal__message-container">
+              <textarea class="product-selector-modal__message-input" placeholder="请输入留言信息" value="{{message}}" bindinput="onMessageChange" maxlength="99"></textarea>
+              <view class="product-selector-modal__message-counter">{{message.length}}/99</view>
+            </view>
+          </view>
+        </scroll-view>
+        
+        <view class="product-selector-modal__footer">
+          <button wx:if="{{selectorMode === 'addCart' || !selectorMode}}" class="btn btn-secondary pd-btn-cart" bindtap="confirmAddToCart">
+            加入购物车
+          </button>
+          <button wx:if="{{selectorMode === 'buyNow' || !selectorMode}}" class="btn btn-primary pd-btn-buy" bindtap="handleBuyNow">
+            立即购买
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar pd-bottom-bar">
+      <view class="pd-bottom-bar__left">
+        <view class="pd-bottom-bar__icons">
+          <view class="pd-bottom-bar__icon" bindtap="contactService">
+            <view class="icon-service"></view>
+            <text class="pd-bottom-bar__icon-text">客服</text>
+          </view>
+          <view class="pd-bottom-bar__icon" bindtap="goToCart">
+            <view class="icon-cart"></view>
+            <text class="pd-bottom-bar__icon-text">购物车</text>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{product.stock && product.stock > 0}}" class="pd-bottom-bar__right">
+        <button class="btn btn-secondary pd-btn-cart" bindtap="handleAddToCart">
+          加购物车
+        </button>
+        <button class="btn btn-primary pd-btn-buy" bindtap="handleBuyNowBtn">
+          立即购买
+        </button>
+      </view>
+      <view wx:else class="pd-bottom-bar__right">
+        <button class="btn btn-primary pd-btn-restock" bindtap="handleRestockReminder">
+          补货提醒
+        </button>
+      </view>
+    </view>
+
+    <!-- 分享选项弹窗 -->
+    <view wx:if="{{showShareModal}}" class="share-modal">
+      <view class="share-modal__overlay" bindtap="hideShareOptions"></view>
+      <view class="share-modal__content">
+        <view class="share-modal__title">立即分享给好友</view>
+        <view class="share-modal__options">
+          <view class="share-option" bindtap="shareToFriend">
+            <view class="share-option__icon share-option__icon--friend"></view>
+            <view class="share-option__text">分享给好友</view>
+          </view>
+          <view class="share-option" bindtap="shareToTimeline">
+            <view class="share-option__icon share-option__icon--timeline"></view>
+            <view class="share-option__text">小程序链接</view>
+            <view class="share-option__subtext">分享到朋友圈</view>
+          </view>
+          <view class="share-option" bindtap="generatePoster">
+            <view class="share-option__icon share-option__icon--poster"></view>
+            <view class="share-option__text">生成海报</view>
+          </view>
+        </view>
+        <view class="share-modal__cancel" bindtap="hideShareOptions">取消</view>
+      </view>
+    </view>
+    
+    <!-- 海报生成画布 -->
+    <canvas canvas-id="posterCanvas" style="width: 750rpx; height: 1334rpx; position: fixed; top: -9999rpx; left: -9999rpx;"></canvas>
+    
+
+    
+    <!-- 位置选择弹窗 -->
+    <view wx:if="{{showLocationModal}}" class="location-modal">
+      <view class="location-modal__overlay" bindtap="hideLocationModal"></view>
+      <view class="location-modal__content">
+        <view class="location-modal__title">位置与规则</view>
+        <view class="location-modal__options">
+          <view class="location-option" bindtap="getCurrentLocation">
+            <image class="location-option__icon" src="/images/icons/currentLocation.svg"></image>
+            <view class="location-option__text">获取当前位置</view>
+          </view>
+          <view class="location-option" bindtap="showExpressRules">
+            <image class="location-option__icon" src="/images/icons/freightRules.svg"></image>
+            <view class="location-option__text">快递计算规则</view>
+          </view>
+        </view>
+        <view class="location-modal__cancel" bindtap="hideLocationModal">取消</view>
+      </view>
+    </view>
+
+    <!-- 快递计算规则弹窗 -->
+    <view wx:if="{{showExpressRulesModal}}" class="express-rules-modal">
+      <view class="express-rules-modal__overlay" bindtap="hideExpressRulesModal"></view>
+      <view class="express-rules-modal__content">
+        <view class="express-rules-modal__title">快递计算规则</view>
+        <scroll-view class="express-rules-modal__scroll" scroll-y="true">
+          <view class="express-rules-modal__rules">
+            <!-- 显示所有规则，当前地址规则已在第一位 -->
+            <view wx:for="{{sortedExpressRules || expressRules}}" wx:key="index" class="express-rule-item">
+              <view class="express-rule-item__region">
+                {{item.region}}
+                <text wx:if="{{item.isCurrentRegion}}"> (当前地区)</text>
+              </view>
+              <view class="express-rule-item__provinces">
+                <view wx:for="{{item.provinces || [item.province]}}" wx:key="province" class="express-rule-item__province">{{item}}</view>
+              </view>
+              <view class="express-rule-item__fee-free">
+                <view class="express-rule-item__fee">
+                  <view class="express-rule-item__fee-label">运费：</view>
+                  <view class="express-rule-item__fee-value">¥{{item.fee}}</view>
+                </view>
+                <view class="express-rule-item__free">
+                  <view class="express-rule-item__free-label">包邮条件：</view>
+                  <view class="express-rule-item__free-value">满{{item.freeShipping || item.freeShippingThreshold || item.freeshipping || 0}}元包邮</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="express-rules-modal__tip">
+            运费根据发货地福建省到收货地址的实际距离计算，不同地区成本略有差异，感谢您的理解与支持。
+          </view>
+        </scroll-view>
+        <view class="express-rules-modal__cancel" bindtap="hideExpressRulesModal">关闭</view>
+      </view>
+    </view>
+  </view>
+</view>

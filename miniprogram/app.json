@@ -9,6 +9,7 @@
     "pages/order-confirm/index",
     "pages/order-list/index",
     "pages/order-detail/index",
+    "pages/customer-service/index",
     "pages/admin/index/index",
     "pages/admin/product-manage/index",
     "pages/admin/product-publish/index",
@@ -47,5 +48,17 @@
   },
   "sitemapLocation": "sitemap.json",
   "style": "v2",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.address": {
+      "desc": "用于获取用户收货地址"
+    },
+    "scope.userLocation": {
+      "desc": "用于导航到自提地址"
+    },
+    "scope.writePhotosAlbum": {
+      "desc": "用于保存海报到相册"
+    }
+  },
+  "requiredPrivateInfos": ["chooseAddress", "getLocation"]
 }

@@ -1,0 +1,296 @@
+<view class="page-root">
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading__spinner"></view>
+    <text class="loading__text">加载中...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="error">
+    <text class="error__text">{{errorMessage}}</text>
+    <button class="btn btn-secondary" bindtap="reload">重试</button>
+  </view>
+
+  <view wx:else class="order-confirm">
+    <!-- 配送方式 -->
+    <view class="delivery-section" bindtap="showDeliverySelector">
+      <view class="delivery-section__header">
+        <text class="delivery-section__title">配送方式</text>
+        <view class="delivery-section__selected">
+          <text class="delivery-section__selected-text">{{deliveryType === 'express' ? '快递运输' : deliveryType === 'self' ? '上门自提' : '同城配送'}}</text>
+          <view class="delivery-section__arrow">></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 收货地址 -->
+    <view wx:if="{{deliveryType === 'express' || deliveryType === 'local'}}" class="address-section">
+      <view class="address-section__header">
+        <text class="address-section__title">{{deliveryType === 'express' ? '收货地址' : '配送地址'}}</text>
+        <view class="address-section__add" bindtap="chooseAddress">
+          <text class="address-section__add-text">{{address ? '已选择' : '选择地址'}}</text>
+          <view class="address-section__arrow">></view>
+        </view>
+      </view>
+      <view wx:if="{{address}}" class="address-info">
+        <view class="address-info__name-phone">
+          <text class="address-info__name">{{address.userName}}</text>
+          <text class="address-info__phone">{{address.telNumber}}</text>
+        </view>
+        <text class="address-info__detail">{{address.provinceName}}{{address.cityName}}{{address.countyName}}{{address.detailInfo}}</text>
+        <!-- 快递配送信息 -->
+        <view wx:if="{{deliveryType === 'express' && address}}" class="express-delivery-info">
+          <view class="express-delivery-info__fee">
+            <text class="express-delivery-info__fee-text">运费：¥{{deliveryFee || 0.00}}</text>
+            <text wx:if="{{deliveryFee === 0}}" class="express-delivery-info__free-shipping"> 已满足包邮条件</text>
+            <text wx:else class="express-delivery-info__free-shipping"> 满{{freeShippingThreshold || 40}}元包邮</text>
+            <view class="express-delivery-info__rules" bindtap="showExpressRules">运费规则</view>
+          </view>
+        </view>
+        <!-- 同城配送地图信息 -->
+        <view wx:if="{{deliveryType === 'local' && address}}" class="local-delivery-info__map">
+          <view class="local-delivery-info__distance">
+            <text class="local-delivery-info__distance-text">配送距离：{{distance || '计算中'}} km{{isOutOfRange ? ' (超过配送范围)' : ''}}</text>
+          </view>
+          <view wx:if="{{!isOutOfRange}}" class="local-delivery-info__fee">
+            <text class="local-delivery-info__fee-text">配送费：{{deliveryFee || '计算中'}} 元</text>
+          </view>
+          <!-- 配送范围图例 -->
+          <view class="local-delivery-info__legend">
+            <view wx:for="{{deliveryRules}}" wx:key="{{index}}" class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: {{['#00ff99', '#ffff99', '#ff9999'][index % 3]}}"></view>
+              <text class="local-delivery-info__legend-text">
+                {{index === 0 ? '0-' : deliveryRules[index-1].maxDistance + '-'}}{{item.maxDistance}}公里{{item.fee === 0 ? ' 免费' : ' ' + item.fee + '元'}}
+              </text>
+            </view>
+            <!-- 超过最大配送范围 -->
+            <view class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: #999999"></view>
+              <text class="local-delivery-info__legend-text">
+                ＞{{deliveryRules.length > 0 ? deliveryRules[deliveryRules.length-1].maxDistance : '10'}}公里 不配送
+              </text>
+            </view>
+          </view>
+          <view class="local-delivery-info__map-container">
+            <map class="local-delivery-info__map-view" 
+                 id="map"
+                 longitude="{{pickupLongitude}}" 
+                 latitude="{{pickupLatitude}}" 
+                 scale="15" 
+                 markers="{{markers}}" 
+                 circles="{{circles}}"
+                 show-location="true"
+                 style="width: 100%; height: {{mapHeight}}rpx;">
+            </map>
+            <!-- 地图控制按钮 -->
+            <view class="map-controls">
+              <view class="map-controls__button" bindtap="resetMap" title="重置地图">
+                <image src="../../images/icons/reset.svg" class="map-controls__button-icon" />
+              </view>
+              <view hidden="true" class="map-controls__button" bindtap="showDeliveryAddress" title="显示配送地址">
+                <image src="../../images/icons/deliveryLocation.svg" class="map-controls__button-icon" />
+              </view>
+              <view hidden="true" class="map-controls__button" bindtap="showCurrentLocation" title="显示当前位置">
+                <image src="../../images/icons/currentLocation.svg" class="map-controls__button-icon" />
+              </view>
+              <view wx:if="{{!isMapFullScreen}}" class="map-controls__button" bindtap="fullScreenMap" title="全屏地图">
+                <image src="../../images/icons/fullScreen.svg" class="map-controls__button-icon" />
+              </view>
+              <view wx:else class="map-controls__button" bindtap="exitFullScreenMap" title="退出全屏">
+                <image src="../../images/icons/canFullScreen.svg" class="map-controls__button-icon" />
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:else class="address-empty">
+        <text class="address-empty__text">{{deliveryType === 'express' ? '暂未设置收货地址' : '暂未设置配送地址'}}</text>
+      </view>
+    </view>
+
+    <!-- 自提信息 -->
+    <view wx:if="{{deliveryType === 'self'}}" class="self-pickup-section">
+      <view class="self-pickup-section__header">
+        <text class="self-pickup-section__title">自提信息</text>
+      </view>
+      <view class="self-pickup-info">
+        <view class="self-pickup-info__row self-pickup-info__row--address">
+          <text class="self-pickup-info__label">自提地址</text>
+          <view class="self-pickup-info__address-container">
+            <text class="self-pickup-info__address-text">{{pickupLocation || '自提地址未设置'}}</text>
+            <view class="self-pickup-info__address-actions">
+              <view class="self-pickup-info__address-icon" bindtap="copyPickupLocation" title="复制地址">
+                <image src="../../images/icons/copy.svg" class="self-pickup-info__address-icon-img" />
+              </view>
+              <view class="self-pickup-info__address-icon" bindtap="navigateToPickupLocation" title="导航到地址">
+                <image src="../../images/icons/navigation.svg" class="self-pickup-info__address-icon-img" />
+              </view>
+            </view>
+          </view>
+        </view>
+        <view class="self-pickup-info__row self-pickup-info__row--left">
+          <text class="self-pickup-info__label">自提时间</text>
+          <view class="self-pickup-time-container">
+            <picker mode="multiSelector" range="{{multiSelectorRange}}" value="{{multiSelectorValue}}" bindchange="onMultiSelectorChange" bindcolumnchange="onMultiSelectorColumnChange">
+              <text class="self-pickup-info__value">{{pickupDateTime}}</text>
+            </picker>
+            <text class="self-pickup-time-separator"> - </text>
+            <text class="self-pickup-time-range">{{pickupTimeRange}}</text>
+          </view>
+        </view>
+        <view class="self-pickup-info__row self-pickup-info__row--left">
+          <text class="self-pickup-info__label">取件号码</text>
+          <text class="self-pickup-info__pickup-code-text">{{pickupCode}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 同城配送信息 -->
+    <view wx:if="{{deliveryType === 'local' && address && !isOutOfRange}}" class="local-delivery-section">
+      <view class="local-delivery-section__header">
+        <text class="local-delivery-section__title">配送信息</text>
+      </view>
+      <view class="local-delivery-info">
+        <view class="self-pickup-info__row self-pickup-info__row--left">
+          <text class="self-pickup-info__label">配送时间</text>
+          <view class="self-pickup-time-container">
+            <picker mode="multiSelector" range="{{multiSelectorRange}}" value="{{multiSelectorValue}}" bindchange="onMultiSelectorChange" bindcolumnchange="onMultiSelectorColumnChange">
+              <text class="self-pickup-info__value">{{pickupDateTime}}</text>
+            </picker>
+            <text class="self-pickup-time-separator"> - </text>
+            <text class="self-pickup-time-range">{{pickupTimeRange}}</text>
+          </view>
+        </view>
+        <view class="self-pickup-info__row self-pickup-info__row--left">
+          <text class="self-pickup-info__label">取件号码</text>
+          <text class="self-pickup-info__pickup-code-text">{{pickupCode}}</text>
+        </view>
+
+      </view>
+    </view>
+
+    <!-- 商品信息 -->
+    <view class="product-section">
+      <view class="product-section__header">
+        <text class="product-section__title">商品信息</text>
+      </view>
+      <view class="product-item">
+        <image class="product-item__image" src="{{product.coverImage}}" mode="aspectFill"/>
+        <view class="product-item__info">
+          <text class="product-item__name">{{product.name}}</text>
+          <view class="product-item__bottom">
+            <text class="product-item__price">¥{{product.price}}</text>
+            <text class="product-item__quantity">x{{quantity}}</text>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{message}}" class="product-message">
+        <text class="product-message__label">留言：</text>
+        <text class="product-message__content">{{message}}</text>
+      </view>
+    </view>
+
+    <!-- 订单信息 -->
+    <view class="order-section">
+      <view class="order-section__header">
+        <text class="order-section__title">订单信息</text>
+      </view>
+      <view class="order-info">
+        <view class="order-info__row">
+          <text class="order-info__label">商品金额</text>
+          <text class="order-info__value">¥{{product.price * quantity}}</text>
+        </view>
+        <view wx:if="{{!isOutOfRange && address && deliveryType === 'express'}}" class="order-info__row">
+          <text class="order-info__label">运费</text>
+          <text class="order-info__value">¥{{deliveryFee || 0.00}}</text>
+        </view>
+        <view class="order-info__row order-info__row--total">
+          <text class="order-info__label order-info__label--total">合计</text>
+          <text class="order-info__value order-info__value--total">¥{{totalPrice}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-bar">
+      <view class="bottom-bar__left">
+        <text class="bottom-bar__price">¥{{totalPrice}}</text>
+      </view>
+      <button class="bottom-bar__btn {{isOutOfRange ? 'bottom-bar__btn--disabled' : ''}}" bindtap="submitOrder" disabled="{{isOutOfRange}}">{{isOutOfRange ? '超出配送范围' : '提交订单'}}</button>
+    </view>
+
+    <!-- 配送方式选择弹窗 -->
+    <view wx:if="{{showDeliverySelectorModal}}" class="delivery-selector-modal" catchtap="hideDeliverySelector">
+      <view class="delivery-selector-modal__content" catchtap="noop">
+        <view class="delivery-selector-modal__header">
+          <text class="delivery-selector-modal__title">选择配送方式</text>
+          <view class="delivery-selector-modal__close" bindtap="hideDeliverySelector">×</view>
+        </view>
+        
+        <scroll-view class="delivery-selector-modal__scroll" scroll-y="true">
+          <view class="delivery-selector-modal__options">
+            <view class="delivery-selector-modal__option {{tempDeliveryType === 'express' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="express">
+              <view class="delivery-selector-modal__option-radio"></view>
+              <view class="delivery-selector-modal__option-content">
+                <text class="delivery-selector-modal__option-name">快递运输</text>
+                <text class="delivery-selector-modal__option-desc">默认配送方式</text>
+              </view>
+            </view>
+            <view class="delivery-selector-modal__option {{tempDeliveryType === 'self' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="self">
+              <view class="delivery-selector-modal__option-radio"></view>
+              <view class="delivery-selector-modal__option-content">
+                <text class="delivery-selector-modal__option-name">上门自提</text>
+                <text class="delivery-selector-modal__option-desc">到店自取，无需运费</text>
+              </view>
+            </view>
+            <view class="delivery-selector-modal__option {{tempDeliveryType === 'local' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="local">
+              <view class="delivery-selector-modal__option-radio"></view>
+              <view class="delivery-selector-modal__option-content">
+                <text class="delivery-selector-modal__option-name">同城配送</text>
+                <text class="delivery-selector-modal__option-desc">上门配送，运费根据距离计算</text>
+              </view>
+            </view>
+          </view>
+        </scroll-view>
+        
+        <view class="delivery-selector-modal__footer">
+          <button class="btn btn-primary" bindtap="confirmDeliveryType">确认选择</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快递计算规则弹窗 -->
+    <view wx:if="{{showExpressRulesModal}}" class="express-rules-modal">
+      <view class="express-rules-modal__overlay" bindtap="hideExpressRulesModal"></view>
+      <view class="express-rules-modal__content">
+        <view class="express-rules-modal__title">快递计算规则</view>
+        <scroll-view class="express-rules-modal__scroll" scroll-y="true">
+          <view class="express-rules-modal__rules">
+            <!-- 显示所有规则，当前地址规则已在第一位 -->
+            <view wx:for="{{sortedExpressRules || expressRules}}" wx:key="index" class="express-rule-item">
+              <view class="express-rule-item__region">
+                {{item.region}}
+                <text wx:if="{{item.isCurrentRegion}}"> (当前地区)</text>
+              </view>
+              <view class="express-rule-item__provinces">
+                <view wx:for="{{item.provinces || [item.province]}}" wx:key="province" class="express-rule-item__province">{{item}}</view>
+              </view>
+              <view class="express-rule-item__fee-free">
+                <view class="express-rule-item__fee">
+                  <view class="express-rule-item__fee-label">运费：</view>
+                  <view class="express-rule-item__fee-value">¥{{item.fee}}</view>
+                </view>
+                <view class="express-rule-item__free">
+                  <view class="express-rule-item__free-label">包邮条件：</view>
+                  <view class="express-rule-item__free-value">满{{item.freeShipping || item.freeShippingThreshold || item.freeshipping || 0}}元包邮</view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <view class="express-rules-modal__tip">
+            运费根据发货地福建省到收货地址的实际距离计算，不同地区成本略有差异，感谢您的理解与支持。
+          </view>
+        </scroll-view>
+        <view class="express-rules-modal__cancel" bindtap="hideExpressRulesModal">关闭</view>
+      </view>
+    </view>
+  </view>
+</view>

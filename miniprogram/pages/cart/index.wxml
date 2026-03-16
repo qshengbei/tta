@@ -1,2 +1,32 @@
-<!--pages/cart/index.wxml-->
-<text>pages/cart/index.wxml</text>
+<view class="cart">
+  <view class="cart__header">
+    <text class="cart__title">购物车</text>
+  </view>
+  <view class="cart__content">
+    <view wx:for="{{cartItems}}" wx:key="{{item.productId}}" class="cart__item">
+      <image class="cart__item-image" src="{{item.coverImage}}" mode="aspectFill"/>
+      <view class="cart__item-info">
+        <text class="cart__item-name">{{item.name}}</text>
+        <view class="cart__item-bottom">
+          <text class="cart__item-price">¥{{item.price}}</text>
+          <quantity-selector 
+            quantity="{{item.quantity}}" 
+            maxQuantity="{{item.stock}}" 
+            productId="{{item.productId}}"
+            bind:quantityChange="onQuantityChange"
+          />
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{cartItems.length === 0}}" class="cart__empty">
+      <text class="cart__empty-text">购物车为空</text>
+    </view>
+  </view>
+  <view class="cart__footer" wx:if="{{cartItems.length > 0}}">
+    <view class="cart__total">
+      <text class="cart__total-label">合计：</text>
+      <text class="cart__total-price">¥{{totalPrice}}</text>
+    </view>
+    <button class="cart__checkout">去结算</button>
+  </view>
+</view>
