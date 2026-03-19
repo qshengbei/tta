@@ -118,10 +118,10 @@
             <text class="self-pickup-info__address-text">{{pickupLocation || '自提地址未设置'}}</text>
             <view class="self-pickup-info__address-actions">
               <view class="self-pickup-info__address-icon" bindtap="copyPickupLocation" title="复制地址">
-                <image src="../../images/icons/copy.svg" class="self-pickup-info__address-icon-img" />
+                <image src="../../images/icons/复制.png" class="self-pickup-info__address-icon-img" mode="aspectFit"/>
               </view>
               <view class="self-pickup-info__address-icon" bindtap="navigateToPickupLocation" title="导航到地址">
-                <image src="../../images/icons/navigation.svg" class="self-pickup-info__address-icon-img" />
+                <image src="../../images/icons/导航.png" class="self-pickup-info__address-icon-img" mode="aspectFit"/>
               </view>
             </view>
           </view>
@@ -172,13 +172,27 @@
       <view class="product-section__header">
         <text class="product-section__title">商品信息</text>
       </view>
-      <view class="product-item">
+      <!-- 单个商品 -->
+      <view wx:if="{{product._id}}" class="product-item">
         <image class="product-item__image" src="{{product.coverImage}}" mode="aspectFill"/>
         <view class="product-item__info">
           <text class="product-item__name">{{product.name}}</text>
           <view class="product-item__bottom">
             <text class="product-item__price">¥{{product.price}}</text>
             <text class="product-item__quantity">x{{quantity}}</text>
+          </view>
+        </view>
+      </view>
+      <!-- 多个商品 -->
+      <view wx:elif="{{products && products.length > 0}}" class="product-list">
+        <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-item">
+          <image class="product-item__image" src="{{item.coverImage}}" mode="aspectFill"/>
+          <view class="product-item__info">
+            <text class="product-item__name">{{item.name}}</text>
+            <view class="product-item__bottom">
+              <text class="product-item__price">¥{{item.price}}</text>
+              <text class="product-item__quantity">x{{item.quantity}}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -196,7 +210,7 @@
       <view class="order-info">
         <view class="order-info__row">
           <text class="order-info__label">商品金额</text>
-          <text class="order-info__value">¥{{product.price * quantity}}</text>
+          <text class="order-info__value">¥{{totalPrice - (deliveryFee || 0)}}</text>
         </view>
         <view wx:if="{{!isOutOfRange && address && deliveryType === 'express'}}" class="order-info__row">
           <text class="order-info__label">运费</text>

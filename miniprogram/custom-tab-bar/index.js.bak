@@ -1,0 +1,48 @@
+Component({
+  data: {
+    selected: 0,
+    color: "#999999",
+    selectedColor: "#000000",
+    list: [
+      {
+        pagePath: "/pages/home/index",
+        text: "首页",
+        iconPath: "/miniprogram/images/icons/首页.png",
+        selectedIconPath: "/miniprogram/images/icons/首页.png"
+      },
+      {
+        pagePath: "/pages/category/index",
+        text: "分类",
+        iconPath: "/miniprogram/images/icons/分类.png",
+        selectedIconPath: "/miniprogram/images/icons/分类.png"
+      },
+      {
+        pagePath: "/pages/cart/index",
+        text: "购物车",
+        iconPath: "/miniprogram/images/icons/购物车.png",
+        selectedIconPath: "/miniprogram/images/icons/购物车.png"
+      },
+      {
+        pagePath: "/pages/my/index",
+        text: "我的",
+        iconPath: "/miniprogram/images/icons/我的.png",
+        selectedIconPath: "/miniprogram/images/icons/我的.png"
+      }
+    ]
+  },
+  attached() {
+  },
+  methods: {
+    switchTab(e) {
+      const data = e.currentTarget.dataset;
+      const path = data.path;
+      const index = data.index;
+      this.setData({
+        selected: index
+      });
+      wx.switchTab({
+        url: path
+      });
+    }
+  }
+})

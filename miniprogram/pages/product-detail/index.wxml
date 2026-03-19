@@ -55,7 +55,7 @@
             <span class="product-detail__price-value">{{displayPrice}}</span>
           </view>
           <view class="product-detail__share-btn" bindtap="showShareOptions">
-            <view class="share-icon"></view>
+            <image class="share-icon" src="../../images/icons/分享.png" mode="aspectFit"></image>
             <text class="share-text">分享</text>
           </view>
         </view>
@@ -228,12 +228,19 @@
     <view class="bottom-bar pd-bottom-bar">
       <view class="pd-bottom-bar__left">
         <view class="pd-bottom-bar__icons">
-          <view class="pd-bottom-bar__icon" bindtap="contactService">
-            <view class="icon-service"></view>
+          <button class="pd-bottom-bar__icon" open-type="contact" 
+          show-message-card="true"
+          send-message-path="/pages/product-detail/index?id={{product._id}}"
+          send-message-title="{{product.name}}"
+          send-message-img="{{coverImageUrl}}"
+          session-from="product_detail_{{product._id}}"
+          bindcontact="handleContact">
+          
+            <image class="icon-service" src="../../images/icons/客服.png" mode="aspectFit"></image>
             <text class="pd-bottom-bar__icon-text">客服</text>
-          </view>
-          <view class="pd-bottom-bar__icon" bindtap="goToCart">
-            <view class="icon-cart"></view>
+          </button>
+          <view class="pd-bottom-bar__icon" bindtap="showCartPreview">
+            <image class="icon-cart" src="../../images/icons/购物车.png" mode="aspectFit"></image>
             <text class="pd-bottom-bar__icon-text">购物车</text>
           </view>
         </view>
@@ -289,11 +296,11 @@
         <view class="location-modal__title">位置与规则</view>
         <view class="location-modal__options">
           <view class="location-option" bindtap="getCurrentLocation">
-            <image class="location-option__icon" src="/images/icons/currentLocation.svg"></image>
+            <image class="location-option__icon" src="../../images/icons/地图定位.png" mode="aspectFit"></image>
             <view class="location-option__text">获取当前位置</view>
           </view>
           <view class="location-option" bindtap="showExpressRules">
-            <image class="location-option__icon" src="/images/icons/freightRules.svg"></image>
+            <image class="location-option__icon" src="../../images/icons/快递运费.png" mode="aspectFit"></image>
             <view class="location-option__text">快递计算规则</view>
           </view>
         </view>
@@ -337,4 +344,10 @@
       </view>
     </view>
   </view>
+
+  <!-- 购物车预览组件 -->
+  <cart-preview 
+    visible="{{showCartPreview}}" 
+    bindclose="closeCartPreview"
+  />
 </view>

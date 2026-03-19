@@ -53,11 +53,22 @@ Page({
   },
 
   onLoad(options) {
-    const { productId, quantity, message } = options;
+    const { productId, quantity, message, cartItems } = options;
+    
+    let cartItemsArray = [];
+    if (cartItems) {
+      try {
+        cartItemsArray = JSON.parse(decodeURIComponent(cartItems));
+      } catch (err) {
+        console.error("解析购物车数据失败", err);
+      }
+    }
+    
     this.setData({
       productId: productId || "",
       quantity: parseInt(quantity) || 1,
-      message: message ? decodeURIComponent(message) : ""
+      message: message ? decodeURIComponent(message) : "",
+      cartItems: cartItemsArray
     });
     
     // 生成取件号码
@@ -74,6 +85,8 @@ Page({
     
     if (productId) {
       this.fetchProduct();
+    } else if (cartItemsArray.length > 0) {
+      this.fetchCartProducts();
     } else {
       this.setData({
         loading: false,
@@ -81,6 +94,68 @@ Page({
         errorMessage: "未获取到商品信息"
       });
     }
+  },
+  
+  // 获取购物车商品信息
+  fetchCartProducts() {
+    this.setData({ loading: true, error: false, errorMessage: "" });
+    const products = getCollection("products");
+    const cartItems = this.data.cartItems;
+    const productIds = cartItems.map(item => item.productId);
+    
+    // 批量获取商品信息
+    const productPromises = productIds.map(productId => {
+      return products.doc(productId).get();
+    });
+    
+    Promise.all(productPromises)
+      .then((results) => {
+        const productsData = results.map(result => result.data || {}).filter(Boolean);
+        
+        if (productsData.length === 0) {
+          this.setData({
+            loading: false,
+            error: true,
+            errorMessage: "商品信息不存在"
+          });
+          return;
+        }
+        
+        // 计算总价格
+        let totalPrice = 0;
+        const cartProducts = cartItems.map(cartItem => {
+          const product = productsData.find(p => p._id === cartItem.productId);
+          if (product) {
+            const itemTotal = product.price * cartItem.quantity;
+            totalPrice += itemTotal;
+            return {
+              ...product,
+              quantity: cartItem.quantity,
+              message: cartItem.message
+            };
+          }
+          return null;
+        }).filter(Boolean);
+        
+        this.setData({
+          products: cartProducts,
+          totalPrice,
+          loading: false
+        });
+        
+        // 计算运费
+        if (this.data.deliveryType === 'express' && this.data.address) {
+          this.calculateShippingFee();
+        }
+      })
+      .catch((err) => {
+        console.error("加载商品信息失败", err);
+        this.setData({
+          loading: false,
+          error: true,
+          errorMessage: "加载商品信息失败，请稍后重试"
+        });
+      });
   },
 
   // 获取快递运费规则
@@ -483,6 +558,11 @@ Page({
           totalPrice,
           loading: false
         });
+        
+        // 计算运费
+        if (this.data.deliveryType === 'express' && this.data.address) {
+          this.calculateShippingFee();
+        }
       })
       .catch((err) => {
         console.error("加载商品信息失败", err);
@@ -500,17 +580,87 @@ Page({
 
   // 计算快递运费
   calculateShippingFee() {
-    const { address, product, quantity, expressRules } = this.data;
+    const { address, product, quantity, expressRules, products } = this.data;
     
-    if (!address || !product) {
+    if (!address) {
       return;
     }
     
     const province = address.provinceName;
-    const { shippingFee, freeShippingThreshold } = calculateShippingFee(expressRules, province, product, quantity);
+    let totalPrice = 0;
+    let shippingFee = 0;
+    let freeShippingThreshold = 0;
     
-    // 更新总价格
-    const totalPrice = product.price * quantity + shippingFee;
+    if (products && products.length > 0) {
+      // 多商品情况
+      let subtotal = 0;
+      products.forEach(item => {
+        subtotal += item.price * item.quantity;
+      });
+      
+      // 使用第一个商品来获取运费规则，但使用所有商品的总价格来计算是否包邮
+      if (products.length > 0) {
+        // 查找对应省份的运费规则
+        let provinceRule = null;
+        for (let i = 0; i < expressRules.length; i++) {
+          const rule = expressRules[i];
+          if (rule.provinces && Array.isArray(rule.provinces)) {
+            // 检查省份是否在规则的provinces数组中
+            if (rule.provinces.some(ruleProvince => province.includes(ruleProvince) || ruleProvince.includes(province))) {
+              provinceRule = rule;
+              break;
+            }
+          } else if (rule.province) {
+            // 检查省份是否匹配
+            if (rule.province === "默认" || province.includes(rule.province) || rule.province.includes(province)) {
+              provinceRule = rule;
+              break;
+            }
+          }
+        }
+        
+        // 如果没有找到对应省份的规则，使用默认规则
+        if (!provinceRule) {
+          provinceRule = expressRules.find(rule => rule.province === "默认") || expressRules[0];
+        }
+        
+        if (provinceRule) {
+          // 获取包邮门槛和运费
+          freeShippingThreshold = provinceRule.freeShipping || provinceRule.freeShippingThreshold || provinceRule.freeshipping || 0;
+          const fee = provinceRule.fee || 0;
+          
+          console.log('多商品运费计算:', {
+            subtotal: subtotal,
+            freeShippingThreshold: freeShippingThreshold,
+            fee: fee,
+            isFreeShipping: subtotal >= freeShippingThreshold
+          });
+          
+          // 检查是否满足包邮条件
+          if (subtotal >= freeShippingThreshold) {
+            shippingFee = 0;
+          } else {
+            shippingFee = fee;
+          }
+        }
+      }
+      
+      totalPrice = subtotal + shippingFee;
+    } else if (product) {
+      // 单个商品情况
+      const { shippingFee: itemShippingFee, freeShippingThreshold: itemThreshold } = calculateShippingFee(expressRules, province, product, quantity);
+      shippingFee = itemShippingFee;
+      freeShippingThreshold = itemThreshold;
+      totalPrice = product.price * quantity + shippingFee;
+      console.log('单个商品运费计算:', {
+        productPrice: product.price,
+        quantity: quantity,
+        subtotal: product.price * quantity,
+        freeShippingThreshold: itemThreshold,
+        shippingFee: itemShippingFee,
+        totalPrice: totalPrice
+      });
+    }
     
     this.setData({
       deliveryFee: shippingFee,
@@ -587,15 +737,15 @@ Page({
       this.initPickupTime();
       
       // 重新计算总价格（不包含配送费）
-      const totalPrice = this.data.product.price * this.data.quantity;
-      this.setData({ totalPrice });
+        const totalPrice = this.calculateProductTotal();
+        this.setData({ totalPrice });
     } else if (tempDeliveryType === 'express' && this.data.address) {
       // 如果是快递配送且有地址，计算运费
       this.calculateShippingFee();
     } else {
       // 其他情况，重新计算总价格（不包含配送费）
-      const totalPrice = this.data.product.price * this.data.quantity;
-      this.setData({ totalPrice });
+        const totalPrice = this.calculateProductTotal();
+        this.setData({ totalPrice });
     }
     
     // 隐藏弹窗
@@ -634,96 +784,68 @@ Page({
       longitude: this.data.pickupLongitude || 116.4565 
     };
     
+    let userLocation;
+    
     // 解析用户地址坐标
     if (this.data.tencentMapKey && this.data.address) {
       const addressStr = this.data.address.provinceName + this.data.address.cityName + this.data.address.countyName + this.data.address.detailInfo;
       
       try {
         // 从缓存或API获取地址坐标
-        const userLocation = await getAddressLocation(addressStr, this.data.tencentMapKey, this.data.secretKey);
-        
-        // 计算距离
-        const distance = calculateDistance(selfPickupLocation, userLocation);
-        
-        // 根据配送规则计算配送费
-        const { deliveryFee, isOutOfRange } = calculateDeliveryFee(distance, this.data.deliveryRules);
-        
-        // 如果超出配送范围，提示用户
-        if (isOutOfRange) {
-          wx.showToast({
-            title: '超出配送范围，请选择其他配送方式',
-            icon: 'none'
-          });
-        }
-        
-        // 计算总价格（包含配送费）
-        const totalPrice = Number(this.data.product.price) * Number(this.data.quantity) + Number(deliveryFee);
-        
-        // 生成地图标记
-        const markers = generateMarkers(selfPickupLocation, userLocation, '您的地址');
-        
-        // 生成地图圆形覆盖物
-        const circles = generateCircles(selfPickupLocation, this.data.deliveryRules);
-        
-        this.setData({ 
-          distance: distance.toFixed(1), 
-          deliveryFee, 
-          isOutOfRange,
-          totalPrice,
-          markers,
-          circles
-        }, () => {
-          // 计算完成后，如果需要初始化自提时间且未超出配送范围
-          if (initTime && !this.data.isOutOfRange) {
-            this.initPickupTime();
-          }
-          
-          // 调整地图视野，确保两个标记点都在画面内
-          adjustMapView(markers);
-        });
+        userLocation = await getAddressLocation(addressStr, this.data.tencentMapKey, this.data.secretKey);
       } catch (err) {
         console.error("地址解析失败", err);
         wx.showToast({
           title: "地址解析失败",
           icon: "none"
         });
+        return;
       }
     } else {
       // 如果没有腾讯地图API密钥或地址，使用默认值
-      const userLocation = { latitude: 39.9265, longitude: 116.4465 };
-      
-      // 计算距离
-      const distance = calculateDistance(selfPickupLocation, userLocation);
-      
-      // 根据配送规则计算配送费
-      const { deliveryFee, isOutOfRange } = calculateDeliveryFee(distance, this.data.deliveryRules);
-      
-      // 计算总价格（包含配送费）
-      const totalPrice = Number(this.data.product.price) * Number(this.data.quantity) + Number(deliveryFee);
-      
-      // 生成地图标记
-      const markers = generateMarkers(selfPickupLocation, userLocation, '您的地址');
-      
-      // 生成地图圆形覆盖物
-      const circles = generateCircles(selfPickupLocation, this.data.deliveryRules);
-      
-      this.setData({ 
-        distance: distance.toFixed(1), 
-        deliveryFee, 
-        isOutOfRange,
-        totalPrice,
-        markers,
-        circles
-      }, () => {
-        // 计算完成后，如果需要初始化自提时间且未超出配送范围
-        if (initTime && !this.data.isOutOfRange) {
-          this.initPickupTime();
-        }
-        
-        // 调整地图视野，确保两个标记点都在画面内
-        adjustMapView(markers);
+      userLocation = { latitude: 39.9265, longitude: 116.4465 };
+    }
+    
+    // 计算距离
+    const distance = calculateDistance(selfPickupLocation, userLocation);
+    
+    // 根据配送规则计算配送费
+    const { deliveryFee, isOutOfRange } = calculateDeliveryFee(distance, this.data.deliveryRules);
+    
+    // 如果超出配送范围，提示用户
+    if (isOutOfRange) {
+      wx.showToast({
+        title: '超出配送范围，请选择其他配送方式',
+        icon: 'none'
       });
     }
+    
+    // 计算总价格（包含配送费）
+    const productTotal = this.calculateProductTotal();
+    const totalPrice = productTotal + Number(deliveryFee);
+    
+    // 生成地图标记
+    const markers = generateMarkers(selfPickupLocation, userLocation, '您的地址');
+    
+    // 生成地图圆形覆盖物
+    const circles = generateCircles(selfPickupLocation, this.data.deliveryRules);
+    
+    this.setData({ 
+      distance: distance.toFixed(1), 
+      deliveryFee, 
+      isOutOfRange,
+      totalPrice,
+      markers,
+      circles
+    }, () => {
+      // 计算完成后，如果需要初始化自提时间且未超出配送范围
+      if (initTime && !this.data.isOutOfRange) {
+        this.initPickupTime();
+      }
+      
+      // 调整地图视野，确保两个标记点都在画面内
+      adjustMapView(markers);
+    });
   },
 
   // 复制自提地址
@@ -839,7 +961,7 @@ Page({
   // 提交订单
   submitOrder() {
     // 检查配送方式
-    const { deliveryType, address, pickupCode, isOutOfRange } = this.data;
+    const { deliveryType, address, pickupCode, isOutOfRange, product, products } = this.data;
     
     // 检查是否超出配送范围
     if (isOutOfRange) {
@@ -869,7 +991,7 @@ Page({
     }
     
     // 检查商品信息
-    if (!this.data.product._id) {
+    if (!product._id && (!products || products.length === 0)) {
       wx.showToast({
         title: "商品信息错误",
         icon: "none"
@@ -882,7 +1004,7 @@ Page({
       title: "提交订单中..."
     });
     
-    // 这里可以添加实际的订单提交逻辑，比如调用云函数创建订单
+    // 直接跳转到支付页面，传递订单相关信息
     setTimeout(() => {
       wx.hideLoading();
       wx.showToast({
@@ -890,10 +1012,40 @@ Page({
         icon: "success"
       });
       
-      // 跳转到订单列表页面
+      // 准备订单数据
+      const orderData = {
+        totalPrice: this.data.totalPrice,
+        deliveryType: this.data.deliveryType,
+        address: this.data.address,
+        pickupCode: this.data.pickupCode,
+        pickupTime: this.data.pickupTime
+      };
+      
+      // 添加商品信息
+      if (this.data.product._id) {
+        // 单个商品
+        orderData.products = [{
+          productId: this.data.product._id,
+          name: this.data.product.name,
+          price: this.data.product.price,
+          quantity: this.data.quantity,
+          coverImage: this.data.product.coverImage
+        }];
+      } else if (this.data.products && this.data.products.length > 0) {
+        // 多个商品
+        orderData.products = this.data.products.map(item => ({
+          productId: item._id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          coverImage: item.coverImage
+        }));
+      }
+      
+      // 跳转到支付页面，传递订单数据
       setTimeout(() => {
         wx.navigateTo({
-          url: "/pages/order-list/index"
+          url: "/pages/payment/index?totalPrice=" + this.data.totalPrice + "&orderData=" + encodeURIComponent(JSON.stringify(orderData))
         });
       }, 1500);
     }, 1500);
@@ -941,7 +1093,8 @@ Page({
         const { deliveryFee, isOutOfRange } = calculateDeliveryFee(distance, this.data.deliveryRules);
         
         // 计算总价格（包含配送费）
-        const totalPrice = Number(this.data.product.price) * Number(this.data.quantity) + Number(deliveryFee);
+        const productTotal = this.calculateProductTotal();
+        const totalPrice = productTotal + Number(deliveryFee);
         
         // 生成地图标记
         const markers = generateMarkers(selfPickupLocation, deliveryLocation, '配送地址');
@@ -999,7 +1152,8 @@ Page({
         const { deliveryFee, isOutOfRange } = calculateDeliveryFee(distance, this.data.deliveryRules);
         
         // 计算总价格（包含配送费）
-        const totalPrice = Number(this.data.product.price) * Number(this.data.quantity) + Number(deliveryFee);
+        const productTotal = this.calculateProductTotal();
+        const totalPrice = productTotal + Number(deliveryFee);
         
         // 生成地图标记
         const markers = generateMarkers(selfPickupLocation, currentLocation, '当前位置');
@@ -1102,5 +1256,20 @@ Page({
   // 隐藏快递计算规则弹窗
   hideExpressRulesModal() {
     this.setData({ showExpressRulesModal: false });
+  },
+
+  // 计算商品总价
+  calculateProductTotal() {
+    let productTotal = 0;
+    if (this.data.products && this.data.products.length > 0) {
+      // 多个商品情况
+      productTotal = this.data.products.reduce((sum, item) => {
+        return sum + (item.price * item.quantity);
+      }, 0);
+    } else if (this.data.product._id) {
+      // 单个商品情况
+      productTotal = Number(this.data.product.price) * Number(this.data.quantity);
+    }
+    return productTotal;
   }
 });

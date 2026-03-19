@@ -1,9 +1,10 @@
 import { getCollection } from "../../utils/cloud";
 import QQMapWX from "../../utils/qqmap-wx-jssdk1.2/qqmap-wx-jssdk";
 import { calculateShippingFee, sortExpressRules, DEFAULT_EXPRESS_RULES } from "../../utils/shipping";
-import { contactService, scanQRCode } from "../../utils/customer-service";
+import { scanQRCode } from "../../utils/customer-service";
 import { showShareOptions, hideShareOptions, shareToFriend, shareToTimeline, generatePoster, getShareAppMessageConfig, getShareTimelineConfig } from "../../utils/share";
 import { cacheProduct, getCachedProduct, cacheExpressRules, getCachedExpressRules, cacheAddress, getCachedAddress } from "../../utils/cache";
+import { getProductDetail, isProductSoldOut, formatPrice, buildPreviewImages } from "../../utils/product";
 
 Page({
   data: {
@@ -32,7 +33,9 @@ Page({
     freeShippingThreshold: 0, // 包邮条件
     showLocationModal: false, // 显示位置选择弹窗
     showExpressRulesModal: false, // 显示快递计算规则弹窗
-    sortedExpressRules: [] // 排序后的快递规则
+    sortedExpressRules: [], // 排序后的快递规则
+    coverImageUrl: "", // 商品封面图的临时URL
+    showCartPreview: false // 购物车预览弹出层显示状态
   },
 
   onLoad(options) {
@@ -317,10 +320,7 @@ Page({
       console.log('从缓存获取商品详情');
       const product = cachedProduct;
       const stock = typeof product.stock === "number" ? product.stock : 99;
-      let displayPrice = "0.00";
-      if (typeof product.price === "number") {
-        displayPrice = product.price.toFixed(2);
-      }
+      let displayPrice = formatPrice(product.price);
       
       // 确保images字段是一个数组
       if (!product.images || !Array.isArray(product.images)) {
@@ -331,10 +331,7 @@ Page({
       let totalImages = 1 + product.images.length; // 默认至少有一张封面图
       
       // 构建预览图片数组
-      let previewImageUrls = [product.coverImage];
-      if (product.images.length > 0) {
-        previewImageUrls = previewImageUrls.concat(product.images);
-      }
+      let previewImageUrls = buildPreviewImages(product);
       
       // 获取同布料的商品
       if (product.materialId) {
@@ -358,6 +355,9 @@ Page({
         loading: false
       });
       
+      // 获取商品封面图的临时URL
+      this.getCoverImageUrl(product.coverImage);
+      
       // 计算运费
       this.calculateShippingFee();
       return;
@@ -371,10 +371,7 @@ Page({
       .then((res) => {
         const product = res.data || {};
         const stock = typeof product.stock === "number" ? product.stock : 99;
-        let displayPrice = "0.00";
-        if (typeof product.price === "number") {
-          displayPrice = product.price.toFixed(2);
-        }
+        let displayPrice = formatPrice(product.price);
         
         // 确保images字段是一个数组
         if (!product.images || !Array.isArray(product.images)) {
@@ -385,10 +382,7 @@ Page({
         let totalImages = 1 + product.images.length; // 默认至少有一张封面图
         
         // 构建预览图片数组
-        let previewImageUrls = [product.coverImage];
-        if (product.images.length > 0) {
-          previewImageUrls = previewImageUrls.concat(product.images);
-        }
+        let previewImageUrls = buildPreviewImages(product);
         
         // 缓存商品详情
         cacheProduct(this.data.productId, product);
@@ -414,6 +408,9 @@ Page({
           previewImageUrls,
           loading: false
         });
+        
+        // 获取商品封面图的临时URL
+        this.getCoverImageUrl(product.coverImage);
         
         // 计算运费
         this.calculateShippingFee();
@@ -508,16 +505,26 @@ Page({
             }
           });
         } else {
-          return cart.add({
-            data: {
-              productId: this.data.productId,
-              quantity: this.data.quantity,
-              message: this.data.message,
-              checked: true,
-              productSnapshot,
-              createdAt: new Date(),
-              updatedAt: new Date()
+          // 获取当前用户的最大sort值
+          const openid = wx.getStorageSync('openid') || '';
+          return cart.where({ _openid: openid, isDelete: false }).orderBy('sort', 'desc').limit(1).get().then(sortRes => {
+            let sort = 1;
+            if (sortRes.data && sortRes.data.length > 0) {
+              sort = sortRes.data[0].sort + 1;
             }
+            return cart.add({
+              data: {
+                productId: this.data.productId,
+                quantity: this.data.quantity,
+                message: this.data.message,
+                checked: true,
+                productSnapshot,
+                isDelete: false,
+                sort: sort,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              }
+            });
           });
         }
       })
@@ -568,6 +575,20 @@ Page({
     this.showProductSelector();
   },
 
+  // 显示购物车预览
+  showCartPreview() {
+    this.setData({
+      showCartPreview: true
+    });
+  },
+
+  // 关闭购物车预览
+  closeCartPreview() {
+    this.setData({
+      showCartPreview: false
+    });
+  },
+
   // 跳转到购物车
   goToCart() {
     wx.switchTab({
@@ -575,14 +596,37 @@ Page({
     });
   },
 
-  // 联系客服
-  contactService() {
-    contactService();
-  },
+
 
   // 长按扫码
   scanQRCode() {
     scanQRCode();
+  },
+
+  // 处理客服消息回调
+  handleContact(e) {
+    console.log('用户从客服会话返回', e.detail);
+    // e.detail.path: 用户点击的消息路径
+    // e.detail.query: 用户点击的消息参数
+  },
+
+  // 获取商品封面图的临时URL
+  getCoverImageUrl(coverImage) {
+    if (coverImage) {
+      wx.cloud.getTempFileURL({
+        fileList: [coverImage],
+        success: (res) => {
+          if (res.fileList && res.fileList.length > 0) {
+            this.setData({
+              coverImageUrl: res.fileList[0].tempFileURL
+            });
+          }
+        },
+        fail: (err) => {
+          console.error('获取临时文件URL失败', err);
+        }
+      });
+    }
   },
 
   // 补货提醒

@@ -1,6 +1,9 @@
 {
   "navigationBarTitleText": "购物车",
   "usingComponents": {
-    "quantity-selector": "../../components/quantity-selector/index"
-  }
+    "quantity-selector": "../../components/quantity-selector/index",
+    "search-filter-panel": "../../components/search-filter-panel/index"
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
 }

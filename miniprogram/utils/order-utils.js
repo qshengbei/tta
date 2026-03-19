@@ -21,30 +21,49 @@ export function generatePickupCode() {
  * @returns {Promise} 自提地址信息的Promise
  */
 export async function getPickupLocation() {
-  const settings = getCollection("settings");
-  const res = await settings.get();
-  
-  if (res.data && res.data.length > 0) {
-    const setting = res.data[0];
-    if (setting.pickupLocation) {
-      return {
-        pickupLocation: setting.pickupLocation,
-        pickupLatitude: setting.latitude ? Number(setting.latitude) : null,
-        pickupLongitude: setting.longitude ? Number(setting.longitude) : null,
-        tencentMapKey: setting.tencentMapKey || "",
-        secretKey: setting.secretKey || "",
-        beginTime: setting.beginTime ? Number(setting.beginTime) : 9, // 默认起始时间为9点
-        endTime: setting.endTime ? Number(setting.endTime) : 20, // 默认结束时间为20点
-        deliveryRules: setting.deliveryRules || [ // 默认配送费规则
-          { maxDistance: 2, fee: 0 },
-          { maxDistance: 5, fee: 5 },
-          { maxDistance: 10, fee: 10 }
-        ]
-      };
+  try {
+    // 先尝试从缓存获取
+    const cachedLocation = wx.getStorageSync('pickupLocation');
+    if (cachedLocation && Date.now() - cachedLocation.timestamp < 30 * 60 * 1000) { // 30分钟缓存
+      return cachedLocation.data;
     }
+
+    const settings = getCollection("settings");
+    const res = await settings.get();
+    
+    if (res.data && res.data.length > 0) {
+      const setting = res.data[0];
+      if (setting.pickupLocation) {
+        const pickupLocationInfo = {
+          pickupLocation: setting.pickupLocation,
+          pickupLatitude: setting.latitude ? Number(setting.latitude) : null,
+          pickupLongitude: setting.longitude ? Number(setting.longitude) : null,
+          tencentMapKey: setting.tencentMapKey || "",
+          secretKey: setting.secretKey || "",
+          beginTime: setting.beginTime ? Number(setting.beginTime) : 9, // 默认起始时间为9点
+          endTime: setting.endTime ? Number(setting.endTime) : 20, // 默认结束时间为20点
+          deliveryRules: setting.deliveryRules || [ // 默认配送费规则
+            { maxDistance: 2, fee: 0 },
+            { maxDistance: 5, fee: 5 },
+            { maxDistance: 10, fee: 10 }
+          ]
+        };
+        
+        // 缓存自提地址信息
+        wx.setStorageSync('pickupLocation', {
+          data: pickupLocationInfo,
+          timestamp: Date.now()
+        });
+        
+        return pickupLocationInfo;
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('获取自提地址失败:', error);
+    return null;
   }
-  
-  return null;
 }
 
 /**

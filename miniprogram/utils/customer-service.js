@@ -88,8 +88,21 @@ export function showContactInfo() {
  * 联系客服
  */
 export function contactService() {
-  // 直接显示客服二维码，避免使用wx.openCustomerServiceConversation
-  showCustomerQrCode();
+  // 首先尝试使用微信原生的客服会话功能
+  console.log('开始调用客服会话功能');
+  wx.openCustomerServiceConversation({
+    success: function(res) {
+      console.log('打开客服会话成功', res);
+    },
+    fail: function(err) {
+      console.error('打开客服会话失败，尝试降级处理', err);
+      // 失败时显示客服二维码
+      showCustomerQrCode();
+    },
+    complete: function(res) {
+      console.log('客服会话调用完成', res);
+    }
+  });
 }
 
 /**

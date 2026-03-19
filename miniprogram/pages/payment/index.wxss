@@ -1,0 +1,235 @@
+.payment {
+  font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 内容区域 */
+.payment__content {
+  margin-top: 0;
+  background-color: #fff;
+  padding: 32rpx 24rpx;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* 金额显示 */
+.payment__amount {
+  text-align: center;
+  margin-bottom: 48rpx;
+  animation: fadeInUp 0.6s ease-out 0.2s both;
+}
+
+.payment__amount-label {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 16rpx;
+  display: block;
+}
+
+.payment__amount-value {
+  font-size: 56rpx;
+  font-weight: 600;
+  color: #333;
+  animation: scaleIn 0.8s ease-out 0.4s both;
+}
+
+/* 支付方式 */
+.payment__method {
+  margin-bottom: 32rpx;
+  animation: fadeInUp 0.6s ease-out 0.6s both;
+}
+
+.payment__method-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.payment__method-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.payment__method-icon {
+  width: 48rpx;
+  height: 48rpx;
+  margin-right: 16rpx;
+}
+
+.payment__method-name {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 订单信息 */
+.payment__order-info {
+  margin-top: 32rpx;
+  animation: fadeInUp 0.6s ease-out 0.8s both;
+}
+
+.payment__order-info-title {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.payment__order-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.payment__order-info-label {
+  flex: 1;
+}
+
+.payment__order-info-value {
+  flex: 2;
+  text-align: right;
+  color: #333;
+}
+
+/* 底部支付按钮 */
+.payment__footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx;
+  background-color: #fff;
+  box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.05);
+  animation: fadeInUp 0.6s ease-out 1s both;
+}
+
+.payment__footer-amount {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.payment__footer-amount-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.payment__footer-amount-value {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #333;
+  margin-left: 8rpx;
+}
+
+.payment__footer-pay {
+  width: 200rpx;
+  height: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #0066cc;
+  color: #fff;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 40rpx;
+  border: none;
+  box-shadow: 0 2rpx 8rpx rgba(0, 102, 204, 0.3);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  margin-left: 24rpx;
+  padding: 0;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.payment__footer-pay:active {
+  background-color: #0052a3;
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 16rpx rgba(0, 102, 204, 0.4);
+}
+
+.payment__footer-pay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.payment__footer-pay:hover::before {
+  left: 100%;
+}
+
+/* 响应式设计 */
+@media (max-width: 375px) {
+  .payment__content {
+    padding: 24rpx 20rpx;
+  }
+  
+  .payment__amount-value {
+    font-size: 48rpx;
+  }
+  
+  .payment__footer {
+    padding: 20rpx;
+  }
+  
+  .payment__footer-pay {
+    width: 180rpx;
+    height: 72rpx;
+    font-size: 28rpx;
+  }
+}
+
+/* 横屏模式 */
+@media (orientation: landscape) {
+  .payment__content {
+    padding: 24rpx;
+  }
+  
+  .payment__footer {
+    padding: 16rpx 24rpx;
+  }
+  
+  .payment__footer-pay {
+    height: 64rpx;
+    font-size: 28rpx;
+  }
+}

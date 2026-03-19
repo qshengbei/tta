@@ -615,8 +615,8 @@
 }
 
 .self-pickup-info__address-icon-img {
-  width: 40rpx;
-  height: 40rpx;
+  width: 30rpx;
+  height: 30rpx;
 }
 
 .self-pickup-info__address-icon:hover {

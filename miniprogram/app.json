@@ -9,6 +9,8 @@
     "pages/order-confirm/index",
     "pages/order-list/index",
     "pages/order-detail/index",
+    "pages/payment/index",
+    "pages/payment-success/index",
     "pages/customer-service/index",
     "pages/admin/index/index",
     "pages/admin/product-manage/index",
@@ -30,19 +32,27 @@
     "list": [
       {
         "pagePath": "pages/home/index",
-        "text": "首页"
+        "text": "首页",
+        "iconPath": "images/icons/home.png",
+        "selectedIconPath": "images/icons/home-克莱因蓝.png"
       },
       {
         "pagePath": "pages/category/index",
-        "text": "分类"
+        "text": "分类",
+        "iconPath": "images/icons/category.png",
+        "selectedIconPath": "images/icons/category-克莱因蓝.png"
       },
       {
         "pagePath": "pages/cart/index",
-        "text": "购物车"
+        "text": "购物车",
+        "iconPath": "images/icons/cart.png",
+        "selectedIconPath": "images/icons/cart-克莱因蓝.png"
       },
       {
         "pagePath": "pages/my/index",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "images/icons/my.png",
+        "selectedIconPath": "images/icons/my-克莱因蓝.png"
       }
     ]
   },

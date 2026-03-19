@@ -40,8 +40,8 @@ export function calculateShippingFee(expressRules, currentProvince, product, qua
       // 遍历 provinces 数组，查找匹配的省份
       for (let j = 0; j < rule.provinces.length; j++) {
         const ruleProvince = rule.provinces[j];
-        // 直接匹配完整的省份名称
-        if (ruleProvince === currentProvince) {
+        // 灵活匹配省份名称
+        if (currentProvince.includes(ruleProvince) || ruleProvince.includes(currentProvince)) {
           provinceRule = rule;
           break;
         }
@@ -49,8 +49,8 @@ export function calculateShippingFee(expressRules, currentProvince, product, qua
     } else if (rule.province) {
       // 检查 rule.province 字段（单数形式）
       const ruleProvince = rule.province;
-      // 直接匹配完整的省份名称
-      if (ruleProvince === currentProvince) {
+      // 灵活匹配省份名称
+      if (ruleProvince === "默认" || currentProvince.includes(ruleProvince) || ruleProvince.includes(currentProvince)) {
         provinceRule = rule;
         break;
       }

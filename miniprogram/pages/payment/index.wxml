@@ -1,0 +1,36 @@
+<view class="payment">
+  <view class="payment__content">
+    <view class="payment__amount">
+      <text class="payment__amount-label">订单金额</text>
+      <text class="payment__amount-value">¥{{totalPrice}}</text>
+    </view>
+    
+    <view class="payment__method">
+      <text class="payment__method-title">支付方式</text>
+      <view class="payment__method-item" bindtap="selectPaymentMethod">
+        <image src="/images/icons/wechat-pay.png" class="payment__method-icon" />
+        <text class="payment__method-name">微信支付</text>
+      </view>
+    </view>
+    
+    <view class="payment__order-info">
+      <text class="payment__order-info-title">订单信息</text>
+      <view class="payment__order-info-item">
+        <text class="payment__order-info-label">订单编号</text>
+        <text class="payment__order-info-value">{{orderId}}</text>
+      </view>
+      <view class="payment__order-info-item">
+        <text class="payment__order-info-label">创建时间</text>
+        <text class="payment__order-info-value">{{createTime}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <view class="payment__footer">
+    <view class="payment__footer-amount">
+      <text class="payment__footer-amount-label">实付金额：</text>
+      <text class="payment__footer-amount-value">¥{{totalPrice}}</text>
+    </view>
+    <button class="payment__footer-pay" bindtap="handlePayment">立即支付</button>
+  </view>
+</view>

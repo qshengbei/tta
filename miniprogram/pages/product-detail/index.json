@@ -1,7 +1,6 @@
 {
-  "navigationBarTitleText": "商品详情",
   "usingComponents": {
-    "quantity-selector": "../../components/quantity-selector/index",
-    "image-preview": "../../components/image-preview/image-preview"
+    "cart-preview": "../../components/cart-preview/index",
+    "quantity-selector": "../../components/quantity-selector/index"
   }
 }

@@ -7,16 +7,17 @@
 .quantity-btn {
   width: 56rpx;
   height: 56rpx;
-  border-radius: 50%;
-  border: 2rpx solid #e0e0e0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #333;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.quantity-icon {
+  width: 56rpx;
+  height: 56rpx;
+  object-fit: contain;
 }
 
 .quantity-btn:active {

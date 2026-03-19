@@ -1,0 +1,14 @@
+<view class="payment-success">
+  <view class="payment-success__content">
+    <view class="payment-success__icon">
+      <image src="/images/icons/对勾中.png" class="payment-success__icon-image" />
+    </view>
+    <text class="payment-success__title">支付成功</text>
+    <text class="payment-success__message">订单已支付成功，感谢您的购买！</text>
+  </view>
+  
+  <view class="payment-success__buttons">
+    <button class="payment-success__button payment-success__button--primary" bindtap="viewOrder">查看订单</button>
+    <button class="payment-success__button payment-success__button--secondary" bindtap="goShopping">再去逛逛</button>
+  </view>
+</view>

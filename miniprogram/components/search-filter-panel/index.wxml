@@ -1,0 +1,116 @@
+<view class="search-filter-panel">
+  <!-- 顶部固定搜索框 -->
+  <view class="search-filter-panel__search-bar">
+    <view class="search-filter-panel__search-input-wrapper">
+      <image class="search-filter-panel__search-icon" src="../../images/icons/搜索.png" mode="aspectFit"/>
+      <input class="search-filter-panel__search-input" 
+             placeholder="搜索商品" 
+             value="{{searchKeyword}}"
+             bindinput="handleSearchInput"
+             bindconfirm="handleSearchConfirm"
+             bindtap="showSearchPanel"
+      />
+      <view wx:if="{{searchKeyword}}" class="search-filter-panel__search-clear" bindtap="clearSearch">
+        <text>×</text>
+      </view>
+    </view>
+    <view class="search-filter-panel__action-btn" bindtap="showFilterPanel">
+      <image class="search-filter-panel__action-icon" src="../../images/icons/筛选.png" mode="aspectFit"/>
+    </view>
+  </view>
+  
+  <!-- 搜索弹窗 -->
+  <view wx:if="{{showSearchPanel}}" class="search-filter-panel__filter-modal" catchtap="hideSearchPanel">
+    <view class="search-filter-panel__filter-container" catchtap="stopPropagation">
+
+      
+      <!-- 搜索框 -->
+      <view class="search-filter-panel__search-input-wrapper search-filter-panel__search-input-wrapper--modal">
+        <image class="search-filter-panel__search-icon" src="../../images/icons/搜索.png" mode="aspectFit"/>
+        <input class="search-filter-panel__search-input" 
+               placeholder="搜索商品" 
+               value="{{searchKeyword}}"
+               bindinput="handleSearchInput"
+               bindconfirm="handleSearchConfirm"
+               auto-focus
+        />
+        <view wx:if="{{searchKeyword}}" class="search-filter-panel__search-clear" bindtap="clearSearch">
+          <text>×</text>
+        </view>
+      </view>
+      
+      <!-- 搜索建议 -->
+      <view wx:if="{{searchKeyword && searchSuggestions.length > 0}}" class="search-filter-panel__search-suggestions">
+        <view wx:for="{{searchSuggestions}}" wx:key="{{index}}" class="search-filter-panel__search-suggestion-item" bindtap="useSearchSuggestion" data-keyword="{{item}}">
+          <image class="search-filter-panel__search-suggestion-icon" src="../../images/icons/搜索.png" mode="aspectFit"/>
+          <text class="search-filter-panel__search-suggestion-text">{{item}}</text>
+        </view>
+      </view>
+      
+      <!-- 搜索历史 -->
+      <view wx:if="{{!searchKeyword || searchSuggestions.length === 0}}" class="search-filter-panel__search-history">
+        <view class="search-filter-panel__search-history-header">
+          <text class="search-filter-panel__search-history-title">搜索历史</text>
+          <view wx:if="{{searchHistory.length > 0}}" class="search-filter-panel__search-history-clear" bindtap="clearSearchHistory">
+            <text>清除</text>
+          </view>
+        </view>
+        <view wx:if="{{searchHistory.length > 0}}" class="search-filter-panel__search-history-tags">
+          <view wx:for="{{searchHistory}}" wx:key="{{index}}" class="search-filter-panel__search-history-tag" bindtap="useSearchHistory" data-keyword="{{item}}">
+            <text>{{item}}</text>
+          </view>
+        </view>
+        <view wx:else class="search-filter-panel__search-history-empty">
+          <text>暂无搜索历史</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 筛选面板 -->
+  <view wx:if="{{showFilterPanel}}" class="search-filter-panel__filter-modal" catchtap="hideFilterPanel">
+    <view class="search-filter-panel__filter-container" catchtap="stopPropagation">
+
+      
+      <!-- 商品类别筛选 -->
+      <view class="search-filter-panel__filter-section">
+        <text class="search-filter-panel__filter-section-title">商品类别</text>
+        <view class="search-filter-panel__filter-options">
+          <!-- 一级分类 -->
+          <view wx:for="{{categoryGroups}}" wx:key="_id" class="search-filter-panel__filter-category-group">
+            <view class="search-filter-panel__filter-option search-filter-panel__filter-option-level1 {{selectedCategories[item._id] ? 'search-filter-panel__filter-option--active' : ''}}" catchtap="selectCategory" data-category-id="{{item._id}}" data-category-name="{{item.name}}" data-level="{{item.level}}">
+              {{item.name}}
+            </view>
+            <!-- 二级分类 -->
+            <view class="search-filter-panel__filter-level2-container">
+              <view wx:for="{{item.subCategories}}" wx:for-item="subItem" wx:key="_id" class="search-filter-panel__filter-option {{selectedCategories[subItem._id] ? 'search-filter-panel__filter-option--active' : ''}}" catchtap="selectCategory" data-category-id="{{subItem._id}}" data-category-name="{{subItem.name}}" data-level="{{subItem.level}}" data-parent-id="{{subItem.parentId}}">
+                {{subItem.name}}
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 库存状态筛选 -->
+      <view class="search-filter-panel__filter-section">
+        <text class="search-filter-panel__filter-section-title">库存状态</text>
+        <view class="search-filter-panel__filter-options">
+          <view class="search-filter-panel__filter-option {{filterOptions.inStock === null ? 'search-filter-panel__filter-option--active' : ''}}" catchtap="selectStockStatus" data-status="null">
+            <text>全部</text>
+          </view>
+          <view class="search-filter-panel__filter-option {{filterOptions.inStock === true ? 'search-filter-panel__filter-option--active' : ''}}" catchtap="selectStockStatus" data-status="true">
+            <text>有库存</text>
+          </view>
+          <view class="search-filter-panel__filter-option {{filterOptions.inStock === false ? 'search-filter-panel__filter-option--active' : ''}}" catchtap="selectStockStatus" data-status="false">
+            <text>无库存</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="search-filter-panel__filter-footer">
+        <button class="search-filter-panel__filter-reset-btn" bindtap="resetFilter">重置</button>
+        <button class="search-filter-panel__filter-apply" bindtap="applyFilter">应用筛选</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,58 @@
+<view class="order-detail">
+  <view class="order-detail__header">
+    <text class="order-detail__title">订单详情</text>
+    <text class="order-detail__back" bindtap="goBack">×</text>
+  </view>
+  
+  <view wx:if="{{loading}}" class="order-detail__loading">
+    <view class="order-detail__loading-spinner"></view>
+    <text class="order-detail__loading-text">加载中...</text>
+  </view>
+  
+  <view wx:elif="{{error}}" class="order-detail__error">
+    <text class="order-detail__error-text">{{errorMessage}}</text>
+    <button class="order-detail__error-button" bindtap="goBack">返回</button>
+  </view>
+  
+  <view wx:else class="order-detail__content">
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">订单信息</text>
+      <view class="order-detail__info-item">
+        <text class="order-detail__info-label">订单编号：</text>
+        <text class="order-detail__info-value">{{order.orderNumber}}</text>
+      </view>
+      <view class="order-detail__info-item">
+        <text class="order-detail__info-label">订单状态：</text>
+        <text class="order-detail__info-value">{{order.statusText}}</text>
+      </view>
+      <view class="order-detail__info-item">
+        <text class="order-detail__info-label">创建时间：</text>
+        <text class="order-detail__info-value">{{order.createdAt}}</text>
+      </view>
+    </view>
+    
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">商品信息</text>
+      <view wx:for="{{order.products}}" wx:key="_id" class="order-detail__product-item">
+        <image class="order-detail__product-image" src="{{item.coverImage}}" mode="aspectFill"></image>
+        <view class="order-detail__product-info">
+          <text class="order-detail__product-name">{{item.name}}</text>
+          <text class="order-detail__product-price">¥{{item.price}}</text>
+        </view>
+        <text class="order-detail__product-quantity">×{{item.quantity}}</text>
+      </view>
+    </view>
+    
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">订单金额</text>
+      <view class="order-detail__amount-item">
+        <text class="order-detail__amount-label">商品金额：</text>
+        <text class="order-detail__amount-value">¥{{order.totalPrice}}</text>
+      </view>
+      <view class="order-detail__amount-item order-detail__amount-item--total">
+        <text class="order-detail__amount-label">实付金额：</text>
+        <text class="order-detail__amount-value order-detail__amount-value--total">¥{{order.totalPrice}}</text>
+      </view>
+    </view>
+  </view>
+</view>

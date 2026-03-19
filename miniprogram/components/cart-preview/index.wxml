@@ -1,0 +1,50 @@
+<view class="cart-preview" wx:if="{{visible}}">
+  <view class="cart-preview__overlay" bindtap="close"></view>
+  <view class="cart-preview__content">
+    <view class="cart-preview__header">
+      <view class="cart-preview__header-left">
+        <text class="cart-preview__title">购物车</text>
+        <view wx:if="{{showHint}}" class="cart-preview__hint">
+          <text>左滑商品可删除</text>
+        </view>
+      </view>
+      <text class="cart-preview__close" bindtap="close">×</text>
+    </view>
+    
+    <view class="cart-preview__body">
+      <view wx:if="{{cartItems.length === 0}}" class="cart-preview__empty">
+        <text>购物车为空</text>
+        <text>去添加商品吧</text>
+      </view>
+      
+      <view wx:else class="cart-preview__items">
+        <view wx:for="{{cartItems}}" wx:key="_id" class="cart-preview__item-container">
+          <view class="cart-preview__item" 
+                data-product-id="{{item.productId}}" 
+                bindtouchstart="touchStart" 
+                bindtouchmove="touchMove" 
+                bindtouchend="touchEnd" 
+                style="transform: translateX({{item.translateX}}rpx);">
+            <image class="cart-preview__item-image" src="{{item.coverImage}}" mode="aspectFill"></image>
+            <view class="cart-preview__item-info">
+              <text class="cart-preview__item-name">{{item.name}}</text>
+              <text class="cart-preview__item-price">¥{{item.price}}</text>
+            </view>
+            <view class="cart-preview__item-quantity">
+              <text>×{{item.quantity}}</text>
+            </view>
+          </view>
+          <view class="cart-preview__item-delete" bindtap="deleteCartItem" data-product-id="{{item.productId}}">
+            <text class="cart-preview__item-delete-text">删除</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <view class="cart-preview__footer">
+      <button class="cart-preview__btn" bindtap="goToCart">
+        去购物车
+      </button>
+    </view>
+  </view>
+</view>
