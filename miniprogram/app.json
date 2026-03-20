@@ -12,6 +12,8 @@
     "pages/payment/index",
     "pages/payment-success/index",
     "pages/customer-service/index",
+    "pages/category-products/index",
+    "pages/search-result/index",
     "pages/admin/index/index",
     "pages/admin/product-manage/index",
     "pages/admin/product-publish/index",
@@ -38,7 +40,7 @@
       },
       {
         "pagePath": "pages/category/index",
-        "text": "分类",
+        "text": "宝贝",
         "iconPath": "images/icons/category.png",
         "selectedIconPath": "images/icons/category-克莱因蓝.png"
       },

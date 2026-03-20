@@ -1,11 +1,6 @@
 <view class="cart">
   <!-- 搜索和筛选组件 -->
-  <search-filter-panel 
-    cartItems="{{cartItems}}"
-    loading="{{loading}}"
-    bind:search="handleSearch"
-    bind:filter="handleFilter"
-  />
+  <search-filter-panel pageType="cart" cartItems="{{cartItems}}" loading="{{loading}}" bind:search="handleSearch" bind:filter="handleFilter" />
   
   
   <!-- 加载状态 -->

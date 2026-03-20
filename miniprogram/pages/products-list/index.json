@@ -1,6 +1,5 @@
 {
   "usingComponents": {
     "search-filter-panel": "../../components/search-filter-panel/index"
-  },
-  "enablePullDownRefresh": true
+  }
 }

@@ -16,6 +16,7 @@
     </view>
     <view class="search-filter-panel__action-btn" bindtap="showFilterPanel">
       <image class="search-filter-panel__action-icon" src="../../images/icons/筛选.png" mode="aspectFit"/>
+      <text wx:if="{{activeFilterCount > 0}}" class="search-filter-panel__action-btn-count">{{activeFilterCount}}</text>
     </view>
   </view>
   

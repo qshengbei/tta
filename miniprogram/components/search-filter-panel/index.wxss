@@ -26,6 +26,24 @@
   background-color: #f8f8f8;
   transition: all 0.3s ease;
   margin: 0 8rpx;
+  position: relative;
+}
+
+.search-filter-panel__action-btn-count {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #ff4d4f;
+  color: white;
+  font-size: 20rpx;
+  min-width: 28rpx;
+  height: 28rpx;
+  line-height: 28rpx;
+  text-align: center;
+  border-radius: 14rpx;
+  padding: 0 6rpx;
+  box-sizing: border-box;
+  transform: translate(50%, -50%);
 }
 
 .search-filter-panel__action-btn--search {

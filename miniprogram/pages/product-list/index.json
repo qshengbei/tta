@@ -1,6 +1,6 @@
 {
   "navigationBarTitleText": "商品列表",
   "usingComponents": {
-    "product-card": "../../components/product-card/index"
+    "search-filter-panel": "../../components/search-filter-panel/index"
   }
 }

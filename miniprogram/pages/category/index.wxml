@@ -1,2 +1,140 @@
-<!--pages/category/index.wxml-->
-<text>pages/category/index.wxml</text>
+<view class="category-page">
+  <!-- 顶部搜索和筛选组件 -->
+  <search-filter-panel pageType="products" bind:search="handleSearch" bind:filter="handleFilter" />
+
+
+  <!-- 标签切换 -->
+  <view class="tab-container">
+    <view class="tab {{activeTab === 'products' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="products">
+      <text class="tab-text">宝贝</text>
+    </view>
+    <view class="tab {{activeTab === 'categories' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="categories">
+      <text class="tab-text">分类</text>
+    </view>
+    <view class="tab {{activeTab === 'series' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="series">
+      <text class="tab-text">系列</text>
+    </view>
+  </view>
+
+  <!-- 宝贝标签内容 -->
+  <view wx:if="{{activeTab === 'products'}}" class="products-content">
+    <!-- 排序选项 -->
+    <view class="sort-options">
+      <view class="sort-option {{sortType === 'default' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="default">
+        <text class="sort-text">综合</text>
+      </view>
+      <view class="sort-option {{sortType === 'new' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="new">
+        <text class="sort-text">新品</text>
+      </view>
+      <view class="sort-option {{sortType === 'price' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="price">
+        <text class="sort-text">价格</text>
+        <image wx:if="{{sortType !== 'price'}}" class="sort-icon" src="../../images/icons/sort.png" mode="aspectFit"/>
+        <image wx:elif="{{priceSortOrder === 'desc'}}" class="sort-icon" src="../../images/icons/sort-up.png" mode="aspectFit"/>
+        <image wx:else class="sort-icon" src="../../images/icons/sort-down.png" mode="aspectFit"/>
+      </view>
+    </view>
+
+    <!-- 商品列表 -->
+    <view class="products-list">
+      <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+        <view class="product-image-container">
+          <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+        </view>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <text class="product-price">¥{{item.price}}</text>
+        </view>
+      </view>
+      <!-- 没有更多商品提示 -->
+      <view wx:if="{{products.length > 0}}" class="no-more">
+        <text class="no-more-text">没有更多啦</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 分类标签内容 -->
+  <view wx:if="{{activeTab === 'categories'}}" class="categories-content">
+    <view class="categories-container">
+      <!-- 左侧分类导航 -->
+      <view class="categories-nav">
+        <!-- 一级分类 -->
+        <view wx:for="{{level1Categories}}" wx:key="{{item._id}}" class="nav-item {{selectedCategory === item._id ? 'nav-item--active' : ''}}" bindtap="selectCategory" data-id="{{item._id}}">
+          <text class="nav-text">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 右侧内容区域 -->
+      <view class="categories-content-area">
+        <!-- 一级分类内容 -->
+        <view wx:if="{{selectedCategory}}" class="category-content">
+          <view class="level1-category" bindtap="goToCategoryProducts" data-id="{{selectedCategory}}">
+            <image class="category-image" src="{{selectedCategoryData.image}}" mode="aspectFill"/>
+            <view class="category-overlay">
+              <text class="category-text">探索全部</text>
+            </view>
+          </view>
+          <view class="level2-categories">
+            <view wx:for="{{level2Categories}}" wx:key="{{item._id}}" class="level2-category" bindtap="goToCategoryProducts" data-id="{{item._id}}">
+              <image class="category-image" src="{{item.image}}" mode="aspectFill"/>
+              <view class="category-overlay">
+                <text class="category-text">{{item.name}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 默认内容 -->
+        <view wx:else class="default-content">
+          <text class="default-text">请选择分类</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 系列标签内容 -->
+  <view wx:if="{{activeTab === 'series'}}" class="categories-content">
+    <view class="categories-container">
+      <!-- 左侧系列导航 -->
+      <view class="categories-nav">
+        <view wx:for="{{seriesList}}" wx:key="{{item._id}}" class="nav-item {{selectedSeries === item._id ? 'nav-item--active' : ''}}" bindtap="selectSeries" data-id="{{item._id}}">
+          <text class="nav-text">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 右侧内容区域 -->
+      <view class="categories-content-area">
+        <!-- 系列内容 -->
+        <view wx:if="{{selectedSeries}}" class="series-content">
+          <view class="series-header">
+            <text class="series-title">{{selectedSeriesData.name}}</text>
+            <text class="series-subtitle">{{selectedSeriesData.subtitle || ''}}</text>
+          </view>
+          <view class="series-image-container" bindtap="goToSeriesProducts" data-id="{{selectedSeries}}">
+            <image class="series-image" src="{{selectedSeriesData.image}}" mode="aspectFill"/>
+            <view class="category-overlay">
+              <text class="category-text">探索全部</text>
+            </view>
+          </view>
+          <view class="series-products">
+            <view wx:for="{{seriesProducts}}" wx:key="{{item._id}}" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+              <view class="product-image-container">
+                <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+              </view>
+              <view class="product-info">
+                <text class="product-name">{{item.name}}</text>
+                <text class="product-price">¥{{item.price}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 默认内容 -->
+        <view wx:else class="default-content">
+          <text class="default-text">请选择系列</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+
+</view>

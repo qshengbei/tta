@@ -21,6 +21,21 @@ Component({
     loading: {
       type: Boolean,
       value: false
+    },
+    pageType: {
+      type: String,
+      value: 'cart' // cart 或 products
+    },
+    searchKeyword: {
+      type: String,
+      value: '',
+      observer: function(newVal) {
+        if (newVal) {
+          this.setData({
+            searchKeyword: newVal
+          });
+        }
+      }
     }
   },
   
@@ -37,7 +52,14 @@ Component({
       inStock: null
     },
     selectedCategories: {},
-    categoryGroups: []
+    categoryGroups: [],
+    activeFilterCount: 0, // 活跃筛选条件数量
+    // 用于保存打开筛选面板前的筛选条件
+    previousFilterOptions: {},
+    previousSelectedCategories: {},
+    previousActiveFilterCount: 0,
+    // 标记是否点击了应用按钮
+    applied: false
   },
   
   lifetimes: {
@@ -97,54 +119,165 @@ Component({
         this.setData({ 
           searchSuggestions: []
         });
-        // 触发搜索事件，传递空关键词
-        this.triggerEvent('search', { keyword: '', filteredItems: this.data.cartItems });
+        // 对于购物车页面，触发搜索事件，传递空关键词
+        if (this.properties.pageType === 'cart') {
+          this.triggerEvent('search', { keyword: '', filteredItems: this.data.cartItems });
+        }
         return;
       }
       
       // 生成搜索建议
       this.generateSearchSuggestions(keyword);
       
-      // 过滤商品
-      const filteredItems = this.data.cartItems.filter(item => {
-        const name = item.name || '';
-        const description = item.description || '';
-        const category = item.category || '';
-        return name.includes(keyword) || description.includes(keyword) || category.includes(keyword);
-      });
-      
-      // 触发搜索事件
-      this.triggerEvent('search', { keyword, filteredItems });
+      // 对于购物车页面，执行搜索并触发搜索事件
+      if (this.properties.pageType === 'cart') {
+        // 基于当前的筛选条件进行搜索
+        const { filterOptions } = this.data;
+        let baseItems = [...this.data.cartItems];
+        
+        // 应用筛选条件
+        if (filterOptions) {
+          // 按类别筛选
+          if (filterOptions.category && filterOptions.category.length > 0) {
+            baseItems = baseItems.filter(item => {
+              if (item.typeId) {
+                for (let i = 0; i < filterOptions.category.length; i++) {
+                  if (item.typeId === filterOptions.category[i]) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+          }
+          
+          // 按库存状态筛选
+          if (filterOptions.inStock !== null) {
+            baseItems = baseItems.filter(item => {
+              if (filterOptions.inStock) {
+                return item.stock > 0;
+              } else {
+                return item.stock <= 0;
+              }
+            });
+          }
+        }
+        
+        // 过滤商品
+        const filteredItems = baseItems.filter(item => {
+          const name = item.name || '';
+          return name.includes(keyword);
+        });
+        
+        // 触发搜索事件
+        this.triggerEvent('search', { keyword, filteredItems });
+      }
     },
 
     // 处理搜索确认
     handleSearchConfirm(e) {
       const keyword = e.detail.value;
+      console.log('handleSearchConfirm called:', keyword);
+      console.log('pageType:', this.properties.pageType);
       if (keyword) {
         // 保存搜索历史
         this.saveSearchHistory(keyword);
-        // 执行搜索
-        this.performSearch(keyword);
+        
         // 隐藏搜索面板
         this.setData({ showSearchPanel: false });
+        
+        // 根据页面类型执行不同的行为
+        if (this.properties.pageType === 'cart') {
+          // 在购物车页面，执行搜索并触发搜索事件
+          // 基于当前的筛选条件进行搜索
+          const { filterOptions } = this.data;
+          let baseItems = [...this.data.cartItems];
+          
+          // 应用筛选条件
+          if (filterOptions) {
+            // 按类别筛选
+            if (filterOptions.category && filterOptions.category.length > 0) {
+              baseItems = baseItems.filter(item => {
+                if (item.typeId) {
+                  for (let i = 0; i < filterOptions.category.length; i++) {
+                    if (item.typeId === filterOptions.category[i]) {
+                      return true;
+                    }
+                  }
+                }
+                return false;
+              });
+            }
+            
+            // 按库存状态筛选
+            if (filterOptions.inStock !== null) {
+              baseItems = baseItems.filter(item => {
+                if (filterOptions.inStock) {
+                  return item.stock > 0;
+                } else {
+                  return item.stock <= 0;
+                }
+              });
+            }
+          }
+          
+          // 过滤商品
+          const filteredItems = baseItems.filter(item => {
+            const name = item.name || '';
+            return name.includes(keyword);
+          });
+          
+          // 触发搜索事件
+          this.triggerEvent('search', { keyword, filteredItems });
+        } else {
+          // 在其他页面，触发搜索事件，传递关键词
+          this.triggerEvent('search', { keyword });
+        }
       }
     },
 
     // 生成搜索建议
     generateSearchSuggestions(keyword) {
       const allKeywords = [];
-      this.data.cartItems.forEach(item => {
-        if (item.name) allKeywords.push(item.name);
-        if (item.description) allKeywords.push(item.description);
-        if (item.category) allKeywords.push(item.category);
-      });
       
-      const uniqueKeywords = [...new Set(allKeywords)];
-      const suggestions = uniqueKeywords.filter(item => 
-        item.includes(keyword) && item !== keyword
-      ).slice(0, 5);
-      
-      this.setData({ searchSuggestions: suggestions });
+      if (this.properties.pageType === 'products') {
+        // 在宝贝页面，从数据库获取商品数据
+        const productCollection = getCollection('products');
+        productCollection.where({ isDeleted: false }).get().then(res => {
+          if (res.data && res.data.length > 0) {
+            res.data.forEach(item => {
+              if (item.name) allKeywords.push(item.name);
+              if (item.description) allKeywords.push(item.description);
+            });
+            
+            const uniqueKeywords = [...new Set(allKeywords)];
+            const suggestions = uniqueKeywords.filter(item => 
+              item.includes(keyword) && item !== keyword
+            ).slice(0, 5);
+            
+            this.setData({ searchSuggestions: suggestions });
+          } else {
+            this.setData({ searchSuggestions: [] });
+          }
+        }).catch(err => {
+          console.error('获取商品数据失败:', err);
+          this.setData({ searchSuggestions: [] });
+        });
+      } else {
+        // 在购物车页面，使用 cartItems
+        this.data.cartItems.forEach(item => {
+          if (item.name) allKeywords.push(item.name);
+          if (item.description) allKeywords.push(item.description);
+          if (item.category) allKeywords.push(item.category);
+        });
+        
+        const uniqueKeywords = [...new Set(allKeywords)];
+        const suggestions = uniqueKeywords.filter(item => 
+          item.includes(keyword) && item !== keyword
+        ).slice(0, 5);
+        
+        this.setData({ searchSuggestions: suggestions });
+      }
     },
 
     // 清除搜索
@@ -154,56 +287,181 @@ Component({
         searchSuggestions: []
       });
       // 触发搜索事件，传递空关键词
-      this.triggerEvent('search', { keyword: '', filteredItems: this.data.cartItems });
+      this.triggerEvent('search', { keyword: '' });
     },
 
     // 显示搜索面板
-  showSearchPanel() {
-    this.setData({ showSearchPanel: true });
-  },
+    showSearchPanel() {
+      this.setData({ showSearchPanel: true });
+    },
 
-  // 隐藏搜索面板
-  hideSearchPanel() {
-    this.setData({ showSearchPanel: false });
-  },
+    // 隐藏搜索面板
+    hideSearchPanel() {
+      this.setData({ showSearchPanel: false });
+    },
 
-  // 使用搜索历史
+    // 使用搜索历史
     useSearchHistory(e) {
       const keyword = e.currentTarget.dataset.keyword;
+      console.log('useSearchHistory called:', keyword);
+      console.log('pageType:', this.properties.pageType);
       this.setData({ 
         searchKeyword: keyword
       });
       // 保存搜索历史
       this.saveSearchHistory(keyword);
-      // 执行搜索
-      this.performSearch(keyword);
+      
       // 隐藏搜索面板
       this.setData({ showSearchPanel: false });
+      
+      // 根据页面类型执行不同的行为
+      if (this.properties.pageType === 'cart') {
+        // 在购物车页面，执行搜索并触发搜索事件
+        // 基于当前的筛选条件进行搜索
+        const { filterOptions } = this.data;
+        let baseItems = [...this.data.cartItems];
+        
+        // 应用筛选条件
+        if (filterOptions) {
+          // 按类别筛选
+          if (filterOptions.category && filterOptions.category.length > 0) {
+            baseItems = baseItems.filter(item => {
+              if (item.typeId) {
+                for (let i = 0; i < filterOptions.category.length; i++) {
+                  if (item.typeId === filterOptions.category[i]) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+          }
+          
+          // 按库存状态筛选
+          if (filterOptions.inStock !== null) {
+            baseItems = baseItems.filter(item => {
+              if (filterOptions.inStock) {
+                return item.stock > 0;
+              } else {
+                return item.stock <= 0;
+              }
+            });
+          }
+        }
+        
+        // 过滤商品
+        const filteredItems = baseItems.filter(item => {
+          const name = item.name || '';
+          return name.includes(keyword);
+        });
+        
+        // 触发搜索事件
+        this.triggerEvent('search', { keyword, filteredItems });
+      } else {
+        // 在其他页面，触发搜索事件，传递关键词
+        this.triggerEvent('search', { keyword });
+      }
     },
 
     // 使用搜索建议
     useSearchSuggestion(e) {
       const keyword = e.currentTarget.dataset.keyword;
+      console.log('useSearchSuggestion called:', keyword);
+      console.log('pageType:', this.properties.pageType);
       this.setData({ 
         searchKeyword: keyword
       });
       // 保存搜索历史
       this.saveSearchHistory(keyword);
-      // 执行搜索
-      this.performSearch(keyword);
+      
       // 隐藏搜索面板
       this.setData({ showSearchPanel: false });
+      
+      // 根据页面类型执行不同的行为
+      if (this.properties.pageType === 'cart') {
+        // 在购物车页面，执行搜索并触发搜索事件
+        // 基于当前的筛选条件进行搜索
+        const { filterOptions } = this.data;
+        let baseItems = [...this.data.cartItems];
+        
+        // 应用筛选条件
+        if (filterOptions) {
+          // 按类别筛选
+          if (filterOptions.category && filterOptions.category.length > 0) {
+            baseItems = baseItems.filter(item => {
+              if (item.typeId) {
+                for (let i = 0; i < filterOptions.category.length; i++) {
+                  if (item.typeId === filterOptions.category[i]) {
+                    return true;
+                  }
+                }
+              }
+              return false;
+            });
+          }
+          
+          // 按库存状态筛选
+          if (filterOptions.inStock !== null) {
+            baseItems = baseItems.filter(item => {
+              if (filterOptions.inStock) {
+                return item.stock > 0;
+              } else {
+                return item.stock <= 0;
+              }
+            });
+          }
+        }
+        
+        // 过滤商品
+        const filteredItems = baseItems.filter(item => {
+          const name = item.name || '';
+          return name.includes(keyword);
+        });
+        
+        // 触发搜索事件
+        this.triggerEvent('search', { keyword, filteredItems });
+      } else {
+        // 在其他页面，触发搜索事件，传递关键词
+        this.triggerEvent('search', { keyword });
+      }
     },
 
-  // 显示筛选面板
-  showFilterPanel() {
-    this.setData({ showFilterPanel: true });
-  },
+    // 显示筛选面板
+    showFilterPanel() {
+      // 保存当前的筛选条件
+      const { filterOptions, selectedCategories, activeFilterCount } = this.data;
+      this.setData({
+        previousFilterOptions: JSON.parse(JSON.stringify(filterOptions)),
+        previousSelectedCategories: JSON.parse(JSON.stringify(selectedCategories)),
+        previousActiveFilterCount: activeFilterCount,
+        applied: false
+      });
+      
+      // 根据 filterOptions.category 数组更新 selectedCategories 对象
+      const newSelectedCategories = {};
+      if (filterOptions.category && filterOptions.category.length > 0) {
+        filterOptions.category.forEach(categoryId => {
+          newSelectedCategories[categoryId] = true;
+        });
+      }
+      this.setData({ 
+        selectedCategories: newSelectedCategories,
+        showFilterPanel: true 
+      });
+    },
 
-  // 隐藏筛选面板
-  hideFilterPanel() {
-    this.setData({ showFilterPanel: false });
-  },
+    // 隐藏筛选面板
+    hideFilterPanel() {
+      // 如果没有点击应用按钮，恢复之前的筛选条件
+      if (!this.data.applied) {
+        this.setData({
+          filterOptions: JSON.parse(JSON.stringify(this.data.previousFilterOptions)),
+          selectedCategories: JSON.parse(JSON.stringify(this.data.previousSelectedCategories)),
+          activeFilterCount: this.data.previousActiveFilterCount
+        });
+      }
+      this.setData({ showFilterPanel: false });
+    },
 
     // 阻止事件冒泡
     stopPropagation() {
@@ -260,10 +518,17 @@ Component({
       const categoryArray = Object.keys(selectedCategories);
       const newFilterOptions = { ...this.data.filterOptions, category: categoryArray };
       
+      // 计算活跃筛选条件数量
+      let activeFilterCount = categoryArray.length;
+      if (newFilterOptions.inStock !== null) {
+        activeFilterCount++;
+      }
+      
       // 直接更新所有相关数据
       this.setData({ 
         selectedCategories: selectedCategories,
-        filterOptions: newFilterOptions
+        filterOptions: newFilterOptions,
+        activeFilterCount: activeFilterCount
       });
     },
 
@@ -282,9 +547,16 @@ Component({
       // 库存状态只能单选，直接设置为选中的状态
       filterOptions.inStock = status;
       
+      // 计算活跃筛选条件数量
+      let activeFilterCount = filterOptions.category.length;
+      if (filterOptions.inStock !== null) {
+        activeFilterCount++;
+      }
+      
       // 直接更新所有相关数据
       this.setData({ 
-        filterOptions: filterOptions
+        filterOptions: filterOptions,
+        activeFilterCount: activeFilterCount
       });
     },
 
@@ -298,54 +570,79 @@ Component({
       // 直接更新所有相关数据
       this.setData({ 
         filterOptions: filterOptions,
-        selectedCategories: {}
+        selectedCategories: {},
+        activeFilterCount: 0
       });
     },
 
     // 应用筛选
     applyFilter() {
-      const { filterOptions, cartItems } = this.data;
+      const { filterOptions, cartItems, activeFilterCount } = this.data;
+      console.log('applyFilter called');
+      console.log('pageType:', this.properties.pageType);
+      console.log('filterOptions:', filterOptions);
       
-      let filteredItems = [...cartItems];
+      // 标记为已应用
+      this.setData({ applied: true });
       
-      // 按类别筛选
-      if (filterOptions.category && filterOptions.category.length > 0) {
-        // 筛选商品类别在选择的分类数组中的商品
-        filteredItems = filteredItems.filter(item => {
-          // 检查商品是否有typeId
-          if (item.typeId) {
-            // 直接检查商品的typeId是否在选择的分类数组中
-            for (let i = 0; i < filterOptions.category.length; i++) {
-              if (item.typeId === filterOptions.category[i]) {
-                return true;
-              }
-            }
-          }
-          
-          return false;
-        });
-      }
-      
-      // 按库存状态筛选
-      if (filterOptions.inStock !== null) {
-        filteredItems = filteredItems.filter(item => {
-          if (filterOptions.inStock) {
-            return item.stock > 0;
-          } else {
-            return item.stock <= 0;
-          }
-        });
-      }
-      
+      // 隐藏筛选面板
       this.setData({ 
-        showFilterPanel: false
+        showFilterPanel: false,
+        searchSuggestions: [] // 清空搜索建议
       });
       
-      // 保存筛选状态到本地存储
-      wx.setStorageSync('cartFilterOptions', filterOptions);
-      
-      // 触发筛选事件
-      this.triggerEvent('filter', { filterOptions, filteredItems });
+      // 根据页面类型执行不同的行为
+      if (this.properties.pageType === 'cart') {
+        // 在购物车页面，执行筛选并触发筛选事件
+        // 基于当前搜索后的结果进行筛选（如果有搜索关键词）
+        const baseItems = this.data.searchKeyword ? this.data.cartItems.filter(item => {
+          const name = item.name || '';
+          return name.includes(this.data.searchKeyword);
+        }) : this.data.cartItems;
+        
+        let filteredItems = [...baseItems];
+        
+        // 按类别筛选
+        if (filterOptions.category && filterOptions.category.length > 0) {
+          // 筛选商品类别在选择的分类数组中的商品
+          filteredItems = filteredItems.filter(item => {
+            // 检查商品是否有typeId
+            if (item.typeId) {
+              // 直接检查商品的typeId是否在选择的分类数组中
+              for (let i = 0; i < filterOptions.category.length; i++) {
+                if (item.typeId === filterOptions.category[i]) {
+                  return true;
+                }
+              }
+            }
+            
+            return false;
+          });
+        }
+        
+        // 按库存状态筛选
+        if (filterOptions.inStock !== null) {
+          filteredItems = filteredItems.filter(item => {
+            if (filterOptions.inStock) {
+              return item.stock > 0;
+            } else {
+              return item.stock <= 0;
+            }
+          });
+        }
+        
+        // 保存筛选状态到本地存储
+        wx.setStorageSync('cartFilterOptions', filterOptions);
+        
+        // 触发筛选事件
+        this.triggerEvent('filter', { filterOptions, filteredItems });
+      } else {
+        // 在其他页面，触发筛选事件，传递筛选条件
+        this.triggerEvent('filter', { 
+          category: filterOptions.category, 
+          inStock: filterOptions.inStock
+        });
+      }
     },
 
     // 加载商品类别

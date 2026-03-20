@@ -1,6 +1,14 @@
 <view class="products-list-page">
-  <!-- 顶部搜索和筛选组件 -->
-  <search-filter-panel pageType="products" searchKeyword="{{keyword}}" bind:search="handleSearch" bind:filter="handleFilter" />
+  <!-- 顶部导航 -->
+  <view class="page-header">
+    <view class="back-btn" bindtap="goBack">
+      <image class="back-icon" src="../../images/icons/back.png" mode="aspectFit"/>
+    </view>
+    <text class="page-title">{{pageTitle}}</text>
+  </view>
+
+  <!-- 搜索和筛选组件 -->
+  <search-filter-panel bind:search="handleSearch" bind:filter="handleFilter" />
 
   <!-- 排序选项 -->
   <view class="sort-options">
@@ -13,7 +21,7 @@
     <view class="sort-option {{sortType === 'price' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="price">
       <text class="sort-text">价格</text>
       <image wx:if="{{sortType !== 'price'}}" class="sort-icon" src="../../images/icons/sort.png" mode="aspectFit"/>
-      <image wx:elif="{{priceSortOrder === 'asc'}}" class="sort-icon" src="../../images/icons/sort-up.png" mode="aspectFit"/>
+      <image wx:elif="{{priceSortOrder === 'desc'}}" class="sort-icon" src="../../images/icons/sort-up.png" mode="aspectFit"/>
       <image wx:else class="sort-icon" src="../../images/icons/sort-down.png" mode="aspectFit"/>
     </view>
   </view>
@@ -29,14 +37,10 @@
         <text class="product-price">¥{{item.price}}</text>
       </view>
     </view>
-    <!-- 没有更多商品提示 -->
-    <view wx:if="{{products.length > 0}}" class="no-more">
-      <text class="no-more-text">没有更多啦</text>
-    </view>
   </view>
 
   <!-- 空状态 -->
   <view wx:if="{{products.length === 0}}" class="empty-state">
-    <text class="empty-text">暂无商品</text>
+    <text class="empty-text">{{emptyText}}</text>
   </view>
 </view>

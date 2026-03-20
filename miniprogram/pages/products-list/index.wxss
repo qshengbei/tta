@@ -1,8 +1,41 @@
-/* pages/product-list/index.wxss */
+/* pages/products-list/index.wxss */
 
 .products-list-page {
   min-height: 100vh;
   background-color: #f8f8f8;
+}
+
+/* 页面头部 */
+.page-header {
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  background-color: #fff;
+  border-bottom: 1rpx solid #f0f0f0;
+  padding: 0 24rpx;
+  position: relative;
+}
+
+.back-btn {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.back-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.page-title {
+  flex: 1;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+  margin-left: -48rpx;
 }
 
 /* 排序选项 */
@@ -45,16 +78,6 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
   padding: 20rpx;
-}
-
-/* 没有更多商品提示 */
-.no-more {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40rpx 0;
-  color: #999;
-  font-size: 28rpx;
-  background-color: #f8f8f8;
 }
 
 .product-item {
@@ -136,6 +159,10 @@
 
 /* 横屏模式 */
 @media (orientation: landscape) {
+  .page-header {
+    height: 72rpx;
+  }
+  
   .sort-options {
     height: 60rpx;
   }
