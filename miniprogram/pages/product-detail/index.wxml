@@ -43,7 +43,7 @@
         </view>
         <!-- 售罄提示 -->
         <view wx:if="{{!product.stock || product.stock <= 0}}" class="product-detail__sold-out">
-          售罄
+          补货中
         </view>
       </view>
 
@@ -126,10 +126,15 @@
       <view class="product-detail__notice">
         <view class="product-detail__section-title">购买须知</view>
         <view class="product-detail__notice-content">
-          <text class="product-detail__notice-item">亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解</text>
-          <text class="product-detail__notice-item">若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心</text>
-          <text class="product-detail__notice-item">每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象</text>
-          <text class="product-detail__notice-item">如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答</text>
+          <block wx:if="{{buyTips}}">
+            <text class="product-detail__notice-text">{{buyTips}}</text>
+          </block>
+          <block wx:else>
+            <text class="product-detail__notice-item">亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解</text>
+            <text class="product-detail__notice-item">若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心</text>
+            <text class="product-detail__notice-item">每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象</text>
+            <text class="product-detail__notice-item">如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答</text>
+          </block>
         </view>
       </view>
       
@@ -169,7 +174,7 @@
                       <image class="product-selector-modal__option-image" src="{{productItem.coverImage}}" mode="aspectFill" lazy-load="true"/>
                     </view>
                     <view class="product-selector-modal__option-name">{{productItem.name}}</view>
-                    <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">售罄</view>
+                    <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">补货中</view>
                   </view>
                 </view>
               </view>
@@ -185,7 +190,7 @@
                   <image class="product-selector-modal__option-image" src="{{productItem.coverImage}}" mode="aspectFill" lazy-load="true"/>
                 </view>
                 <view class="product-selector-modal__option-name">{{productItem.name}}</view>
-                <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">售罄</view>
+                <view wx:if="{{!productItem.stock || productItem.stock <= 0}}" class="product-selector-modal__option-soldout">补货中</view>
               </view>
             </view>
           </view>
@@ -228,7 +233,8 @@
     <view class="bottom-bar pd-bottom-bar">
       <view class="pd-bottom-bar__left">
         <view class="pd-bottom-bar__icons">
-          <button class="pd-bottom-bar__icon" open-type="contact" 
+          <!-- 官方客服按钮 -->
+          <button wx:if="{{customerServiceMethod === 'official'}}" class="pd-bottom-bar__icon" open-type="contact" 
           show-message-card="true"
           send-message-path="/pages/product-detail/index?id={{product._id}}"
           send-message-title="{{product.name}}"
@@ -236,6 +242,11 @@
           session-from="product_detail_{{product._id}}"
           bindcontact="handleContact">
           
+            <image class="icon-service" src="../../images/icons/客服.png" mode="aspectFit"></image>
+            <text class="pd-bottom-bar__icon-text">客服</text>
+          </button>
+          <!-- 自定义客服按钮 -->
+          <button wx:else class="pd-bottom-bar__icon" bindtap="openCustomService">
             <image class="icon-service" src="../../images/icons/客服.png" mode="aspectFit"></image>
             <text class="pd-bottom-bar__icon-text">客服</text>
           </button>

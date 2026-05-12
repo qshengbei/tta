@@ -104,3 +104,41 @@ export function calculateMinTime(now, beginTime) {
   
   return { minHour, minMinute };
 }
+
+/**
+ * 解析数据库中的date类型时间为可读格式
+ * @param {Date|string} date - 日期对象或日期字符串
+ * @returns {string} 格式化后的日期时间字符串，格式为YYYY-MM-DD HH:MM:SS
+ */
+export function parseDbDate(date) {
+  if (!date) return '';
+  
+  let dateObj;
+  if (typeof date === 'string') {
+    // 尝试解析字符串为日期对象
+    dateObj = new Date(date);
+  } else if (date instanceof Date) {
+    dateObj = date;
+  } else {
+    // 处理其他类型，比如对象
+    try {
+      dateObj = new Date(JSON.stringify(date));
+    } catch (e) {
+      return '';
+    }
+  }
+  
+  // 检查是否为有效日期
+  if (isNaN(dateObj.getTime())) {
+    return '';
+  }
+  
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const hour = String(dateObj.getHours()).padStart(2, '0');
+  const minute = String(dateObj.getMinutes()).padStart(2, '0');
+  const second = String(dateObj.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}

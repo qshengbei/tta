@@ -1,0 +1,135 @@
+.TUI-message-input-container {
+    background-color: #F1F1F1;
+}
+
+.TUI-message-input {
+    display: flex;
+    padding: 10rpx 0;
+    background-color: #F1F1F1;
+    width: 100vw;
+    align-items: center;
+}
+.TUI-commom-function {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 750rpx;
+    height: 106rpx;
+    background-color: #F1F1F1;
+    align-items: center;
+}
+.TUI-commom-function-item {
+    display: flex;
+    width: 136rpx;
+    justify-content: center;
+    align-items: center;
+    font-size: 24rpx;
+    color: #FFFFFF;
+    height: 48rpx;
+    margin-left: 16rpx;
+    border-radius: 24rpx;
+    background-color: #00C8DC;
+}
+.TUI-commom-function-item:first-child{
+    margin-left: 48rpx;
+}
+.TUI-message-input-functions {
+    display: flex;
+    align-items: center;
+}
+.TUI-message-input-main {
+    height: 30px;
+    background-color: #fff;
+    flex: 1;
+    margin: 0 10rpx;
+    padding: 0 20rpx;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+}
+.TUI-message-input-main-focus {
+    height: auto;
+    background-color: #fff;
+    flex: 1;
+    margin: 0 10rpx;
+    padding: 10rpx 20rpx;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;   
+}
+.TUI-message-input-area {
+    width: 100%;
+    height: 100%;
+    max-height: 300rpx;
+    /* 最多显示10行 */
+    line-height: 30rpx;
+    overflow: scroll;
+}
+.TUI-icon {
+    width: 56rpx;
+    height: 56rpx;
+    margin: 0 16rpx;
+}
+.TUI-Extensions {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100vw;
+    height: 450rpx;
+    margin-left: 14rpx;
+    margin-right: 14rpx;
+}
+
+.TUI-Extension-slot {
+    width: 128rpx;
+    height: 170rpx;
+    margin-left: 26rpx;
+    margin-right: 26rpx;
+    margin-top: 24rpx;
+}
+
+.TUI-Extension-icon {
+    width: 128rpx;
+    height: 128rpx;
+    border-radius: 25%;
+}
+
+.TUI-sendMessage-btn {
+    display: flex;
+    align-items: center;
+    margin: 0 10rpx;
+    padding: 0 20rpx;
+    font-size: 32rpx;
+    color: #07C160;
+}
+
+.TUI-Emoji-area {
+    width: 100vw;
+    height: 450rpx;
+    background-color: #F1F1F1;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.TUI-Extension-slot-name {
+    line-height: 34rpx;
+    font-size: 24rpx;
+    color: #333333;
+    letter-spacing: 0;
+    text-align: center;
+}
+
+.TUI-Call-Extension-container{
+    display:flex
+}
+
+.input-placeholder {
+    color: #C7C7CD;
+    font-size: 32rpx;
+}

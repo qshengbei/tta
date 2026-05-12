@@ -8,6 +8,7 @@ Page({
     products: [],
     originalProducts: [],
     loading: false,
+    showSkeleton: true,
     sortType: 'default',
     priceSortOrder: 'asc',
     emptyText: '暂无商品',
@@ -17,7 +18,52 @@ Page({
     categoryId: '',
     typeId: '',
     categories: [],
-    inStock: null
+    inStock: null,
+    // 滚动相关
+    lastScrollTop: 0,
+    isTopBarVisible: true,
+    scrollDirection: 'up',
+    // 标记是否需要刷新
+    needsRefresh: false,
+    // 标记是否离开过页面（去商品详情等）
+    hasNavigatedAway: false
+  },
+
+  // 生成缓存key
+  getCacheKey() {
+    const { pageType, keyword, categoryId, typeId, categories, inStock } = this.data;
+    return `products_${pageType}_${keyword || ''}_${categoryId || ''}_${typeId || ''}_${(categories || []).join('_')}_${inStock}`;
+  },
+
+  // 从缓存获取数据
+  getCachedProducts() {
+    try {
+      const cacheKey = this.getCacheKey();
+      const cached = wx.getStorageSync(cacheKey);
+      if (cached && cached.data && cached.timestamp) {
+        // 检查缓存是否过期（5分钟）
+        const now = Date.now();
+        if (now - cached.timestamp < 5 * 60 * 1000) {
+          return cached.data;
+        }
+      }
+    } catch (e) {
+      console.log('读取缓存失败', e);
+    }
+    return null;
+  },
+
+  // 保存到缓存
+  setCachedProducts(products) {
+    try {
+      const cacheKey = this.getCacheKey();
+      wx.setStorageSync(cacheKey, {
+        data: products,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      console.log('保存缓存失败', e);
+    }
   },
 
   async onLoad(options) {
@@ -33,14 +79,65 @@ Page({
       categoryId: categoryId || '',
       typeId: typeId || '',
       categories: categories ? categories.split(',') : [],
-      inStock: inStock !== undefined ? inStock === 'true' : null
+      inStock: inStock !== undefined ? inStock === 'true' : null,
+      showSkeleton: true
     });
 
     // 设置页面标题
     await this.setPageTitle();
     
-    // 加载商品数据
+    // 优先显示缓存数据
+    const cachedProducts = this.getCachedProducts();
+    if (cachedProducts && cachedProducts.length > 0) {
+      this.setData({
+        products: cachedProducts,
+        originalProducts: [...cachedProducts],
+        showSkeleton: false
+      });
+      this.applySort();
+    }
+    
+    // 异步加载最新数据
     this.loadProducts();
+  },
+
+  onShow() {
+    const { products, lastScrollTop, needsRefresh, hasNavigatedAway } = this.data;
+    
+    // 如果只是从商品详情页返回（hasNavigatedAway 为 true），不刷新数据，保持滚动位置
+    // 这个检查放在最前面，确保优先保持滚动位置
+    if (hasNavigatedAway) {
+      console.log('从商品详情页返回，保持滚动位置');
+      this.setData({ hasNavigatedAway: false });
+      return;
+    }
+    
+    // 检查是否需要强制刷新（例如从后台管理页面返回）
+    if (needsRefresh || (getApp().globalData.productsNeedRefresh === true)) {
+      console.log('检测到商品数据变更，强制刷新');
+      this.setData({ needsRefresh: false });
+      getApp().globalData.productsNeedRefresh = false;
+      // 显示骨架屏并重新加载
+      if (products.length > 0) {
+        // 已有数据，静默更新不显示骨架屏
+        this.loadProducts();
+      } else {
+        this.setData({ showSkeleton: true });
+        this.loadProducts();
+      }
+      return;
+    }
+    
+    // 正常页面显示，保持滚动位置
+    if (products.length === 0) {
+      wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+      this.setData({ lastScrollTop: 0, isTopBarVisible: true });
+    }
+  },
+  
+  onHide() {
+    // 标记页面已离开（去商品详情等页面）
+    this.setData({ hasNavigatedAway: true });
   },
 
   // 获取系列名称
@@ -124,7 +221,7 @@ Page({
   },
 
   loadProducts() {
-    const { pageType, keyword, categoryId, typeId, categories, inStock } = this.data;
+    const { pageType, keyword, categoryId, typeId, categories, inStock, products } = this.data;
     console.log('loadProducts called with:', {
       pageType,
       keyword,
@@ -133,14 +230,17 @@ Page({
       categories,
       inStock
     });
-    this.setData({ loading: true });
+    
+    // 如果已有数据，不显示 loading，避免空白
+    if (products.length === 0) {
+      this.setData({ loading: true });
+    }
     
     // 处理分类查询，获取一级分类及其所有二级分类的ID
     if (pageType === 'type' && typeId) {
       // 查询该一级分类下的所有二级分类
       db.collection('product_types').where({ parentId: typeId }).get().then(res => {
         const subCategoryIds = res.data.map(item => item._id);
-        // 合并一级分类ID和所有二级分类ID
         const allCategoryIds = [typeId, ...subCategoryIds];
         console.log('All category IDs:', allCategoryIds);
         
@@ -199,17 +299,29 @@ Page({
       console.log('Query result:', res);
       const products = res.data || [];
       console.log('Found products:', products);
+      
+      // 查看每个商品的status和stock字段
+      products.forEach((product, index) => {
+        console.log(`Product ${index} status:`, product.status);
+        console.log(`Product ${index} stock:`, product.stock);
+      });
+      
+      // 更新页面数据
       this.setData({
         products,
         originalProducts: [...products],
-        loading: false
+        loading: false,
+        showSkeleton: false
       });
+      
+      // 保存到缓存
+      this.setCachedProducts(products);
       
       // 应用排序
       this.applySort();
     }).catch(err => {
       console.error('加载商品失败:', err);
-      this.setData({ loading: false });
+      this.setData({ loading: false, showSkeleton: false });
     });
   },
 
@@ -290,5 +402,160 @@ Page({
 
   goBack() {
     wx.navigateBack();
+  },
+
+  // 跳转到添加商品页面
+  goToAddProduct() {
+    const { typeId } = this.data;
+    wx.navigateTo({
+      url: `/pages/admin/product-publish/index?typeId=${typeId}`
+    });
+  },
+
+  // 下架商品
+  下架商品(e) {
+    const { id } = e.currentTarget.dataset;
+    wx.showModal({
+      title: '确认下架',
+      content: '确定要下架这个商品吗？',
+      success: (res) => {
+        if (res.confirm) {
+          // 使用云函数下架商品
+          wx.cloud.callFunction({
+            name: 'updateProduct',
+            data: {
+              productId: id,
+              updateData: {
+                status: 'off',
+                updatedAt: new Date()
+              }
+            }
+          }).then(res => {
+            console.log('云函数下架结果:', res);
+            
+            if (res.result && res.result.success) {
+              console.log('云函数下架成功');
+              wx.showToast({
+                title: '商品下架成功',
+                icon: 'success'
+              });
+              
+              // 刷新商品列表
+              this.loadProducts();
+            } else {
+              console.error('云函数下架失败:', res.result.error);
+              wx.showToast({
+                title: '下架商品失败',
+                icon: 'none'
+              });
+            }
+          }).catch(err => {
+            console.error('调用云函数失败:', err);
+            wx.showToast({
+              title: '下架商品失败',
+              icon: 'none'
+            });
+          });
+        }
+      }
+    });
+  },
+
+  // 上架商品
+  上架商品(e) {
+    const { id } = e.currentTarget.dataset;
+    wx.showModal({
+      title: '确认上架',
+      content: '确定要上架这个商品吗？',
+      success: (res) => {
+        if (res.confirm) {
+          // 使用云函数上架商品
+          wx.cloud.callFunction({
+            name: 'updateProduct',
+            data: {
+              productId: id,
+              updateData: {
+                status: 'on',
+                updatedAt: new Date()
+              }
+            }
+          }).then(res => {
+            console.log('云函数上架结果:', res);
+            
+            if (res.result && res.result.success) {
+              console.log('云函数上架成功');
+              wx.showToast({
+                title: '商品上架成功',
+                icon: 'success'
+              });
+              
+              // 刷新商品列表
+              this.loadProducts();
+            } else {
+              console.error('云函数上架失败:', res.result.error);
+              wx.showToast({
+                title: '上架商品失败',
+                icon: 'none'
+              });
+            }
+          }).catch(err => {
+            console.error('调用云函数失败:', err);
+            wx.showToast({
+              title: '上架商品失败',
+              icon: 'none'
+            });
+          });
+        }
+      }
+    });
+  },
+
+  // 编辑商品
+  编辑商品(e) {
+    const { id } = e.currentTarget.dataset;
+    wx.navigateTo({
+      url: `/pages/admin/product-publish/index?id=${id}`
+    });
+  },
+
+  /**
+   * 页面相关事件处理函数--监听用户滚动
+   */
+  onPageScroll(e) {
+    const currentScrollTop = e.scrollTop;
+    const lastScrollTop = this.data.lastScrollTop;
+    const scrollDirection = currentScrollTop > lastScrollTop ? 'up' : 'down';
+    
+    // 滚动到顶部时，强制显示顶部栏
+    if (currentScrollTop <= 10) {
+      if (!this.data.isTopBarVisible) {
+        this.setData({ 
+          isTopBarVisible: true,
+          scrollDirection: 'down'
+        });
+      }
+      this.setData({ lastScrollTop: currentScrollTop });
+      return;
+    }
+    
+    // 只有在滚动超过一定阈值时才触发显示/隐藏
+    if (Math.abs(currentScrollTop - lastScrollTop) > 30) {
+      if (scrollDirection === 'up' && this.data.isTopBarVisible && currentScrollTop > 100) {
+        // 上滑，隐藏顶部栏（标签和排序选项）
+        this.setData({ 
+          isTopBarVisible: false,
+          scrollDirection: 'up'
+        });
+      } else if (scrollDirection === 'down' && !this.data.isTopBarVisible) {
+        // 下滑，显示顶部栏（标签和排序选项）
+        this.setData({ 
+          isTopBarVisible: true,
+          scrollDirection: 'down'
+        });
+      }
+    }
+    
+    // 更新上次滚动位置
+    this.setData({ lastScrollTop: currentScrollTop });
   }
 });

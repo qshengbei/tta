@@ -2,6 +2,10 @@
   "pages": [
     "pages/home/index",
     "pages/category/index",
+    "pages/message/index",
+    "pages/message/detail/index",
+    "pages/message/service/index",
+    "pages/message/list/index",
     "pages/cart/index",
     "pages/my/index",
     "pages/product-list/index",
@@ -17,7 +21,22 @@
     "pages/admin/index/index",
     "pages/admin/product-manage/index",
     "pages/admin/product-publish/index",
-    "pages/admin/order-manage/index"
+    "pages/admin/order-manage/index",
+    "pages/admin/cloth-manage/index",
+    "pages/admin/cloth-manage/edit/index",
+    "pages/admin/series-manage/index",
+    "pages/admin/series-manage/edit/index",
+    "pages/admin/product-type-manage/index",
+    "pages/admin/product-type-manage/edit/index",
+    "pages/admin/product-list/index",
+    "pages/admin/user-manage/index",
+    "pages/admin/update-settings/index",
+    "pages/admin/notification-manage/index",
+    "pages/admin/ship-order/index",
+    "pages/admin/after-sales/detail/index",
+    "pages/after-sales/apply/index",
+    "pages/after-sales/list/index",
+    "pages/after-sales/detail/index"
   ],
   "window": {
     "backgroundColor": "#F5F5F5",
@@ -43,6 +62,12 @@
         "text": "宝贝",
         "iconPath": "images/icons/category.png",
         "selectedIconPath": "images/icons/category-克莱因蓝.png"
+      },
+      {
+        "pagePath": "pages/message/index",
+        "text": "消息",
+        "iconPath": "images/icons/消息.png",
+        "selectedIconPath": "images/icons/消息.png"
       },
       {
         "pagePath": "pages/cart/index",

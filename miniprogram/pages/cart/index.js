@@ -17,7 +17,8 @@ Page({
       category: [],
       inStock: null
     },
-    searchKeyword: ''
+    searchKeyword: '',
+    expandedQuantityId: null // 当前展开数量选择器的商品ID
   },
   
   onLoad(options) {
@@ -27,6 +28,15 @@ Page({
   onShow() {
     // 每次页面显示时重新获取购物车数据
     this.fetchCartItems();
+  },
+
+  onHide() {
+    // 页面隐藏时重置数量选择器状态
+    this.setData({ expandedQuantityId: null });
+    // 清除定时器
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+    }
   },
   
   // 下拉刷新
@@ -1141,10 +1151,10 @@ Page({
     });
   },
   
-  // 跳转到首页
+  // 跳转到宝贝页面
   goToHome() {
     wx.switchTab({
-      url: '/pages/home/index'
+      url: '/pages/category/index'
     });
   },
   
@@ -1160,6 +1170,211 @@ Page({
   // 阻止事件冒泡
   stopPropagation() {
     // 空方法，用于阻止事件冒泡
+  },
+
+  // 切换数量选择器的展开状态
+  toggleQuantitySelector(e) {
+    const productId = e.currentTarget.dataset.productId;
+    const currentExpandedId = this.data.expandedQuantityId;
+    
+    // 如果点击的是当前展开的商品，则收起；否则展开新的商品
+    if (currentExpandedId === productId) {
+      this.setData({ expandedQuantityId: null });
+    } else {
+      this.setData({ expandedQuantityId: productId });
+      // 启动延迟隐藏定时器
+      this.delayHideQuantitySelector();
+    }
+  },
+
+  // 隐藏数量选择器
+  hideQuantitySelector() {
+    this.setData({ expandedQuantityId: null });
+  },
+
+  // 隐藏所有面板（删除按钮和数量选择器）
+  hideAllPanels() {
+    // 隐藏删除按钮
+    this.hideDeleteButtons();
+    // 隐藏数量选择器
+    this.hideQuantitySelector();
+  },
+
+  // 延迟隐藏数量选择器
+  delayHideQuantitySelector() {
+    // 清除之前的定时器
+    if (this.hideTimer) {
+      clearTimeout(this.hideTimer);
+    }
+    
+    // 设置新的定时器，3秒后隐藏
+    this.hideTimer = setTimeout(() => {
+      this.hideQuantitySelector();
+    }, 3000);
+  },
+
+  // 增加数量后隐藏选择器
+  increaseQuantity(e) {
+    try {
+      const productId = e.currentTarget.dataset.productId;
+      if (!productId) {
+        console.error('商品ID为空');
+        return;
+      }
+      
+      let newQuantity;
+      
+      const cartItems = this.data.cartItems.map(item => {
+        if (item.productId === productId) {
+          // 确保quantity是数字
+          const currentQuantity = typeof item.quantity === 'number' ? item.quantity : 1;
+          // 检查库存限制
+          if (currentQuantity < item.stock) {
+            newQuantity = currentQuantity + 1;
+            return { ...item, quantity: newQuantity };
+          } else {
+            // 已达库存上限，只有当库存不是默认值99时才显示提示
+            if (item.stock !== 99) {
+              wx.showToast({
+                title: '已达库存上限',
+                icon: 'none'
+              });
+            }
+            return item;
+          }
+        }
+        return item;
+      });
+      
+      this.setData({ cartItems });
+      // 更新filteredCartItems
+      const filteredCartItems = this.data.filteredCartItems.map(item => {
+        if (item.productId === productId) {
+          const updatedItem = cartItems.find(i => i.productId === productId);
+          return updatedItem || item;
+        }
+        return item;
+      });
+      this.setData({ filteredCartItems });
+      this.calculateTotalPrice();
+      
+      // 只有当数量实际变化时才更新数据库
+      if (newQuantity) {
+        this.updateCartQuantity(productId, newQuantity);
+        // 延迟隐藏数量选择器
+        this.delayHideQuantitySelector();
+      }
+    } catch (err) {
+      console.error('增加数量失败:', err);
+      wx.showToast({
+        title: '操作失败，请稍后重试',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 减少数量后隐藏选择器
+  decreaseQuantity(e) {
+    try {
+      const productId = e.currentTarget.dataset.productId;
+      if (!productId) {
+        console.error('商品ID为空');
+        return;
+      }
+      
+      const cartItems = this.data.cartItems.map(item => {
+        if (item.productId === productId) {
+          // 确保quantity是数字
+          const currentQuantity = typeof item.quantity === 'number' ? item.quantity : 1;
+          if (currentQuantity > 1) {
+            return { ...item, quantity: currentQuantity - 1 };
+          }
+        }
+        return item;
+      });
+      this.setData({ cartItems });
+      // 更新filteredCartItems
+      const filteredCartItems = this.data.filteredCartItems.map(item => {
+        if (item.productId === productId) {
+          const updatedItem = cartItems.find(i => i.productId === productId);
+          return updatedItem || item;
+        }
+        return item;
+      });
+      this.setData({ filteredCartItems });
+      this.calculateTotalPrice();
+      const updatedItem = cartItems.find(item => item.productId === productId);
+      if (updatedItem) {
+        this.updateCartQuantity(productId, updatedItem.quantity);
+        // 延迟隐藏数量选择器
+        this.delayHideQuantitySelector();
+      }
+    } catch (err) {
+      console.error('减少数量失败:', err);
+      wx.showToast({
+        title: '操作失败，请稍后重试',
+        icon: 'none'
+      });
+    }
+  },
+
+  // 输入完成后隐藏选择器
+  onQuantityBlur(e) {
+    try {
+      const productId = e.currentTarget.dataset.productId;
+      if (!productId) {
+        console.error('商品ID为空');
+        return;
+      }
+      
+      const inputValue = e.detail.value;
+      let quantity = parseInt(inputValue) || 1;
+      
+      // 查找当前商品
+      const currentItem = this.data.cartItems.find(item => item.productId === productId);
+      if (currentItem) {
+        // 检查库存限制
+        if (quantity < 1) {
+          quantity = 1;
+        } else if (quantity > currentItem.stock) {
+          quantity = currentItem.stock;
+          // 只有当库存不是默认值99时才显示库存上限提示
+          if (currentItem.stock !== 99) {
+            wx.showToast({
+              title: '已达库存上限',
+              icon: 'none'
+            });
+          }
+        }
+      }
+      
+      const cartItems = this.data.cartItems.map(item => {
+        if (item.productId === productId) {
+          return { ...item, quantity };
+        }
+        return item;
+      });
+      this.setData({ cartItems });
+      // 更新filteredCartItems
+      const filteredCartItems = this.data.filteredCartItems.map(item => {
+        if (item.productId === productId) {
+          const updatedItem = cartItems.find(i => i.productId === productId);
+          return updatedItem || item;
+        }
+        return item;
+      });
+      this.setData({ filteredCartItems });
+      this.calculateTotalPrice();
+      this.updateCartQuantity(productId, quantity);
+      // 延迟隐藏数量选择器
+      this.delayHideQuantitySelector();
+    } catch (err) {
+      console.error('数量验证失败:', err);
+      wx.showToast({
+        title: '操作失败，请稍后重试',
+        icon: 'none'
+      });
+    }
   },
   
   // 更新选择状态
@@ -1207,7 +1422,7 @@ Page({
     
     // 只操作当前显示的商品
     this.data.filteredCartItems.forEach(item => {
-      // 已售罄商品不参与全选
+      // 补货中商品不参与全选
       if (!item.isSoldOut) {
         const index = cartItems.findIndex(i => i.productId === item.productId);
         if (index !== -1) {

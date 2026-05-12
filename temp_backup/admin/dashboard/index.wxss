@@ -1,0 +1,191 @@
+/* pages/admin/dashboard/index.wxss */
+.admin-dashboard {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 页面头部 */
+.admin-header {
+  background-color: #1989fa;
+  color: white;
+  padding: 45rpx 30rpx 30rpx;
+  text-align: center;
+}
+
+.admin-header__title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 仪表盘内容 */
+.dashboard-content {
+  padding: 30rpx;
+}
+
+/* 统计卡片 */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20rpx;
+  margin-bottom: 30rpx;
+}
+
+.stats-card {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.stats-card__content {
+  flex: 1;
+}
+
+.stats-card__value {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10rpx;
+  display: block;
+}
+
+.stats-card__label {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.stats-card__icon {
+  width: 80rpx;
+  height: 80rpx;
+  background-color: #f0f7ff;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-card__icon-img {
+  width: 48rpx;
+  height: 48rpx;
+}
+
+/* 最近订单 */
+.recent-orders {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.recent-orders__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.recent-orders__title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.recent-orders__more {
+  font-size: 24rpx;
+  color: #1989fa;
+}
+
+.recent-orders__list {
+  border-top: 1rpx solid #f0f0f0;
+  padding-top: 20rpx;
+}
+
+.recent-orders__item {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.recent-orders__item:last-child {
+  border-bottom: none;
+}
+
+.recent-orders__item-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.recent-orders__item-id {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.recent-orders__item-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.recent-orders__item-status {
+  margin-bottom: 10rpx;
+}
+
+.recent-orders__item-status-text {
+  font-size: 26rpx;
+  color: #1989fa;
+}
+
+.recent-orders__item-amount {
+  text-align: right;
+}
+
+.recent-orders__item-amount-text {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+/* 快速操作 */
+.quick-actions {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.quick-actions__header {
+  margin-bottom: 30rpx;
+}
+
+.quick-actions__title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.quick-actions__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20rpx;
+}
+
+.quick-actions__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20rpx 0;
+}
+
+.quick-actions__item-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-bottom: 10rpx;
+}
+
+.quick-actions__item-text {
+  font-size: 24rpx;
+  color: #666;
+}

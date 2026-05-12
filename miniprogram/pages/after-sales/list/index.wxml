@@ -1,0 +1,60 @@
+<!--pages/after-sales/list/index.wxml-->
+<view class="page-root">
+  
+  <view class="content">
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading">
+      <text class="loading__text">加载中...</text>
+    </view>
+    
+    <!-- 加载完成后显示 -->
+    <view wx:else>
+      <!-- 售后订单列表 -->
+      <view class="after-sales-list" wx:if="{{afterSalesList.length > 0}}">
+        <view class="after-sales-item" wx:for="{{afterSalesList}}" wx:key="{{item._id}}" bindtap="viewAfterSalesDetail" data-id="{{item._id}}">
+          <view class="after-sales-item__header">
+            <view class="after-sales-item__header-left">
+              <text class="after-sales-item__order-no">订单号：{{item.orderNo || item.orderId}}</text>
+              <text class="after-sales-item__type">{{item.typeText}}</text>
+            </view>
+            <text class="after-sales-item__status {{item.statusClass}}">{{item.statusText}}</text>
+          </view>
+          <view class="after-sales-item__content">
+            <view class="after-sales-item__reason">
+              <text class="after-sales-item__reason-label">售后原因：</text>
+              <text class="after-sales-item__reason-text">{{item.reason}}</text>
+            </view>
+            <!-- 货物状态 -->
+            <view wx:if="{{item.goodsStatus}}" class="after-sales-item__reason">
+              <text class="after-sales-item__reason-label">货物状态：</text>
+              <text class="after-sales-item__reason-text">{{item.goodsStatus === 'received' ? '已收到货' : '未收到货'}}</text>
+            </view>
+            <view class="after-sales-item__amount">
+              <text class="after-sales-item__amount-label">申请件数：</text>
+              <text class="after-sales-item__amount-text">{{item.totalApplyQty}} 件 / {{item.itemCount}} 个商品项</text>
+            </view>
+            <view class="after-sales-item__amount">
+              <text class="after-sales-item__amount-label">退款金额：</text>
+              <text class="after-sales-item__amount-text">¥{{item.refundAmount}}</text>
+            </view>
+            <view class="after-sales-item__time">
+              <text class="after-sales-item__time-label">申请时间：</text>
+              <text class="after-sales-item__time-text">{{item.createdAtText}}</text>
+            </view>
+          </view>
+          <view class="after-sales-item__footer">
+            <button wx:if="{{item.status === 'submitted' || item.status === 'reviewing' || item.status === 'pending'}}" class="after-sales-item__btn after-sales-item__btn--cancel" bindtap="cancelAfterSales" data-id="{{item._id}}" data-order-id="{{item.orderId}}" data-legacy="{{item.isLegacy}}">取消申请</button>
+            <button wx:else class="after-sales-item__btn after-sales-item__btn--primary" bindtap="viewAfterSalesDetail" data-id="{{item._id}}">查看详情</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 空状态 -->
+      <view class="empty-state" wx:else>
+        <image src="/images/icons/empty.png" class="empty-state__image"></image>
+        <text class="empty-state__text">暂无售后记录</text>
+        <button class="empty-state__btn" bindtap="goToOrderList">去查看订单</button>
+      </view>
+    </view>
+  </view>
+</view>

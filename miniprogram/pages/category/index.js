@@ -25,23 +25,171 @@ Page({
     categories: [],
     inStock: null,
     // 用于双击检测
-    lastTapTime: 0
+    lastTapTime: 0,
+    // 滚动相关
+    lastScrollTop: 0,
+    isTopBarVisible: true,
+    scrollDirection: 'up',
+    // 标记是否离开过页面（去商品详情等）
+    hasNavigatedAway: false,
+    // 是否显示骨架屏
+    showSkeleton: true
+  },
+
+  // 生成缓存key
+  getCacheKey() {
+    const { searchKeyword, categories, inStock } = this.data;
+    return `category_products_${searchKeyword || ''}_${(categories || []).join('_')}_${inStock}`;
+  },
+
+  // 从缓存获取数据
+  getCachedProducts() {
+    try {
+      const cacheKey = this.getCacheKey();
+      const cached = wx.getStorageSync(cacheKey);
+      if (cached && cached.data && cached.timestamp) {
+        // 检查缓存是否过期（10分钟 - 延长缓存时间）
+        const now = Date.now();
+        if (now - cached.timestamp < 10 * 60 * 1000) {
+          return cached.data;
+        }
+      }
+    } catch (e) {
+      console.log('读取缓存失败', e);
+    }
+    return null;
+  },
+
+  // 保存到缓存
+  setCachedProducts(products) {
+    try {
+      const cacheKey = this.getCacheKey();
+      wx.setStorageSync(cacheKey, {
+        data: products,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      console.log('保存缓存失败', e);
+    }
   },
 
   /**
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    this.initData()
+    this.setData({ showSkeleton: true });
+    
+    // 优先显示缓存数据
+    const cachedProducts = this.getCachedProducts();
+    if (cachedProducts && cachedProducts.length > 0) {
+      console.log('使用缓存数据');
+      this.setData({
+        products: cachedProducts,
+        originalProducts: [...cachedProducts],
+        showSkeleton: false
+      });
+      this.sortProducts(this.data.sortType);
+      // 异步加载最新数据但不显示loading
+      this.loadProductsSilently();
+      return;
+    }
+    
+    // 没有缓存，正常加载
+    this.initData();
+  },
+
+  /**
+   * 静默加载最新数据（不显示loading，用于缓存更新）
+   */
+  loadProductsSilently() {
+    const { searchKeyword, categories, inStock } = this.data;
+    
+    let query = db.collection('products').where({ isDeleted: false });
+    
+    if (searchKeyword && searchKeyword.trim() !== '') {
+      query = query.where({ name: db.RegExp({ regexp: searchKeyword, options: 'i' }) });
+    }
+    
+    if (categories && categories.length > 0) {
+      query = query.where({ typeId: db.command.in(categories) });
+    }
+    
+    if (inStock !== null) {
+      if (inStock) {
+        query = query.where({ stock: db.command.gt(0) });
+      } else {
+        query = query.where({ stock: db.command.lte(0) });
+      }
+    }
+    
+    query.get().then(res => {
+      const newProducts = res.data;
+      // 如果数据有变化，才更新
+      if (JSON.stringify(newProducts) !== JSON.stringify(this.data.products)) {
+        this.setData({
+          products: newProducts,
+          originalProducts: newProducts
+        });
+        this.setCachedProducts(newProducts);
+        this.sortProducts(this.data.sortType);
+      }
+    }).catch(err => {
+      console.error('静默加载失败:', err);
+    });
   },
 
   /**
    * 生命周期函数--监听页面显示
    */
   onShow() {
-    if (!this.data.products.length) {
-      this.initData()
+    const { products } = this.data;
+    const app = getApp();
+    
+    console.log('category onShow - products.length:', products.length);
+    console.log('category onShow - productsNeedRefresh:', app.globalData.productsNeedRefresh);
+    
+    // 检查是否需要强制刷新（从后台管理页面返回）
+    if (app.globalData.productsNeedRefresh === true) {
+      console.log('检测到商品数据变更，强制刷新');
+      app.globalData.productsNeedRefresh = false;
+      wx.showToast({ title: '刷新中...', icon: 'loading', duration: 800 });
+      this.initData();
+      return;
     }
+    
+    // 如果已有数据，保持现状，不做任何操作
+    // 微信小程序会自动保存TabBar页面的滚动位置
+    if (products.length > 0) {
+      console.log('已有数据，保持滚动位置');
+      return;
+    }
+    
+    // 双击刷新检测（只有在没有数据时才检查，避免干扰正常切换）
+    const now = Date.now();
+    const lastTapTime = this.data.lastTapTime || 0;
+    
+    if (now - lastTapTime < 300) {
+      console.log('双击刷新宝贝页面');
+      wx.showToast({ title: '刷新中...', icon: 'loading', duration: 800 });
+      this.initData();
+      this.setData({ lastTapTime: 0 });
+      return;
+    }
+    
+    this.setData({ lastTapTime: now });
+    
+    // 没有数据，初始化
+    console.log('没有数据，初始化');
+    this.initData();
+    wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+    this.setData({ lastScrollTop: 0, isTopBarVisible: true });
+  },
+
+  /**
+   * 生命周期函数--监听页面卸载
+   */
+  onUnload() {
+    // 移除滚动监听
   },
 
   /**
@@ -57,8 +205,12 @@ Page({
    * 加载商品列表
    */
   loadProducts() {
-    wx.showLoading({ title: '加载中...' })
-    const { searchKeyword, categories, inStock } = this.data;
+    const { searchKeyword, categories, inStock, products } = this.data;
+    
+    // 如果已有数据，不显示 loading，避免空白
+    if (products.length === 0) {
+      wx.showLoading({ title: '加载中...' })
+    }
     
     // 构建查询条件
     let query = db.collection('products').where({ isDeleted: false });
@@ -85,14 +237,18 @@ Page({
     query.get().then(res => {
       this.setData({ 
         products: res.data,
-        originalProducts: res.data
+        originalProducts: res.data,
+        showSkeleton: false
       })
+      // 保存到缓存
+      this.setCachedProducts(res.data);
       // 应用排序
       this.sortProducts(this.data.sortType);
       wx.hideLoading()
     }).catch(err => {
       console.error('加载商品失败:', err)
       wx.hideLoading()
+      this.setData({ showSkeleton: false });
     })
   },
 
@@ -100,7 +256,7 @@ Page({
    * 加载系列列表
    */
   loadSeries() {
-    db.collection('category').get().then(res => {
+    db.collection('category').where({ status: 'on' }).get().then(res => {
       this.setData({ seriesList: res.data })
     }).catch(err => {
       console.error('加载系列失败:', err)
@@ -341,5 +497,46 @@ Page({
     
     // 更新最后点击时间
     this.setData({ lastTapTime: now });
+  },
+
+  /**
+   * 页面相关事件处理函数--监听用户滚动
+   */
+  onPageScroll(e) {
+    const currentScrollTop = e.scrollTop;
+    const lastScrollTop = this.data.lastScrollTop;
+    const scrollDirection = currentScrollTop > lastScrollTop ? 'up' : 'down';
+    
+    // 滚动到顶部时，强制显示顶部栏
+    if (currentScrollTop <= 10) {
+      if (!this.data.isTopBarVisible) {
+        this.setData({ 
+          isTopBarVisible: true,
+          scrollDirection: 'down'
+        });
+      }
+      this.setData({ lastScrollTop: currentScrollTop });
+      return;
+    }
+    
+    // 只有在滚动超过一定阈值时才触发显示/隐藏
+    if (Math.abs(currentScrollTop - lastScrollTop) > 30) {
+      if (scrollDirection === 'up' && this.data.isTopBarVisible && currentScrollTop > 100) {
+        // 上滑，隐藏顶部栏（标签和排序选项）
+        this.setData({ 
+          isTopBarVisible: false,
+          scrollDirection: 'up'
+        });
+      } else if (scrollDirection === 'down' && !this.data.isTopBarVisible) {
+        // 下滑，显示顶部栏（标签和排序选项）
+        this.setData({ 
+          isTopBarVisible: true,
+          scrollDirection: 'down'
+        });
+      }
+    }
+    
+    // 更新上次滚动位置
+    this.setData({ lastScrollTop: currentScrollTop });
   }
 })

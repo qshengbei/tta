@@ -1,0 +1,52 @@
+<!-- pages/admin/product-type-manage/index.wxml -->
+<view class="product-type-manage">
+  <!-- 商品类型列表 -->
+  <view class="product-type-list">
+    <!-- 一级类型 -->
+    <view wx:for="{{level1Types}}" wx:key="_id" class="level1-wrapper">
+      <view class="product-type-item level1">
+        <image class="product-type-item__image" src="{{item.image || '../../../images/icons/default-type.png'}}" mode="aspectFill"></image>
+        <view class="product-type-item__info">
+          <text class="product-type-item__name">{{item.name}}</text>
+          <text class="product-type-item__level">级别: 一级</text>
+          <text wx:if="{{item.children && item.children.length > 0}}" class="product-type-item__child-count">包含 {{item.children.length}} 个二级类型</text>
+        </view>
+        <view class="product-type-item__actions">
+        <button class="product-type-item__action-button edit-button" data-id="{{item._id}}" bindtap="editProductType">编辑</button>
+        <button class="product-type-item__action-button toggle-button" data-id="{{item._id}}" bindtap="toggleExpand">{{item.expanded ? '收起' : '展开'}}</button>
+        <button class="product-type-item__action-button delete-button" data-id="{{item._id}}" bindtap="deleteProductType">删除</button>
+      </view>
+      </view>
+      
+      <!-- 二级类型 -->
+      <view wx:if="{{item.expanded && item.children && item.children.length > 0}}" class="level2-container">
+        <text style="font-size: 22rpx; color: #666; margin-bottom: 15rpx; display: block;">二级类型:</text>
+        <view wx:for="{{item.children}}" wx:for-item="child" wx:key="_id" class="product-type-item level2">
+          <image class="product-type-item__image" src="{{child.image || '../../../images/icons/default-type.png'}}" mode="aspectFill"></image>
+          <view class="product-type-item__info">
+            <text class="product-type-item__name">{{child.name}}</text>
+            <text class="product-type-item__level">级别: 二级</text>
+          </view>
+          <view class="product-type-item__actions">
+            <button class="product-type-item__action-button edit-button" data-id="{{child._id}}" bindtap="editProductType">编辑</button>
+            <button class="product-type-item__action-button delete-button" data-id="{{child._id}}" bindtap="deleteProductType">删除</button>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view wx:if="{{level1Types.length === 0 && !loading}}" class="empty-state">
+      <text class="empty-state__text">暂无商品类型</text>
+      <button class="empty-state__button" bindtap="addProductType">添加类型</button>
+    </view>
+    
+    <!-- 加载状态 -->
+    <view wx:if="{{loading}}" class="loading-state">
+      <text class="loading-state__text">加载中...</text>
+    </view>
+  </view>
+  
+  <!-- 底部固定添加按钮 -->
+  <button class="add-button fixed-bottom" bindtap="addProductType">添加类型</button>
+</view>

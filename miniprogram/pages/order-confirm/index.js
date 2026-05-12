@@ -16,7 +16,7 @@ Page({
     loading: true,
     error: false,
     errorMessage: "",
-    deliveryType: "express", // express: 快递, self: 自提, local: 同城配送
+    deliveryType: "express", // express: 快递, pickup: 自提, local: 同城配送
     tempDeliveryType: "express", // 临时存储弹窗中的选择
     pickupCode: "",
     pickupTime: "10:00",
@@ -131,7 +131,8 @@ Page({
             return {
               ...product,
               quantity: cartItem.quantity,
-              message: cartItem.message
+              message: cartItem.message,
+              supportNoReasonReturn: product.supportNoReasonReturn || false // 确保有默认值
             };
           }
           return null;
@@ -233,9 +234,9 @@ Page({
         });
         
         // 只有当配送方式为自提，或同城配送且未超过配送范围时，才初始化自提时间
-        if (this.data.deliveryType === 'self' || (this.data.deliveryType === 'local' && !this.data.isOutOfRange)) {
-          this.initPickupTime();
-        }
+    if (this.data.deliveryType === 'pickup' || (this.data.deliveryType === 'local' && !this.data.isOutOfRange)) {
+      this.initPickupTime();
+    }
         
         // 如果没有坐标，使用地址解析获取
         if (!pickupLocationInfo.pickupLatitude || !pickupLocationInfo.pickupLongitude) {
@@ -313,7 +314,7 @@ Page({
       }
       
       // 如果是自提，或者是同城配送且没超过配送距离，才显示提示
-      if (this.data.deliveryType === 'self' || (this.data.deliveryType === 'local' && !this.data.isOutOfRange)) {
+      if (this.data.deliveryType === 'pickup' || (this.data.deliveryType === 'local' && !this.data.isOutOfRange)) {
         // 如果当天没有可用时间，提示用户选择第二天
         wx.showToast({
           title: toastTitle,
@@ -525,6 +526,11 @@ Page({
         // 如果是同城配送，计算距离和配送费
         if (this.data.deliveryType === 'local') {
           this.calculateDistance();
+        } else if (this.data.deliveryType === 'express') {
+          // 如果是快递配送，计算运费
+          if (this.data.expressRules && this.data.expressRules.length > 0) {
+            this.calculateShippingFee();
+          }
         }
       }
     } catch (err) {
@@ -550,11 +556,17 @@ Page({
           return;
         }
         
+        // 确保 supportNoReasonReturn 字段有默认值
+        const productWithDefaults = {
+          ...product,
+          supportNoReasonReturn: product.supportNoReasonReturn || false
+        };
+        
         // 计算总价格
-        const totalPrice = product.price * this.data.quantity;
+        const totalPrice = productWithDefaults.price * this.data.quantity;
         
         this.setData({
-          product,
+          product: productWithDefaults,
           totalPrice,
           loading: false
         });
@@ -674,17 +686,40 @@ Page({
     try {
       const address = await selectAddress();
       console.log("获取到的地址数据:", address);
+      
+      // 使用回调确保setData完成后再计算运费
       this.setData({
         address
+      }, () => {
+        // 如果是同城配送，计算距离和配送费
+        if (this.data.deliveryType === 'local') {
+          this.calculateDistance();
+        } else if (this.data.deliveryType === 'express') {
+          // 如果是快递配送，计算运费
+          // 确保快递运费规则已经加载完成
+          if (this.data.expressRules && this.data.expressRules.length > 0) {
+            console.log("快递规则已加载，计算运费");
+            this.calculateShippingFee();
+          } else {
+            console.log("快递规则未加载，等待加载完成");
+            // 如果快递运费规则还没有加载完成，等待加载完成后再计算
+            const checkRules = setInterval(() => {
+              if (this.data.expressRules && this.data.expressRules.length > 0) {
+                clearInterval(checkRules);
+                console.log("快递规则加载完成，计算运费");
+                this.calculateShippingFee();
+              }
+            }, 100);
+            // 设置一个3秒的超时，避免无限等待
+            setTimeout(() => {
+              clearInterval(checkRules);
+              console.log("超时，使用默认规则计算运费");
+              // 即使规则没有加载完成，也尝试计算运费（会使用默认规则）
+              this.calculateShippingFee();
+            }, 3000);
+          }
+        }
       });
-      
-      // 如果是同城配送，计算距离和配送费
-      if (this.data.deliveryType === 'local') {
-        this.calculateDistance();
-      } else if (this.data.deliveryType === 'express') {
-        // 如果是快递配送，计算运费
-        this.calculateShippingFee();
-      }
     } catch (err) {
       console.error("选择地址失败", err);
       if (err.message === "用户取消选择地址") {
@@ -732,7 +767,7 @@ Page({
     if (tempDeliveryType === 'local' && this.data.address) {
       // 先计算距离和配送范围，在回调中决定是否初始化自提时间
       this.calculateDistance(true);
-    } else if (tempDeliveryType === 'self') {
+    } else if (tempDeliveryType === 'pickup') {
       // 如果是自提，直接初始化自提时间
       this.initPickupTime();
       
@@ -836,16 +871,17 @@ Page({
       isOutOfRange,
       totalPrice,
       markers,
-      circles
-    }, () => {
-      // 计算完成后，如果需要初始化自提时间且未超出配送范围
-      if (initTime && !this.data.isOutOfRange) {
-        this.initPickupTime();
-      }
-      
-      // 调整地图视野，确保两个标记点都在画面内
-      adjustMapView(markers);
+      circles,
+      userLocation // 保存用户地址坐标
     });
+    
+    // 计算完成后，如果需要初始化自提时间且未超出配送范围
+    if (initTime && !this.data.isOutOfRange) {
+      this.initPickupTime();
+    }
+    
+    // 调整地图视野，确保两个标记点都在画面内
+    adjustMapView(markers);
   },
 
   // 复制自提地址
@@ -959,7 +995,7 @@ Page({
   },
 
   // 提交订单
-  submitOrder() {
+  async submitOrder() {
     // 检查配送方式
     const { deliveryType, address, pickupCode, isOutOfRange, product, products } = this.data;
     
@@ -982,7 +1018,7 @@ Page({
     }
     
     // 检查取件号码
-    if ((deliveryType === 'self' || deliveryType === 'local') && !pickupCode) {
+    if ((deliveryType === 'pickup' || deliveryType === 'local') && !pickupCode) {
       wx.showToast({
         title: "请输入取件号码",
         icon: "none"
@@ -997,6 +1033,11 @@ Page({
         icon: "none"
       });
       return;
+    }
+    
+    // 如果是同城配送，确保用户地址坐标已获取
+    if (deliveryType === 'local' && !this.data.userLocation) {
+      await this.calculateDistance();
     }
     
     // 模拟提交订单
@@ -1015,11 +1056,21 @@ Page({
       // 准备订单数据
       const orderData = {
         totalPrice: this.data.totalPrice,
-        deliveryType: this.data.deliveryType,
+        deliveryType: deliveryType,
         address: this.data.address,
         pickupCode: this.data.pickupCode,
-        pickupTime: this.data.pickupTime
+        pickupTime: this.data.pickupTime,
+        pickupDate: this.data.pickupDate, // 传递自提日期
+        message: this.data.message, // 传递留言信息
+        distance: this.data.distance, // 传递配送距离
+        pickupLatitude: this.data.pickupLatitude, // 传递自提点纬度
+        pickupLongitude: this.data.pickupLongitude, // 传递自提点经度
+        userLatitude: this.data.userLocation?.latitude, // 传递用户地址纬度
+        userLongitude: this.data.userLocation?.longitude // 传递用户地址经度
       };
+      
+      // 打印订单数据，检查distance字段
+      console.log('提交订单时的订单数据:', orderData);
       
       // 添加商品信息
       if (this.data.product._id) {
@@ -1029,7 +1080,9 @@ Page({
           name: this.data.product.name,
           price: this.data.product.price,
           quantity: this.data.quantity,
-          coverImage: this.data.product.coverImage
+          coverImage: this.data.product.coverImage,
+          typeId: this.data.product.typeId,
+          supportNoReasonReturn: this.data.product.supportNoReasonReturn || false // 是否支持七天无理由退换货
         }];
       } else if (this.data.products && this.data.products.length > 0) {
         // 多个商品
@@ -1038,14 +1091,19 @@ Page({
           name: item.name,
           price: item.price,
           quantity: item.quantity,
-          coverImage: item.coverImage
+          coverImage: item.coverImage,
+          typeId: item.typeId,
+          supportNoReasonReturn: item.supportNoReasonReturn || false // 是否支持七天无理由退换货
         }));
       }
       
       // 跳转到支付页面，传递订单数据
+      // 使用 redirectTo 跳转到支付页面，这样页面栈中就不会保留确认订单页面
+      // 当用户在订单列表页面点击返回时，会直接回到商品详情页
       setTimeout(() => {
-        wx.navigateTo({
-          url: "/pages/payment/index?totalPrice=" + this.data.totalPrice + "&orderData=" + encodeURIComponent(JSON.stringify(orderData))
+        const sourceProductIdParam = this.data.productId ? `&sourceProductId=${this.data.productId}` : '';
+        wx.redirectTo({
+          url: "/pages/payment/index?totalPrice=" + this.data.totalPrice + "&orderData=" + encodeURIComponent(JSON.stringify(orderData)) + sourceProductIdParam
         });
       }, 1500);
     }, 1500);

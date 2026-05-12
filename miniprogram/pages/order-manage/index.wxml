@@ -1,0 +1,314 @@
+<wxs module="orderStatus" src="../../../utils/orderStatus.wxs"></wxs>
+<!-- pages/admin/order-manage/index.wxml -->
+<view class="order-manage">
+  <!-- 订单搜索筛选组件 -->
+  <admin-order-search-filter-panel pageType="adminOrder" orders="{{originalOrders}}" bind:search="handleSearch" bind:filter="handleFilter" bind:clearSearch="handleClearSearch" />
+  
+  <!-- 固定部分 -->
+  <view class="fixed-header">
+    <!-- 配送类型标签 -->
+    <view class="delivery-type-tabs">
+      <view class="delivery-type-tab {{deliveryType === 'express' ? 'active' : ''}}" data-type="express" bindtap="filterDeliveryType">快递运输</view>
+      <view class="delivery-type-tab {{deliveryType === 'pickup' ? 'active' : ''}}" data-type="pickup" bindtap="filterDeliveryType">上门自提</view>
+      <view class="delivery-type-tab {{deliveryType === 'local' ? 'active' : ''}}" data-type="local" bindtap="filterDeliveryType">同城配送</view>
+    </view>
+
+    <!-- 筛选条件 -->
+    <view class="filter-section">
+      <view class="filter-row">
+        <view class="filter-buttons">
+          <!-- 快递运输状态按钮 -->
+          <view wx:if="{{deliveryType === 'express'}}">
+            <view class="filter-button-item"><view class="filter-button {{status === 'pending' ? 'active' : ''}}" data-status="pending" bindtap="filterStatus">待支付</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'paid' ? 'active' : ''}}" data-status="paid" bindtap="filterStatus">待发货</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'shipping' ? 'active' : ''}}" data-status="shipping" bindtap="filterStatus">待收货</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'delivered' ? 'active' : ''}}" data-status="delivered" bindtap="filterStatus">待确认收货</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'completed' ? 'active' : ''}}" data-status="completed" bindtap="filterStatus">已完成</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'afterSales' ? 'active' : ''}}" data-status="afterSales" bindtap="filterStatus">售后中</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'cancelled' ? 'active' : ''}}" data-status="cancelled" bindtap="filterStatus">已取消</view></view>
+          </view>
+          
+          <!-- 上门自提状态按钮 -->
+          <view wx:if="{{deliveryType === 'pickup'}}">
+            <view class="filter-button-item"><view class="filter-button {{status === 'pending' ? 'active' : ''}}" data-status="pending" bindtap="filterStatus">待支付</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'paid' ? 'active' : ''}}" data-status="paid" bindtap="filterStatus">待自提</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'completed' ? 'active' : ''}}" data-status="completed" bindtap="filterStatus">已完成</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'afterSales' ? 'active' : ''}}" data-status="afterSales" bindtap="filterStatus">售后中</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'cancelled' ? 'active' : ''}}" data-status="cancelled" bindtap="filterStatus">已取消</view></view>
+          </view>
+          
+          <!-- 同城配送状态按钮 -->
+          <view wx:if="{{deliveryType === 'local'}}">
+            <view class="filter-button-item"><view class="filter-button {{status === 'pending' ? 'active' : ''}}" data-status="pending" bindtap="filterStatus">待支付</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'paid' ? 'active' : ''}}" data-status="paid" bindtap="filterStatus">待配送</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'shipping' ? 'active' : ''}}" data-status="shipping" bindtap="filterStatus">配送中</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'delivered' ? 'active' : ''}}" data-status="delivered" bindtap="filterStatus">待确认收货</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'completed' ? 'active' : ''}}" data-status="completed" bindtap="filterStatus">已完成</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'afterSales' ? 'active' : ''}}" data-status="afterSales" bindtap="filterStatus">售后中</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'cancelled' ? 'active' : ''}}" data-status="cancelled" bindtap="filterStatus">已取消</view></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 可滚动部分 -->
+  <view class="scrollable-content">
+    <!-- 订单列表 -->
+    <view class="order-list">
+      <view wx:for="{{orders}}" wx:key="_id" class="order-item" bindtap="viewOrderDetail" data-id="{{item._id}}">
+        <view class="order-item__header">
+          <text class="order-item__shop">订单号: {{item.orderNumber}}</text>
+          <text class="order-item__status" style="color: {{orderStatus.getOrderStatusColor(item.status, item.statusText)}}">{{item.statusText}}</text>
+        </view>
+        
+        <view class="order-item__content">
+          <view wx:for="{{item.products || item.productsList || []}}" wx:key="index" wx:for-item="product" class="order-item__product">
+            <image class="order-item__image" src="{{product.coverImage || product.image}}" mode="aspectFill" wx:if="{{product.coverImage || product.image}}"/>
+            <view class="order-item__info">
+              <text class="order-item__name">{{product.name || '商品名称'}}</text>
+              <view class="order-item__spec" wx:if="{{product.spec}}">
+                <text>{{product.spec}}</text>
+              </view>
+              <view class="order-item__bottom">
+                <text class="order-item__price">¥{{product.price || '0.00'}}</text>
+                <text class="order-item__quantity">x{{product.quantity || 1}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="order-item__divider"></view>
+        </view>
+        
+        <view class="order-item__footer">
+          <view class="order-item__total">
+            <text class="order-item__total-price">合计：¥{{item.totalPrice || '0.00'}}</text>
+          </view>
+          <view class="order-item__actions">
+            <!-- 待支付订单 -->
+            <button wx:if="{{item.status === 'pending'}}" class="order-item__btn" catchtap="editOrder" data-id="{{item._id}}">编辑订单</button>
+            
+            <!-- 待发货/待自提/待配送订单 -->
+            <button wx:if="{{item.status === 'paid'}}" class="order-item__btn order-item__btn--primary" catchtap="shipOrder" data-id="{{item._id}}">发货</button>
+            <button wx:if="{{item.status === 'paid'}}" class="order-item__btn" catchtap="editOrder" data-id="{{item._id}}">编辑订单</button>
+            <button wx:if="{{item.status === 'paid'}}" class="order-item__btn" catchtap="cancelOrder" data-id="{{item._id}}">取消订单</button>
+            
+            <!-- 配送中订单 -->
+            <button wx:if="{{item.status === 'shipping'}}" class="order-item__btn" catchtap="viewLogistics" data-id="{{item._id}}">查看物流</button>
+            
+            <!-- 待收货订单 -->
+            <button wx:if="{{item.status === 'delivered'}}" class="order-item__btn order-item__btn--primary" catchtap="confirmReceipt" data-id="{{item._id}}">确认收货</button>
+            <button wx:if="{{item.status === 'delivered'}}" class="order-item__btn" catchtap="viewLogistics" data-id="{{item._id}}">查看物流</button>
+            
+            <!-- 已完成订单 -->
+            <button wx:if="{{item.status === 'completed' && (!item.afterSalesStatus || item.afterSalesStatus === 'completed' || item.afterSalesStatus === 'cancelled')}}" class="order-item__btn" catchtap="handleAfterSales" data-id="{{item._id}}">退款/售后</button>
+            <button wx:if="{{item.status === 'completed' && item.deliveryType === 'express'}}" class="order-item__btn" catchtap="viewLogistics" data-id="{{item._id}}">查看物流</button>
+            
+            <!-- 售后订单 -->
+            <button wx:if="{{item.status === 'refund'}}" class="order-item__btn order-item__btn--primary" catchtap="processAfterSales" data-id="{{item._id}}">处理售后</button>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 空状态 -->
+      <view wx:if="{{orders.length === 0 && !loading}}" class="empty-state">
+        <text class="empty-state__text">暂无订单</text>
+      </view>
+      
+      <!-- 加载状态 -->
+      <view wx:if="{{loading}}" class="loading-state">
+        <text class="loading-state__text">加载中...</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑订单弹窗 -->
+  <view wx:if="{{editOrderPanelVisible}}" class="edit-order-panel-mask" bindtap="closeEditOrderPanel">
+    <view class="edit-order-panel" catchtap="preventPanelClose">
+      <view class="edit-order-panel__header">
+        <text class="edit-order-panel__title">编辑订单</text>
+        <view class="edit-order-panel__close" bindtap="closeEditOrderPanel">关闭</view>
+      </view>
+
+      <view class="edit-order-panel__body">
+        <!-- 订单号 -->
+        <view class="edit-order-section">
+          <text class="edit-order-section__label">订单号</text>
+          <text class="edit-order-section__value">{{editingOrder.orderNumber}}</text>
+        </view>
+
+        <!-- 收货地址 -->
+        <view class="edit-order-section">
+          <text class="edit-order-section__label">收货地址</text>
+          <view class="edit-order-address">
+            <view class="edit-order-address__info">
+              <text class="edit-order-address__name">{{editingOrder.address.name}}</text>
+              <text class="edit-order-address__phone">{{editingOrder.address.phone}}</text>
+              <text class="edit-order-address__detail">{{editingOrder.address.address}}</text>
+            </view>
+            <view class="edit-order-address__edit" bindtap="editAddress">编辑</view>
+          </view>
+        </view>
+
+        <!-- 订单备注 -->
+        <view class="edit-order-section">
+          <text class="edit-order-section__label">订单备注</text>
+          <textarea 
+            class="edit-order-textarea" 
+            placeholder="请输入订单备注" 
+            value="{{editingOrder.remark}}"
+            bindinput="onRemarkInput"
+            maxlength="200"
+          ></textarea>
+        </view>
+
+        <!-- 商品列表 -->
+        <view class="edit-order-section">
+          <text class="edit-order-section__label">商品信息</text>
+          <view class="edit-order-products">
+            <view wx:for="{{editingOrder.products}}" wx:key="index" class="edit-order-product-item">
+              <image wx:if="{{item.coverImage || item.image}}" src="{{item.coverImage || item.image}}" class="edit-order-product-item__image" mode="aspectFill"/>
+              <view class="edit-order-product-item__info">
+                <text class="edit-order-product-item__name">{{item.name || '商品名称'}}</text>
+                <text class="edit-order-product-item__spec" wx:if="{{item.spec}}">{{item.spec}}</text>
+                <view class="edit-order-product-item__bottom">
+                  <text class="edit-order-product-item__price">¥{{item.price || '0.00'}}</text>
+                  <view class="edit-order-product-item__quantity-control">
+                    <view class="quantity-btn quantity-btn--disabled">-</view>
+                    <text class="quantity-value">{{item.quantity || 1}}</text>
+                    <view class="quantity-btn quantity-btn--disabled">+</view>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+          <text class="edit-order-tip" wx:if="{{editingOrder.status !== 'pending'}}">商品数量已锁定，如需修改请先取消订单</text>
+        </view>
+
+        <!-- 订单金额 -->
+        <view class="edit-order-section">
+          <text class="edit-order-section__label">订单金额</text>
+          <view class="edit-order-amount">
+            <view class="edit-order-amount__item">
+              <text class="edit-order-amount__label">商品金额</text>
+              <text class="edit-order-amount__value">¥{{editingOrder.productAmountInt}}</text>
+            </view>
+            <view class="edit-order-amount__item">
+              <text class="edit-order-amount__label">运费</text>
+              <text class="edit-order-amount__value">¥{{editingOrder.shippingFeeInt}}</text>
+            </view>
+            <view class="edit-order-amount__item edit-order-amount__item--total">
+              <text class="edit-order-amount__label">合计</text>
+              <text class="edit-order-amount__value">¥{{editingOrder.totalPriceInt}}</text>
+            </view>
+          </view>
+          <text class="edit-order-tip" wx:if="{{editingOrder.status !== 'pending'}}">订单金额已锁定，如需调整请先取消订单</text>
+        </view>
+      </view>
+
+      <view class="edit-order-panel__footer">
+        <button class="edit-order-btn edit-order-btn--cancel" bindtap="closeEditOrderPanel">取消</button>
+        <button class="edit-order-btn edit-order-btn--confirm" bindtap="confirmEditOrder">保存修改</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 地址编辑弹窗 -->
+  <view wx:if="{{addressEditVisible}}" class="edit-order-panel-mask" bindtap="closeAddressEdit">
+    <view class="edit-order-panel" catchtap="preventPanelClose">
+      <view class="edit-order-panel__header">
+        <text class="edit-order-panel__title">编辑收货地址</text>
+        <view class="edit-order-panel__close" bindtap="closeAddressEdit">关闭</view>
+      </view>
+
+      <view class="edit-order-panel__body">
+        <view class="address-edit-form">
+          <view class="address-edit-item">
+            <text class="address-edit-label">收货人</text>
+            <input class="address-edit-input" placeholder="请输入收货人姓名" value="{{editingAddress.name}}" bindinput="onAddressNameInput"/>
+          </view>
+          <view class="address-edit-item">
+            <text class="address-edit-label">联系电话</text>
+            <input class="address-edit-input" placeholder="请输入联系电话" value="{{editingAddress.phone}}" bindinput="onAddressPhoneInput"/>
+          </view>
+          <view class="address-edit-item">
+            <text class="address-edit-label">收货地址</text>
+            <textarea class="address-edit-textarea" placeholder="请输入详细地址" value="{{editingAddress.address}}" bindinput="onAddressDetailInput"></textarea>
+          </view>
+        </view>
+      </view>
+
+      <view class="edit-order-panel__footer">
+        <button class="edit-order-btn edit-order-btn--cancel" bindtap="closeAddressEdit">取消</button>
+        <button class="edit-order-btn edit-order-btn--confirm" bindtap="confirmAddressEdit">保存地址</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{afterSalesCaseListVisible}}" class="after-sales-panel-mask" bindtap="closeAfterSalesCaseList">
+    <view class="after-sales-panel" catchtap="preventPanelClose">
+      <view class="after-sales-panel__header">
+        <view class="after-sales-panel__title-wrap">
+          <text class="after-sales-panel__title">选择售后单</text>
+          <text class="after-sales-panel__meta">该订单有{{afterSalesCases.length}}个售后申请</text>
+        </view>
+        <view class="after-sales-panel__close" bindtap="closeAfterSalesCaseList">关闭</view>
+      </view>
+
+      <view class="after-sales-panel__body">
+        <view class="after-sales-case-list">
+          <view wx:for="{{afterSalesCases}}" wx:key="_id" class="after-sales-case-item" catchtap="selectAfterSalesCase" data-case-doc="{{item}}">
+            <view class="after-sales-case-item__header">
+              <text class="after-sales-case-item__no">售后单号：{{item.caseNo || item._id}}</text>
+              <text class="after-sales-case-item__status">{{item.caseStatus === 'submitted' ? '待审核' : item.caseStatus === 'reviewing' ? '审核中' : item.caseStatus === 'waiting_buyer_return' ? '待买家寄回' : item.caseStatus === 'waiting_seller_receive' ? '待商家收货' : item.caseStatus === 'processing' ? '处理中' : item.caseStatus}}</text>
+            </view>
+            <view class="after-sales-case-item__content">
+              <text class="after-sales-case-item__reason">申请原因：{{item.applyReasonText || item.applyDescription || '售后申请'}}</text>
+              <text class="after-sales-case-item__amount">申请金额：¥{{item.totalApplyAmount || 0}}</text>
+              <text class="after-sales-case-item__time">申请时间：{{item.createdAtText || ''}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{afterSalesPanelVisible}}" class="after-sales-panel-mask" bindtap="closeAfterSalesPanel">
+    <view class="after-sales-panel" catchtap="preventPanelClose">
+      <view class="after-sales-panel__header">
+        <view class="after-sales-panel__title-wrap">
+          <text class="after-sales-panel__title">售后明细处理</text>
+          <text class="after-sales-panel__meta">售后单号：{{selectedAfterSalesCase.caseNo || selectedAfterSalesCase._id}}</text>
+        </view>
+        <view class="after-sales-panel__close" bindtap="closeAfterSalesPanel">关闭</view>
+      </view>
+
+      <view class="after-sales-panel__body">
+        <view class="after-sales-item-card" wx:for="{{selectedAfterSalesItems}}" wx:key="_id" wx:for-item="caseItem">
+          <view class="after-sales-item-card__top" catchtap="viewAfterSalesDetail" data-case-id="{{selectedAfterSalesCase._id}}">
+            <image wx:if="{{caseItem.coverImageSnapshot}}" src="{{caseItem.coverImageSnapshot}}" class="after-sales-item-card__image" mode="aspectFill"></image>
+            <view class="after-sales-item-card__info">
+              <text class="after-sales-item-card__name">{{caseItem.productNameSnapshot || '商品'}}</text>
+              <text class="after-sales-item-card__spec">{{caseItem.skuNameSnapshot || ''}}</text>
+              <view class="after-sales-item-card__line">
+                <text class="after-sales-item-card__tag">{{caseItem.typeText}}</text>
+                <text class="after-sales-item-card__status">{{caseItem.statusText}}</text>
+              </view>
+              <view class="after-sales-item-card__line">
+                <text class="after-sales-item-card__qty">申请数量：{{caseItem.applyQtyText}}</text>
+                <text class="after-sales-item-card__amount">¥{{caseItem.applyRefundAmountText}}</text>
+              </view>
+            </view>
+            <view class="after-sales-item-card__arrow">›</view>
+          </view>
+
+          <view class="after-sales-item-card__actions">
+            <button wx:if="{{caseItem.canApprove}}" class="after-sales-action-btn" catchtap="handleAfterSalesItemAction" data-item-id="{{caseItem._id}}" data-action="approve" loading="{{processingItemId === caseItem._id}}">同意</button>
+            <button wx:if="{{caseItem.canReject}}" class="after-sales-action-btn after-sales-action-btn--warn" catchtap="handleAfterSalesItemAction" data-item-id="{{caseItem._id}}" data-action="reject" loading="{{processingItemId === caseItem._id}}">拒绝</button>
+            <button wx:if="{{caseItem.canComplete}}" class="after-sales-action-btn after-sales-action-btn--primary" catchtap="handleAfterSalesItemAction" data-item-id="{{caseItem._id}}" data-action="complete" loading="{{processingItemId === caseItem._id}}">完成</button>
+            <text wx:if="{{!caseItem.canApprove && !caseItem.canReject && !caseItem.canComplete}}" class="after-sales-item-card__readonly">该明细当前无需操作</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

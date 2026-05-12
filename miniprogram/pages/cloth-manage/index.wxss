@@ -1,0 +1,164 @@
+/* pages/admin/cloth-manage/index.wxss */
+.cloth-manage {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  padding-bottom: 100rpx; /* 为底部固定按钮留出空间 */
+}
+
+.add-button {
+  background-color: #1890ff;
+  color: #fff;
+  border: none;
+  border-radius: 8rpx;
+  padding: 12rpx 24rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.add-button::after {
+  border: none;
+}
+
+.add-button.fixed-bottom {
+  position: fixed;
+  bottom: 40rpx;
+  right: 40rpx;
+  z-index: 100;
+  width: 200rpx;
+  height: 80rpx;
+  font-size: 28rpx;
+  line-height: 80rpx;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 40rpx; /* 圆角，值为高度的一半 */
+  box-shadow: 0 4rpx 12rpx rgba(24, 144, 255, 0.3);
+}
+
+.cloth-list {
+  padding: 20rpx;
+}
+
+.cloth-item {
+  display: flex;
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.cloth-item__image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 8rpx;
+  margin-right: 20rpx;
+}
+
+.cloth-item__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.cloth-item__name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8rpx;
+}
+
+.cloth-item__color,
+.cloth-item__material,
+.cloth-item__stock,
+.cloth-item__created {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 4rpx;
+}
+
+.cloth-item__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.cloth-item__action-button {
+  width: 50rpx;
+  height: 60rpx;
+  font-size: 18rpx;
+  line-height: 60rpx;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8rpx;
+  border: 1rpx solid #e5e5e5;
+  background-color: #fff;
+  color: #666;
+  margin-left: auto;
+}
+
+.view-button {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1rpx solid #91d5ff;
+}
+
+.edit-button {
+  background-color: #f6ffed;
+  color: #52c41a;
+  border: 1rpx solid #b7eb8f;
+}
+
+.delete-button {
+  background-color: #fff2f0;
+  color: #ff4d4f;
+  border: 1rpx solid #ffb3b3;
+}
+
+.cloth-item__action-button::after {
+  border: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 20rpx;
+}
+
+.empty-state__text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.empty-state__button {
+  background-color: #1890ff;
+  color: #fff;
+  border: none;
+  border-radius: 8rpx;
+  padding: 12rpx 32rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.empty-state__button::after {
+  border: none;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80rpx 0;
+}
+
+.loading-state__text {
+  font-size: 24rpx;
+  color: #999;
+}

@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "afterSalesScheduler",
+      "type": "timer",
+      "config": "0 */30 * * * *"
+    }
+  ]
+}

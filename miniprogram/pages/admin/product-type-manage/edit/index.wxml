@@ -1,0 +1,51 @@
+<!-- pages/admin/product-type-manage/edit/index.wxml -->
+<view class="product-type-edit">
+  <!-- 编辑表单 -->
+  <form bindsubmit="saveProductType" class="product-form">
+    <!-- 商品类型图片 -->
+    <view class="form-item">
+      <text class="form-item__label">类型图片</text>
+      <view class="image-uploader">
+        <view class="image-uploader__preview" wx:if="{{productType.image}}">
+          <image src="{{productType.image}}" class="image-uploader__preview-image"></image>
+          <view class="image-uploader__preview-remove" bindtap="removeImage">×</view>
+        </view>
+        <view class="image-uploader__upload" wx:else bindtap="chooseImage">
+          <image src="../../../../images/icons/upload.png" class="image-uploader__upload-icon"></image>
+          <text class="image-uploader__upload-text">上传图片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 商品类型名称 -->
+    <view class="form-item">
+      <text class="form-item__label">类型名称</text>
+      <input class="form-item__input" placeholder="请输入类型名称" value="{{productType.name}}" bindinput="onNameChange"></input>
+    </view>
+
+    <!-- 商品类型级别 -->
+    <view class="form-item">
+      <text class="form-item__label">类型级别</text>
+      <picker bindchange="onLevelChange" value="{{levelIndex}}" range="{{levelOptions}}">
+        <view class="form-item__input">{{levelOptions[levelIndex]}}</view>
+      </picker>
+    </view>
+
+    <!-- 父级类型（仅二级类型显示） -->
+    <view class="form-item" wx:if="{{showParentSelector}}">
+      <text class="form-item__label">父级类型</text>
+      <picker bindchange="onParentIdChange" value="{{parentIdIndex}}" range="{{level1Types}}" range-key="name">
+        <view class="form-item__input">{{selectedParentName || '请选择父级类型'}}</view>
+      </picker>
+    </view>
+  </form>
+
+  <!-- 固定在底部的保存按钮 -->
+  <view class="fixed-submit">
+    <form bindsubmit="saveProductType">
+      <button type="primary" form-type="submit" class="submit-button" loading="{{submitting}}">
+        {{isEditing ? '保存修改' : '保存'}}
+      </button>
+    </form>
+  </view>
+</view>

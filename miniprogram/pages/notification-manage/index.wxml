@@ -1,0 +1,205 @@
+<view class="notification-manage">
+  <!-- 顶部导航栏 -->
+  <view class="navbar">
+    <text class="title">通知管理</text>
+  </view>
+
+  <!-- 标签切换 -->
+  <view class="tab-bar">
+    <view 
+      class="tab-item {{activeTab === 'system' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="system"
+    >
+      系统通知
+    </view>
+    <view 
+      class="tab-item {{activeTab === 'activity' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="activity"
+    >
+      活动通知
+    </view>
+    <view 
+      class="tab-item {{activeTab === 'restock' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="restock"
+    >
+      补货通知
+    </view>
+  </view>
+
+  <!-- 系统通知内容 -->
+  <view wx:if="{{activeTab === 'system'}}">
+    <view class="notification-form">
+      <view class="form-item">
+        <text class="label">通知标题</text>
+        <input 
+          class="input" 
+          placeholder="请输入通知标题"
+          value="{{systemForm.title}}"
+          bindinput="onSystemFormChange"
+          data-field="title"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">通知内容</text>
+        <textarea 
+          class="textarea" 
+          placeholder="请输入通知内容"
+          value="{{systemForm.content}}"
+          bindinput="onSystemFormChange"
+          data-field="content"
+          style="height: 150rpx;"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">目标用户</text>
+        <picker 
+          class="picker"
+          range="{{userOptions}}"
+          value="{{systemForm.userType}}"
+          bindchange="onUserTypeChange"
+          data-form="system"
+        >
+          {{userOptions[systemForm.userType]}}
+        </picker>
+      </view>
+      <button 
+        class="submit-btn"
+        bindtap="sendSystemNotification"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        发送通知
+      </button>
+    </view>
+  </view>
+
+  <!-- 活动通知内容 -->
+  <view wx:if="{{activeTab === 'activity'}}">
+    <view class="notification-form">
+      <view class="form-item">
+        <text class="label">活动标题</text>
+        <input 
+          class="input" 
+          placeholder="请输入活动标题"
+          value="{{activityForm.title}}"
+          bindinput="onActivityFormChange"
+          data-field="title"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">活动描述</text>
+        <textarea 
+          class="textarea" 
+          placeholder="请输入活动描述"
+          value="{{activityForm.description}}"
+          bindinput="onActivityFormChange"
+          data-field="description"
+          style="height: 150rpx;"
+        />
+      </view>
+      <view class="form-item">
+        <text class="label">目标用户</text>
+        <picker 
+          class="picker"
+          range="{{userOptions}}"
+          value="{{activityForm.userType}}"
+          bindchange="onUserTypeChange"
+          data-form="activity"
+        >
+          {{userOptions[activityForm.userType]}}
+        </picker>
+      </view>
+      <button 
+        class="submit-btn"
+        bindtap="sendActivityNotification"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        发送通知
+      </button>
+    </view>
+  </view>
+
+  <!-- 补货通知内容 -->
+  <view wx:if="{{activeTab === 'restock'}}">
+    <view wx:if="{{restockList.length === 0}}" class="empty-state">
+      <text>暂无补货提醒</text>
+    </view>
+    <view wx:else class="restock-list">
+      <view 
+        class="restock-item"
+        wx:for="{{restockList}}"
+        wx:key="_id"
+      >
+        <view class="restock-item-header">
+          <text class="product-name">{{item.productData.name}}</text>
+          <text class="status">{{item.status === 'pending' ? '待处理' : '已处理'}}</text>
+        </view>
+        <view class="restock-item-body">
+          <image 
+            class="product-image"
+            src="{{item.productData.coverImage}}"
+            mode="aspectFill"
+          />
+          <view class="product-info">
+            <text class="price">¥{{item.productData.price}}</text>
+            <text class="user-count">共有 {{item.users.length}} 位用户需要补货</text>
+          </view>
+        </view>
+        <view class="restock-item-footer">
+          <button 
+            class="process-btn"
+            bindtap="showUserList"
+            data-id="{{item._id}}"
+          >
+            查看用户
+          </button>
+          <button 
+            class="restock-btn"
+            bindtap="processReplenishment"
+            data-id="{{item._id}}"
+            wx:if="{{item.status === 'pending'}}"
+          >
+            已补货
+          </button>
+          <text class="processed-text" wx:else>
+            已处理
+          </text>
+        </view>
+        <!-- 用户列表弹窗 -->
+        <view 
+          class="user-list-modal" 
+          wx:if="{{showUserList && currentRestockId === item._id}}"
+        >
+          <view class="user-list-content">
+            <view class="user-list-header">
+              <text class="user-list-title">补货用户列表</text>
+              <text class="close-btn" bindtap="hideUserList">×</text>
+            </view>
+            <view class="user-list">
+              <view 
+                class="user-item"
+                wx:for="{{item.users}}"
+                wx:key="openid"
+              >
+                <image 
+                  class="user-avatar"
+                  src="{{item.avatarUrl || '/images/default-avatar.png'}}"
+                  mode="aspectFill"
+                />
+                <view class="user-info">
+                  <text class="user-name">{{item.nickName}}</text>
+                  <text class="request-time">{{item.requestTime}}</text>
+                  <text class="request-count">请求次数：{{item.requestCount}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

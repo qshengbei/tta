@@ -1,0 +1,62 @@
+<!-- pages/logistics/index.wxml -->
+<view class="page-root">
+  <view class="header">
+    <view class="header__left" bindtap="goBack">
+      <image class="header__back" src="../../images/icons/back.png" mode="aspectFit" />
+    </view>
+    <text class="header__title">物流详情</text>
+    <view class="header__right"></view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">
+    <view class="loading__spinner"></view>
+    <text class="loading__text">加载物流信息中...</text>
+  </view>
+
+  <view wx:elif="{{error}}" class="error">
+    <text class="error__text">{{errorMessage}}</text>
+    <button class="btn btn-secondary" bindtap="fetchLogistics">重试</button>
+  </view>
+
+  <view wx:else class="content">
+    <!-- 物流基本信息 -->
+    <view class="logistics-info">
+      <view class="logistics-info__item">
+        <text class="logistics-info__label">物流单号：</text>
+        <text class="logistics-info__value">{{logisticsInfo.trackingNumber}}</text>
+      </view>
+      <view class="logistics-info__item">
+        <text class="logistics-info__label">快递公司：</text>
+        <text class="logistics-info__value">{{logisticsInfo.companyName || '未知'}}</text>
+      </view>
+      <view class="logistics-info__item">
+        <text class="logistics-info__label">物流状态：</text>
+        <text class="logistics-info__value logistics-info__value--status" style="color: {{logisticsInfo.statusColor}}">{{logisticsInfo.statusText || '暂无信息'}}</text>
+      </view>
+    </view>
+
+    <!-- 物流轨迹 -->
+    <view class="logistics-timeline">
+      <view class="logistics-timeline__title">物流轨迹</view>
+      <view wx:for="{{logisticsInfo.timeline}}" wx:key="index" class="logistics-timeline__item">
+        <view class="logistics-timeline__node {{index === 0 ? 'logistics-timeline__node--active' : ''}}">
+          <view class="logistics-timeline__dot {{index === 0 ? 'logistics-timeline__dot--active' : ''}}"></view>
+          <view wx:if="{{index !== logisticsInfo.timeline.length - 1}}" class="logistics-timeline__line"></view>
+        </view>
+        <view class="logistics-timeline__content">
+          <text class="logistics-timeline__text">{{item.context}}</text>
+          <text class="logistics-timeline__time">{{item.time}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 地图轨迹（如果启用） -->
+    <view wx:if="{{showMap}}" class="map-section">
+      <view class="map-section__title">地图轨迹</view>
+      <view class="map-container">
+        <image class="map-placeholder" src="../../images/icons/map-placeholder.png" mode="aspectFill" />
+        <text class="map-placeholder-text">地图轨迹功能正在开发中</text>
+      </view>
+    </view>
+  </view>
+</view>

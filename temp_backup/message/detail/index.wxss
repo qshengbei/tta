@@ -1,0 +1,116 @@
+.detail-container {
+  min-height: 100vh;
+  background-color: #f8f8f8;
+}
+
+/* 顶部操作栏 */
+.message-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10rpx 32rpx;
+  background-color: #f8f8f8;
+  gap: 40rpx;
+  min-height: 40rpx;
+}
+
+.header-left {
+  width: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-right: auto;
+}
+
+.back-icon {
+  width: 32rpx;
+  height: 32rpx;
+  transform: rotate(180deg);
+}
+
+/* 消息内容 */
+.message-content {
+  margin: 0;
+  padding: 24rpx;
+  position: relative;
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 24rpx;
+  border-bottom: none;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.message-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #000000;
+  flex: 1;
+  margin-right: 16rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.message-time {
+  font-size: 20rpx;
+  color: #999999;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.message-body {
+  margin-bottom: 32rpx;
+  box-sizing: border-box;
+}
+
+.message-text {
+  font-size: 24rpx;
+  color: #333333;
+  line-height: 44rpx;
+  word-break: break-word;
+}
+
+.message-footer {
+  padding-top: 24rpx;
+  border-top: 1rpx solid #EAEAEA;
+  display: flex;
+  justify-content: center;
+}
+
+.related-btn {
+  width: 240rpx;
+  height: 64rpx;
+  background-color: #1A3D8F;
+  color: #FFFFFF;
+  border-radius: 32rpx;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 加载中 */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #999999;
+}
+
+/* 点击效果 */
+.related-btn:active {
+  background-color: #0F2A6B;
+}

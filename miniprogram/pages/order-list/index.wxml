@@ -1,4 +1,89 @@
+<wxs module="orderStatus" src="../../utils/orderStatus.wxs"></wxs>
 <view class="page-root">
+  <!-- 订单搜索筛选组件 -->
+  <order-search-filter-panel 
+    pageType="order"
+    orders="{{originalOrders}}" 
+    loading="{{loading}}" 
+    filterOptions="{{filterOptions}}"
+    bind:search="handleSearch" 
+    bind:filter="handleFilter" 
+    bind:clearSearch="handleClearSearch"
+  />
+  
+  <!-- 订单状态标签栏 -->
+  <view class="status-tabs">
+    <view class="status-tabs__container">
+      <!-- 快递运输 -->
+      <block wx:if="{{deliveryType === 'express' || !deliveryType}}">
+        <view class="status-tabs__item {{selectedStatus === 'all' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="all" data-delivery-type="express">
+          <text>全部</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'pending' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="pending" data-delivery-type="express">
+          <text>待支付</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'paid' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="paid" data-delivery-type="express">
+          <text>待发货</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'shipping' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="shipping" data-delivery-type="express">
+          <text>待收货</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'completed' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="completed" data-delivery-type="express">
+          <text>已完成</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'refund' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="refund" data-delivery-type="express">
+          <text>售后</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'cancelled' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="cancelled" data-delivery-type="express">
+          <text>已取消</text>
+        </view>
+      </block>
+      
+      <!-- 上门自提 -->
+      <block wx:elif="{{deliveryType === 'pickup'}}">
+        <view class="status-tabs__item {{selectedStatus === 'all' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="all" data-delivery-type="pickup">
+          <text>全部</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'pending' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="pending" data-delivery-type="pickup">
+          <text>待支付</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'paid' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="paid" data-delivery-type="pickup">
+          <text>待自提</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'completed' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="completed" data-delivery-type="pickup">
+          <text>已完成</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'cancelled' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="cancelled" data-delivery-type="pickup">
+          <text>已取消</text>
+        </view>
+      </block>
+      
+      <!-- 同城配送 -->
+      <block wx:elif="{{deliveryType === 'local'}}">
+        <view class="status-tabs__item {{selectedStatus === 'all' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="all" data-delivery-type="local">
+          <text>全部</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'pending' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="pending" data-delivery-type="local">
+          <text>待支付</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'paid' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="paid" data-delivery-type="local">
+          <text>待配送</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'shipping' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="shipping" data-delivery-type="local">
+          <text>配送中</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'completed' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="completed" data-delivery-type="local">
+          <text>已完成</text>
+        </view>
+        <view class="status-tabs__item {{selectedStatus === 'cancelled' ? 'status-tabs__item--active' : ''}}" bindtap="switchStatus" data-status="cancelled" data-delivery-type="local">
+          <text>已取消</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+
+
   <view wx:if="{{loading}}" class="loading">
     <view class="loading__spinner"></view>
     <text class="loading__text">加载中...</text>
@@ -11,33 +96,121 @@
 
   <view wx:else class="order-list">
     <view wx:if="{{orders.length === 0}}" class="empty">
-      <text class="empty__text">暂无订单</text>
-      <button class="btn btn-primary" bindtap="goToHome">去购物</button>
+      <image class="empty__image" src="../../images/icons/无订单.png" mode="aspectFit" />
+      <text class="empty__text">暂无相关订单</text>
     </view>
     
     <view wx:else class="orders">
-      <view wx:for="{{orders}}" wx:key="{{item._id}}" class="order-item">
+      <view wx:for="{{orders}}" wx:key="_id" class="order-item" bindtap="viewOrderDetail" data-order-id="{{item._id}}">
         <view class="order-item__header">
-          <text class="order-item__order-number">订单号：{{item.orderNumber}}</text>
-          <text class="order-item__status">{{item.statusText}}</text>
+          <text class="order-item__shop">Touch the Aura</text>
+          <text class="order-item__status" style="color: {{orderStatus.getOrderStatusColor(item.status, item.statusText)}}">{{item.statusText || '待支付'}}</text>
         </view>
         
         <view class="order-item__content">
-          <image class="order-item__image" src="{{item.product.coverImage}}" mode="aspectFill"/>
-          <view class="order-item__info">
-            <text class="order-item__name">{{item.product.name}}</text>
-            <view class="order-item__bottom">
-              <text class="order-item__price">¥{{item.product.price}}</text>
-              <text class="order-item__quantity">x{{item.quantity}}</text>
+          <view wx:for="{{item.products || item.productsList || []}}" wx:key="index" class="order-item__product">
+            <image class="order-item__image" src="{{item.coverImage}}" mode="aspectFill" wx:if="{{item.coverImage}}"/>
+            <view class="order-item__info">
+              <text class="order-item__name">{{item.name || '商品名称'}}</text>
+              <view class="order-item__spec" wx:if="{{item.spec}}">
+                <text>{{item.spec}}</text>
+              </view>
+              <view class="order-item__bottom">
+                <text class="order-item__price">¥{{item.price || '0.00'}}</text>
+                <text class="order-item__quantity">x{{item.quantity || 1}}</text>
+              </view>
             </view>
           </view>
+          <view class="order-item__divider"></view>
         </view>
         
         <view class="order-item__footer">
-          <text class="order-item__total">合计：¥{{item.totalPrice}}</text>
-          <button class="order-item__btn" bindtap="viewOrderDetail" data-order-id="{{item._id}}">
-            查看详情
-          </button>
+          <view class="order-item__total">
+            <text class="order-item__total-price">合计：¥{{item.totalPrice || '0.00'}}</text>
+          </view>
+          <view class="order-item__actions">
+            <button wx:if="{{item.status === 'pending' || (item.status === 'paid' && item.canCancel)}}" class="order-item__btn" catchtap="cancelOrder" data-order-id="{{item._id}}">
+              取消订单
+            </button>
+            <button wx:elif="{{item.status === 'paid' && !item.canCancel}}" class="order-item__btn" catchtap="contactService" data-order-id="{{item._id}}">
+              联系客服
+            </button>
+            <button wx:if="{{item.status === 'pending'}}" class="order-item__btn" catchtap="goToPayment" data-order-id="{{item._id}}">
+              去支付
+            </button>
+            <button wx:if="{{item.status === 'shipping' || item.status === 'delivered' || (item.deliveryType === 'express' && (item.status === 'completed' || item.status === 'refund_completed'))}}" class="order-item__btn" catchtap="viewLogistics" data-order-id="{{item._id}}">
+              查看物流
+            </button>
+            <button wx:if="{{item.status === 'delivered' || item.status === 'shipping'}}" class="order-item__btn order-item__btn--primary" catchtap="confirmReceipt" data-order-id="{{item._id}}">
+              确认收货
+            </button>
+
+            <button wx:if="{{item.status === 'refund'}}" class="order-item__btn" catchtap="viewOrderDetail" data-order-id="{{item._id}}">
+              查看售后
+            </button>
+            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled'}}" class="order-item__btn order-item__btn--delete" catchtap="deleteOrder" data-order-id="{{item._id}}">
+              删除订单
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showLogistics}}" class="logistics-modal">
+    <view class="logistics-modal__mask" bindtap="closeLogistics"></view>
+    <view class="logistics-modal__content">
+      <view class="logistics-modal__header">
+        <text class="logistics-modal__title">物流信息</text>
+      </view>
+
+      <view class="logistics-modal__info">
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">快递公司：</text>
+          <text class="logistics-modal__info-value">{{logisticsMapData.companyName || logisticsData.com}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">运单号：</text>
+          <text class="logistics-modal__info-value">{{logisticsData.nu || logisticsMapData.trackingNumber}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">物流状态：</text>
+          <text class="logistics-modal__info-value" style="color: {{logisticsData.state === '3' ? '#52c41a' : logisticsData.state === '2' ? '#1890ff' : logisticsData.state === '1' ? '#faad14' : logisticsData.state === '4' ? '#ff4d4f' : '#999'}}">
+            {{logisticsData.displayStateText || logisticsData.stateName || (logisticsData.state === '0' ? '无轨迹' : logisticsData.state === '1' ? '已揽收' : logisticsData.state === '2' ? '在途中' : logisticsData.state === '3' ? '已签收' : logisticsData.state === '4' ? '问题件' : '待发货')}}
+          </text>
+        </view>
+      </view>
+
+      <view class="logistics-modal__track">
+        <view class="logistics-modal__track-title">物流轨迹</view>
+        <view class="logistics-modal__track-list">
+          <view wx:for="{{logisticsData.data}}" wx:key="{{index}}" class="logistics-modal__track-item">
+            <view class="logistics-modal__track-dot" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-line" wx:if="{{index < logisticsData.data.length - 1}}" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-content">
+              <text class="logistics-modal__track-text">{{item.context}}</text>
+              <text class="logistics-modal__track-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{logisticsTrackPoints.length > 0}}" class="logistics-modal__map-section">
+        <view class="logistics-modal__map-title">地图轨迹</view>
+        <view class="logistics-modal__map-container">
+          <map class="logistics-modal__map"
+               id="logisticsMap"
+               longitude="{{logisticsMapCenter.longitude}}"
+               latitude="{{logisticsMapCenter.latitude}}"
+               scale="{{logisticsMapScale}}"
+               markers="{{logisticsTrackPoints}}"
+               show-location="true"
+               style="width: 100%; height: 100%;">
+          </map>
+        </view>
+        <view class="logistics-modal__map-buttons">
+          <button class="logistics-modal__map-btn" bindtap="resetMap">重置地图</button>
+          <button class="logistics-modal__map-btn" bindtap="fullScreenMap">全屏</button>
         </view>
       </view>
     </view>

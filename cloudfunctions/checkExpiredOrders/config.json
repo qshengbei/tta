@@ -1,0 +1,9 @@
+{
+  "triggers": [
+    {
+      "name": "checkExpiredOrders",
+      "type": "timer",
+      "config": "0 */1 * * * * *"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+
+  {
+    "_id": "template_order_create_success",
+    "templateType": "orderStatusChange",
+    "templateName": "订单创建成功通知",
+    "title": "订单创建成功",
+    "content": "您的订单 #{{orderNumber}} 已创建成功，请在30分钟内完成支付",
+    "isTemplateMessage": false,
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_pay_success",
+    "templateType": "orderStatusChange",
+    "templateName": "订单支付成功通知",
+    "title": "支付成功",
+    "content": "您的订单 #{{orderNumber}} 支付成功，我们正在处理",
+    "isTemplateMessage": true,
+    "templateId": "OPENTM405472175",
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_express_ship",
+    "templateType": "orderStatusChange",
+    "templateName": "快递发货通知",
+    "title": "发货通知",
+    "content": "您的订单 #{{orderNumber}} 已发货，物流单号：{{trackingNumber}}",
+    "isTemplateMessage": true,
+    "templateId": "OPENTM410761029",
+    "variables": ["orderNumber", "trackingNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_local_ship",
+    "templateType": "orderStatusChange",
+    "templateName": "同城配送开始通知",
+    "title": "配送通知",
+    "content": "您的订单 #{{orderNumber}} 已开始配送，请保持手机畅通",
+    "isTemplateMessage": false,
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_confirm",
+    "templateType": "orderStatusChange",
+    "templateName": "订单完成通知",
+    "title": "订单完成",
+    "content": "您的订单 #{{orderNumber}} 已完成，感谢您的购买",
+    "isTemplateMessage": false,
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_apply_after_sales",
+    "templateType": "orderStatusChange",
+    "templateName": "售后申请通知",
+    "title": "售后申请",
+    "content": "您的售后申请已提交，我们会尽快处理",
+    "isTemplateMessage": false,
+    "variables": [],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_process_after_sales",
+    "templateType": "orderStatusChange",
+    "templateName": "售后处理完成通知",
+    "title": "售后处理",
+    "content": "您的售后申请已处理完成，如有疑问请联系客服",
+    "isTemplateMessage": false,
+    "variables": [],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_cancel",
+    "templateType": "orderStatusChange",
+    "templateName": "订单取消通知",
+    "title": "订单取消",
+    "content": "您的订单 #{{orderNumber}} 已取消",
+    "isTemplateMessage": false,
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_order_expire",
+    "templateType": "orderStatusChange",
+    "templateName": "订单过期通知",
+    "title": "订单过期",
+    "content": "您的订单 #{{orderNumber}} 因超时未支付已自动取消",
+    "isTemplateMessage": false,
+    "variables": ["orderNumber"],
+    "status": "active"
+  }
+  {
+    "_id": "template_activity_new",
+    "templateType": "activity",
+    "templateName": "新活动通知",
+    "title": "新活动上线",
+    "content": "{{activityName}} 活动已上线，{{activityDesc}}",
+    "isTemplateMessage": false,
+    "variables": ["activityName", "activityDesc"],
+    "status": "active"
+  }
+  {
+    "_id": "template_activity_end",
+    "templateType": "activity",
+    "templateName": "活动结束通知",
+    "title": "活动结束",
+    "content": "{{activityName}} 活动已结束，感谢您的参与",
+    "isTemplateMessage": false,
+    "variables": ["activityName"],
+    "status": "active"
+  }
+  {
+    "_id": "template_system_maintenance",
+    "templateType": "system",
+    "templateName": "系统维护通知",
+    "title": "系统维护",
+    "content": "系统将于 {{maintenanceTime}} 进行维护，预计持续 {{duration}} 小时",
+    "isTemplateMessage": false,
+    "variables": ["maintenanceTime", "duration"],
+    "status": "active"
+  }
+  {
+    "_id": "template_system_announcement",
+    "templateType": "system",
+    "templateName": "系统公告",
+    "title": "系统公告",
+    "content": "{{announcementContent}}",
+    "isTemplateMessage": false,
+    "variables": ["announcementContent"],
+    "status": "active"
+  }
+  {
+    "_id": "template_restock_notify",
+    "templateType": "restock",
+    "templateName": "商品补货通知",
+    "title": "商品补货",
+    "content": "您关注的商品 {{productName}} 已补货，快来购买吧！",
+    "isTemplateMessage": false,
+    "variables": ["productName"],
+    "status": "active"
+  }

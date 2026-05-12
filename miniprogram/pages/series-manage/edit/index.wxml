@@ -1,0 +1,52 @@
+<!-- pages/admin/series-manage/edit/index.wxml -->
+<view class="series-edit">
+  <!-- 编辑表单 -->
+  <form bindsubmit="saveSeries" class="product-form">
+    <!-- 系列图片 -->
+    <view class="form-item">
+      <text class="form-item__label">系列图片</text>
+      <view class="image-uploader">
+        <view class="image-uploader__preview" wx:if="{{series.image}}">
+          <image src="{{series.image}}" class="image-uploader__preview-image"></image>
+          <view class="image-uploader__preview-remove" bindtap="removeImage">×</view>
+        </view>
+        <view class="image-uploader__upload" wx:else bindtap="chooseImage">
+          <image src="../../../images/icons/upload.png" class="image-uploader__upload-icon"></image>
+          <text class="image-uploader__upload-text">上传图片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 系列名称 -->
+    <view class="form-item">
+      <text class="form-item__label">系列名称</text>
+      <input class="form-item__input" placeholder="请输入系列名称" value="{{series.name}}" bindinput="onNameChange"></input>
+    </view>
+
+    <!-- 系列副名称 -->
+    <view class="form-item">
+      <text class="form-item__label">系列副名称</text>
+      <input class="form-item__input" placeholder="请输入系列副名称" value="{{series.subtitle}}" bindinput="onSubtitleChange"></input>
+    </view>
+
+    <!-- 上架状态 -->
+    <view class="form-item">
+      <text class="form-item__label">上架状态</text>
+      <picker mode="selector" range="{{statusOptions}}" range-key="label" value="{{statusIndex}}" bindchange="onStatusChange">
+        <view class="form-item__picker">
+          <text>{{statusOptions[statusIndex].label}}</text>
+          <text class="picker-arrow">▼</text>
+        </view>
+      </picker>
+    </view>
+  </form>
+
+  <!-- 固定在底部的保存按钮 -->
+  <view class="fixed-submit">
+    <form bindsubmit="saveSeries">
+      <button type="primary" form-type="submit" class="submit-button" loading="{{submitting}}">
+        {{isEditing ? '保存修改' : '保存'}}
+      </button>
+    </form>
+  </view>
+</view>

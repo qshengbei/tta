@@ -1,0 +1,213 @@
+/* pages/admin/ship-order/index.wxss */
+.ship-order {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* 头部 */
+.ship-order__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 0;
+  background-color: transparent;
+  border-bottom: none;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.ship-order__header-left {
+  width: 60px;
+}
+
+.ship-order__header-back {
+  font-size: 16px;
+  color: #333;
+}
+
+.ship-order__header-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+.ship-order__header-right {
+  width: 60px;
+}
+
+/* 内容 */
+.ship-order__content {
+  margin-top: 0;
+  padding: 16px;
+}
+
+/* 订单信息 */
+.ship-order__order-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  padding: 12px;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.ship-order__order-label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 8px;
+  min-width: 80px;
+}
+
+.ship-order__order-value {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+/* 物流信息 */
+.ship-order__logistics-section {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.ship-order__section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+/* 表单项 */
+.ship-order__form-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.ship-order__form-label {
+  font-size: 14px;
+  color: #666;
+  margin-right: 12px;
+  min-width: 80px;
+}
+
+.ship-order__form-select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.ship-order__form-select-value {
+  font-size: 14px;
+  color: #333;
+}
+
+.ship-order__form-select-arrow {
+  font-size: 12px;
+  color: #999;
+}
+
+.ship-order__form-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  background-color: #f9f9f9;
+}
+
+/* 发货按钮 */
+.ship-order__submit-btn {
+  margin-top: 32px;
+  width: 100%;
+  height: 44px;
+  background-color: #07c160;
+  color: #fff;
+  font-size: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ship-order__submit-btn:disabled {
+  background-color: #ccc;
+}
+
+/* 快递公司选择器 */
+.ship-order__picker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.ship-order__picker-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.ship-order__picker-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+}
+
+.ship-order__picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.ship-order__picker-cancel {
+  font-size: 14px;
+  color: #999;
+}
+
+.ship-order__picker-title {
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+}
+
+.ship-order__picker-confirm {
+  font-size: 14px;
+  color: #07c160;
+  font-weight: bold;
+}
+
+.ship-order__picker-view {
+  background-color: #f5f5f5;
+}
+
+.ship-order__picker-view view {
+  font-size: 16px;
+  color: #333;
+}

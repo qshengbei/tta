@@ -1,0 +1,65 @@
+<!-- pages/admin/cloth-manage/edit/index.wxml -->
+<view class="cloth-edit">
+  <!-- 编辑表单 -->
+  <form bindsubmit="saveCloth" class="product-form">
+    <!-- 布料图片 -->
+    <view class="form-item">
+      <text class="form-item__label">布料图片</text>
+      <view class="image-uploader">
+        <view class="image-uploader__preview" wx:if="{{cloth.image}}">
+          <image src="{{cloth.image}}" class="image-uploader__preview-image"></image>
+          <view class="image-uploader__preview-remove" bindtap="removeImage">×</view>
+        </view>
+        <view class="image-uploader__upload" wx:else bindtap="chooseImage">
+          <image src="../../../images/icons/upload.png" class="image-uploader__upload-icon"></image>
+          <text class="image-uploader__upload-text">上传图片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 布料名称 -->
+    <view class="form-item">
+      <text class="form-item__label">布料名称</text>
+      <input class="form-item__input" placeholder="请输入布料名称" value="{{cloth.name}}" bindinput="onNameChange"></input>
+    </view>
+
+    <!-- 布料价格 -->
+    <view class="form-item">
+      <text class="form-item__label">布料价格</text>
+      <input type="number" class="form-item__input" placeholder="请输入布料价格" value="{{cloth.price}}" bindinput="onPriceChange"></input>
+    </view>
+
+    <!-- 布料尺寸 -->
+    <view class="form-item">
+      <text class="form-item__label">布料尺寸</text>
+      <input class="form-item__input" placeholder="请输入布料尺寸" value="{{cloth.size}}" bindinput="onSizeChange"></input>
+    </view>
+
+    <!-- 布料风格 -->
+    <view class="form-item">
+      <text class="form-item__label">布料风格</text>
+      <input class="form-item__input" placeholder="请输入布料风格" value="{{cloth.style}}" bindinput="onStyleChange"></input>
+    </view>
+
+    <!-- 布料类型 -->
+    <view class="form-item">
+      <text class="form-item__label">布料类型</text>
+      <input class="form-item__input" placeholder="请输入布料类型" value="{{cloth.type}}" bindinput="onTypeChange"></input>
+    </view>
+
+    <!-- 布料颜色 -->
+    <view class="form-item">
+      <text class="form-item__label">布料颜色</text>
+      <input class="form-item__input" placeholder="请输入布料颜色" value="{{cloth.color}}" bindinput="onColorChange"></input>
+    </view>
+  </form>
+
+  <!-- 固定在底部的保存按钮 -->
+  <view class="fixed-submit">
+    <form bindsubmit="saveCloth">
+      <button type="primary" form-type="submit" class="submit-button" loading="{{submitting}}">
+        {{isEditing ? '保存修改' : '保存'}}
+      </button>
+    </form>
+  </view>
+</view>

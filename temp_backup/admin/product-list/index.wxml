@@ -1,0 +1,67 @@
+<view class="products-list-page" style="padding-top: 166rpx;">
+  <!-- 顶部搜索和筛选组件 -->
+  <search-filter-panel pageType="products" searchKeyword="{{keyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10002;"/>
+
+  <!-- 排序选项 -->
+  <view class="sort-options" style="position: fixed; top: 94rpx; left: 0; right: 0; z-index: 998; background-color: #fff;">
+    <view class="sort-option {{sortType === 'default' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="default">
+      <text class="sort-text">综合</text>
+    </view>
+    <view class="sort-option {{sortType === 'new' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="new">
+      <text class="sort-text">新品</text>
+    </view>
+    <view class="sort-option {{sortType === 'price' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="price">
+      <text class="sort-text">价格</text>
+      <image wx:if="{{sortType !== 'price'}}" class="sort-icon" src="../../../images/icons/sort.png" mode="aspectFit"/>
+      <image wx:elif="{{priceSortOrder === 'asc'}}" class="sort-icon" src="../../../images/icons/sort-up.png" mode="aspectFit"/>
+      <image wx:else class="sort-icon" src="../../../images/icons/sort-down.png" mode="aspectFit"/>
+    </view>
+    <!-- 显示添加按钮 -->
+    <view class="add-button" bindtap="goToAddProduct">
+      <image class="add-icon" src="../../../images/icons/添加.png" mode="aspectFit"/>
+    </view>
+  </view>
+
+  <!-- 商品列表 -->
+  <view class="products-list">
+    <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-item">
+      <view class="product-content" bindtap="goToProductDetail" data-id="{{item._id}}">
+        <view class="product-image-container">
+          <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+          <view wx:if="{{item.stock === 0}}" class="product-sold-out">
+            <text class="product-sold-out-text">补货中</text>
+          </view>
+        </view>
+        <view class="product-info">
+          <text class="product-name">{{item.name}}</text>
+          <view class="price-and-tag">
+            <text class="product-price">¥{{item.price}}</text>
+            <!-- 显示新品图标 -->
+            <image wx:if="{{item.isNew}}" class="new-tag" src="../../../images/icons/new.png" mode="aspectFit"/>
+          </view>
+        </view>
+      </view>
+      <!-- 显示编辑和上下架按钮 -->
+      <view class="product-actions">
+        <view wx:if="{{item.status === 'on'}}" class="action-button-down" bindtap="下架商品" data-id="{{item._id}}">
+          <text class="action-button-text">下架</text>
+        </view>
+        <view wx:else class="action-button-down" bindtap="上架商品" data-id="{{item._id}}">
+          <text class="action-button-text">上架</text>
+        </view>
+        <view class="action-button-edit" bindtap="编辑商品" data-id="{{item._id}}">
+          <text class="action-button-text">编辑</text>
+        </view>
+      </view>
+    </view>
+    <!-- 没有更多商品提示 -->
+    <view wx:if="{{products.length > 0}}" class="no-more">
+      <text class="no-more-text">没有更多啦</text>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:if="{{products.length === 0}}" class="empty-state">
+    <text class="empty-text">暂无商品</text>
+  </view>
+</view>

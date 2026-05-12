@@ -1,0 +1,61 @@
+<view class="message-container" bindtap="onPageTap">
+  <!-- 顶部操作栏 -->
+  <view class="message-header">
+    <view class="header-left" bindtap="onBack">
+    </view>
+    <text class="mark-all-read" bindtap="markAllAsRead">全部已读</text>
+  </view>
+  
+  <!-- 通知列表 -->
+  <view class="section-container">
+    <scroll-view 
+      class="notification-list"
+      scroll-y
+      enable-back-to-top="true"
+      enhanced="true"
+      bounces="true"
+      scroll-with-animation="true"
+    >
+      <view wx:for="{{notifications}}" wx:key="_id" class="swipe-row notification-swipe-row {{openNotificationActionId === item._id ? 'swipe-row-open' : ''}}">
+        <view class="swipe-actions swipe-actions-double">
+          <view
+            class="swipe-action swipe-action-unread"
+            data-id="{{item._id}}"
+            catchtap="{{item.status === 'unread' ? 'onNotificationMarkRead' : 'onNotificationMarkUnread'}}"
+          >{{item.status === 'unread' ? '已读' : '未读'}}</view>
+          <view
+            class="swipe-action swipe-action-delete"
+            data-id="{{item._id}}"
+            catchtap="onNotificationDelete"
+          >删除</view>
+        </view>
+        <view 
+          class="notification-item swipe-card {{openNotificationActionId === item._id ? 'swipe-card-open-double' : ''}}"
+          data-id="{{item._id}}"
+          bindtap="onNotificationTap"
+          bindtouchstart="onNotificationTouchStart"
+          bindtouchend="onNotificationTouchEnd"
+        >
+          <view wx:if="{{item.status === 'unread'}}" class="unread-badge"></view>
+          
+          <view class="notification-content">
+            <view class="notification-info">
+              <text class="notification-title">{{item.title}}</text>
+              <text class="notification-time">{{item.formattedTime}}</text>
+            </view>
+            <text class="notification-text">{{item.content}}</text>
+            <view wx:if="{{item.isAdmin}}" class="notification-role-tag">管理员通知</view>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{notifications.length === 0}}" class="empty-notification">
+        <text class="empty-text">暂无{{type}}通知</text>
+      </view>
+    </scroll-view>
+  </view>
+  
+  <!-- 底部提示 -->
+  <view class="message-footer">
+    <text class="footer-text">以上是全部{{type}}通知</text>
+  </view>
+</view>

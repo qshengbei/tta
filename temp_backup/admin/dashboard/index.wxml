@@ -1,0 +1,113 @@
+<wxs module="orderStatus" src="../../../utils/orderStatus.wxs"></wxs>
+<view class="admin-dashboard">
+  <!-- 页面头部 -->
+  <view class="admin-header">
+    <text class="admin-header__title">后台管理</text>
+  </view>
+
+  <!-- 仪表盘内容 -->
+  <view class="dashboard-content">
+    <!-- 统计卡片 -->
+    <view class="stats-section">
+      <view class="stats-card">
+        <view class="stats-card__content">
+          <text class="stats-card__value">{{orderCount}}</text>
+          <text class="stats-card__label">总订单数</text>
+        </view>
+        <view class="stats-card__icon">
+          <image src="../../../images/icons/订单管理.png" class="stats-card__icon-img"></image>
+        </view>
+      </view>
+      <view class="stats-card">
+        <view class="stats-card__content">
+          <text class="stats-card__value">{{productCount}}</text>
+          <text class="stats-card__label">商品总数</text>
+        </view>
+        <view class="stats-card__icon">
+          <image src="../../../images/icons/商品管理.png" class="stats-card__icon-img"></image>
+        </view>
+      </view>
+      <view class="stats-card">
+        <view class="stats-card__content">
+          <text class="stats-card__value">{{userCount}}</text>
+          <text class="stats-card__label">用户总数</text>
+        </view>
+        <view class="stats-card__icon">
+          <image src="../../../images/icons/用户管理.png" class="stats-card__icon-img"></image>
+        </view>
+      </view>
+      <view class="stats-card">
+        <view class="stats-card__content">
+          <text class="stats-card__value">¥{{totalSales}}</text>
+          <text class="stats-card__label">总销售额</text>
+        </view>
+        <view class="stats-card__icon">
+          <image src="../../../images/icons/销售额.png" class="stats-card__icon-img"></image>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最近订单 -->
+    <view class="recent-orders">
+      <view class="recent-orders__header">
+        <text class="recent-orders__title">最近订单</text>
+        <text class="recent-orders__more" bindtap="goToOrderManagement">查看全部</text>
+      </view>
+      <view class="recent-orders__list">
+        <view wx:for="{{recentOrders}}" wx:key="_id" class="recent-orders__item">
+          <view class="recent-orders__item-info">
+            <text class="recent-orders__item-id">订单号: {{item.orderNumber}}</text>
+            <text class="recent-orders__item-time">{{item.createdAt}}</text>
+          </view>
+          <view class="recent-orders__item-status">
+            <text class="recent-orders__item-status-text" style="color: {{orderStatus.getOrderStatusColor(item.status, item.statusText)}}">{{item.statusText}}</text>
+          </view>
+          <view class="recent-orders__item-amount">
+            <text class="recent-orders__item-amount-text">¥{{item.totalPrice}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快速操作 -->
+    <view class="quick-actions">
+      <view class="quick-actions__header">
+        <text class="quick-actions__title">快速操作</text>
+      </view>
+      <view class="quick-actions__grid">
+        <view class="quick-actions__item" bindtap="goToProductManagement">
+          <image src="../../../images/icons/商品管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">商品管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToOrderManagement">
+          <image src="../../../images/icons/订单管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">订单管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToClothManagement">
+          <image src="../../../images/icons/商品管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">布料管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToSeriesManagement">
+          <image src="../../../images/icons/商品管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">系列管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToProductTypeManagement">
+          <image src="../../../images/icons/商品管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">商品类型管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToUserManagement">
+          <image src="../../../images/icons/用户管理.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">用户管理</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToSystemSettings">
+          <image src="../../../images/icons/系统设置.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">系统设置</text>
+        </view>
+        <view class="quick-actions__item" bindtap="goToNotificationManagement">
+          <image src="../../../images/icons/系统设置.png" class="quick-actions__item-icon"></image>
+          <text class="quick-actions__item-text">通知管理</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

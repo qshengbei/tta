@@ -1,0 +1,15 @@
+{
+  "name": "payment",
+  "version": "1.0.0",
+  "description": "支付处理云函数",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["payment", "wechat"],
+  "author": "",
+  "license": "ISC"
+}

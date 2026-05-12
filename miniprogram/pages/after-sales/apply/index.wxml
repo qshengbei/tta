@@ -1,0 +1,238 @@
+<!--pages/after-sales/apply/index.wxml-->
+<view class="page-root">
+  <view class="header">
+    <view class="header__back" bindtap="goBack">
+      <text class="header__back-icon">←</text>
+    </view>
+    <text class="header__title">申请退款</text>
+    <view class="header__placeholder"></view>
+  </view>
+
+  <view class="content">
+    <view class="order-info">
+      <view class="order-info__order-no">订单号：{{displayOrderNo}}</view>
+      <view wx:if="{{currentProduct}}" class="order-info__product">
+        <image src="{{currentProduct.image || currentProduct.coverImage || currentProduct.productImage}}" class="order-info__product-image"></image>
+        <view class="order-info__product-info">
+          <text class="order-info__product-name">{{currentProduct.productName || currentProduct.name}}</text>
+          <text class="order-info__product-spec">{{currentProduct.skuName || currentProduct.spec || currentProduct.specs}}</text>
+          <text class="order-info__product-price">¥{{currentProduct.price || currentProduct.productPrice}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 如果是从选择页面跳过来的，直接显示已选择的信息 -->
+    <view wx:if="{{reason}}" class="reason-info">
+      <view class="reason-info__item">
+        <text class="reason-info__label">退款类型</text>
+        <text class="reason-info__value">{{refundType === 'refund_only' ? '退款' : '退货退款'}}</text>
+      </view>
+      <view wx:if="{{refundType === 'refund_only'}}" class="reason-info__item">
+        <text class="reason-info__label">货物状态</text>
+        <text class="reason-info__value">{{goodsStatus === 'not_received' ? '未收到货' : '已收到货'}}</text>
+      </view>
+      <view class="reason-info__item">
+        <text class="reason-info__label">退款原因</text>
+        <text class="reason-info__value">{{reason}}</text>
+      </view>
+    </view>
+
+    <!-- 如果没有参数，显示选择步骤 -->
+    <view wx:if="{{!reason}}" class="step-section">
+      <view class="step-section__header">
+        <text class="step-section__title">退款类型</text>
+        <text class="step-section__hint">选择售后类型</text>
+      </view>
+      <view class="step-section__content">
+        <view class="step-item" bindtap="showRefundTypeModal">
+          <text class="step-item__value">{{refundType === 'refund_only' ? '退款' : refundType === 'return_refund' ? '退货退款' : '请选择退款类型'}}</text>
+          <text class="step-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{refundType && !reason}}" class="step-section">
+      <view class="step-section__header">
+        <text class="step-section__title">货物状态</text>
+        <text class="step-section__hint">选择是否收到货</text>
+      </view>
+      <view class="step-section__content">
+        <view class="step-item" bindtap="showGoodsStatusModal">
+          <text class="step-item__value">{{goodsStatus === 'not_received' ? '未收到货' : goodsStatus === 'received' ? '已收到货' : '请选择货物状态'}}</text>
+          <text class="step-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{goodsStatus && !reason}}" class="step-section">
+      <view class="step-section__header">
+        <text class="step-section__title">退款原因</text>
+        <text class="step-section__hint">选择售后原因</text>
+      </view>
+      <view class="step-section__content">
+        <view class="step-item" bindtap="showReasonModal">
+          <text class="step-item__value">{{reason || '请选择退款原因'}}</text>
+          <text class="step-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 未收到货退款提示 -->
+    <view wx:if="{{goodsStatus === 'not_received' && orderProducts && orderProducts.length > 1}}" class="warning-section">
+      <view class="warning-section__icon">⚠️</view>
+      <view class="warning-section__content">
+        <text class="warning-section__title">温馨提示</text>
+        <text class="warning-section__text">由于您选择未收到货退款，若物流拦截成功，订单中所有商品将一起退款，其他商品将不再支持单独申请售后。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{reason}}" class="meta-info">
+      <view class="meta-info__row">
+        <text class="meta-info__label">运费归属</text>
+        <text class="meta-info__value">{{shippingResponsibility === 'buyer' ? '买家承担' : '商家承担'}}</text>
+      </view>
+      <view class="meta-info__row">
+        <text class="meta-info__label">剩余售后时限</text>
+        <text class="meta-info__value">剩余{{remainingDays}}天</text>
+      </view>
+    </view>
+
+    <!-- 需要上传凭证的情况 -->
+    <view wx:if="{{reason && needProof}}" class="upload-section">
+      <view class="upload-section__header">
+        <text class="upload-section__title">上传凭证</text>
+        <text wx:if="{{requireProof}}" class="upload-section__required">*</text>
+      </view>
+      
+      <view class="upload-section__images">
+        <text class="upload-section__subtitle">图片凭证<text wx:if="{{requireProof}}" class="upload-section__required">*</text></text>
+        <view class="upload-container">
+          <view wx:for="{{proofImages}}" wx:key="index" class="upload-item upload-item--image">
+            <image src="{{item}}" class="upload-item__image"></image>
+            <view class="upload-item__delete" bindtap="deleteImage" data-index="{{index}}">×</view>
+          </view>
+          <view wx:if="{{proofImages.length < 9}}" class="upload-item upload-item--add" bindtap="chooseImage">
+            <text class="upload-item__add-icon">+</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="upload-section__description">
+        <text class="upload-section__subtitle">详细说明<text wx:if="{{requireProof}}" class="upload-section__required">*</text></text>
+        <textarea class="upload-section__textarea" 
+                  value="{{description}}" 
+                  bindinput="onDescriptionInput"
+                  placeholder="请详细描述问题，便于商家快速处理" 
+                  placeholder-style="color: #999;"></textarea>
+      </view>
+    </view>
+
+    <!-- 所有情况都显示退款金额和联系信息 -->
+    <view wx:if="{{reason}}">
+      <view wx:if="{{refundType === 'refund_only' || refundType === 'return_refund'}}" class="amount-section">
+        <view class="amount-section__header">
+          <text class="amount-section__title">退款金额</text>
+          <text class="amount-section__hint">最多可退 ¥{{maxRefundAmount}}</text>
+        </view>
+        <view class="amount-section__content-taobao">
+          <view class="amount-input-taobao">
+            <text class="amount-input__symbol">¥</text>
+            <view class="amount-input__auto-width-wrap">
+              <input class="amount-input__field" 
+                     type="digit" 
+                     value="{{refundAmount}}" 
+                     bindinput="onRefundAmountInput"
+                     placeholder="0.00"
+                     style="width: {{amountInputWidth}}px;"/>
+              <text class="amount-input__mirror">{{refundAmount || '0.00'}}</text>
+            </view>
+            <button class="amount-input__edit-btn" bindtap="onEditAmount"></button>
+          </view>
+          <text class="amount-section__hint-taobao">最多可退 ¥{{maxRefundAmount}}</text>
+        </view>
+      </view>
+
+      <view class="contact-section">
+        <view class="contact-section__header">
+          <text class="contact-section__title">联系信息</text>
+        </view>
+        <view class="contact-section__content">
+          <view class="contact-item">
+            <text class="contact-item__label">联系人</text>
+            <input class="contact-item__input" 
+                   type="text" 
+                   value="{{contactName}}" 
+                   bindinput="onContactNameChange"
+                   placeholder="请输入联系人姓名"></input>
+          </view>
+          <view class="contact-item">
+            <text class="contact-item__label">联系电话</text>
+            <input class="contact-item__input" 
+                   type="number" 
+                   value="{{contactPhone}}" 
+                   bindinput="onContactPhoneChange"
+                   placeholder="请输入联系电话"></input>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <button class="footer__submit" bindtap="submitAfterSales">提交申请</button>
+  </view>
+
+  <!-- 退款类型选择弹窗 -->
+  <view wx:if="{{showRefundTypeModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeRefundTypeModal"></view>
+    <view class="modal__content">
+      <view class="modal__header">
+        <text class="modal__title">选择退款类型</text>
+        <view class="modal__close" bindtap="closeRefundTypeModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view wx:for="{{REFUND_TYPES}}" wx:key="value" class="modal__item" bindtap="selectRefundType" data-type="{{item.value}}">
+          <view class="modal__item-info">
+            <text class="modal__item-name">{{item.label}}</text>
+            <text class="modal__item-desc">{{item.desc}}</text>
+          </view>
+          <view class="modal__item-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 货物状态选择弹窗 -->
+  <view wx:if="{{showGoodsStatusModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeGoodsStatusModal"></view>
+    <view class="modal__content">
+      <view class="modal__header">
+        <text class="modal__title">选择货物状态</text>
+        <view class="modal__close" bindtap="closeGoodsStatusModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view wx:for="{{GOODS_STATUSES}}" wx:key="value" class="modal__item" bindtap="selectGoodsStatus" data-status="{{item.value}}">
+          <text class="modal__item-name">{{item.label}}</text>
+          <view class="modal__item-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退款原因选择弹窗 -->
+  <view wx:if="{{showReasonModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeReasonModal"></view>
+    <view class="modal__content modal__content--large">
+      <view class="modal__header">
+        <text class="modal__title">选择退款原因</text>
+        <view class="modal__close" bindtap="closeReasonModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view wx:for="{{currentReasons}}" wx:key="value" class="modal__item" bindtap="selectReason" data-reason="{{JSON.stringify(item)}}">
+          <text class="modal__item-name">{{item.label}}</text>
+          <view class="modal__item-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

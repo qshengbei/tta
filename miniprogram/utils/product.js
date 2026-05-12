@@ -77,9 +77,9 @@ export async function getProductsDetail(productIds) {
 }
 
 /**
- * 检查商品是否已售罄
+ * 检查商品是否补货中
  * @param {Object} product - 商品信息
- * @returns {boolean} 是否已售罄
+ * @returns {boolean} 是否补货中
  */
 export function isProductSoldOut(product) {
   return !product.stock || product.stock <= 0;

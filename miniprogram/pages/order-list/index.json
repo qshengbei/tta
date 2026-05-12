@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "我的订单"
+  "navigationBarTitleText": "我的订单",
+  "usingComponents": {
+    "order-search-filter-panel": "../../components/order-search-filter-panel"
+  }
 }

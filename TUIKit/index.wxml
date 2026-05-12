@@ -1,0 +1,12 @@
+<!--TUIKitWChat/Chat/index.wxml-->
+<TUIConversation
+  id="TUIConversation"
+  bind:createConversation="createConversation"></TUIConversation>
+<TUIChat
+  id="TUIChat"
+  wx:if="{{isShowConversation}}"
+  currentConversationID="{{currentConversationID}}"
+  unreadCount="{{unreadCount}}"
+  hasCallKit="{{hasCallKit}}"
+  bind:showConversationList="showConversationList"
+  bind:handleCall="handleCall"></TUIChat>

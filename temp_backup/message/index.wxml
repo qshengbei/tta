@@ -1,0 +1,95 @@
+<view class="message-container" bindtap="onPageTap">
+  <!-- 顶部操作栏 -->
+  <view class="message-header">
+    <text wx:if="{{!isCustomerService}}" class="enter-service" bindtap="enterCustomerService">联系客服</text>
+    <text class="mark-all-read" bindtap="markAllAsRead">全部已读</text>
+  </view>
+  
+  <!-- 通知消息区域 -->
+  <view class="section-container">
+    <view class="message-list">
+      <view wx:for="{{notifications}}" wx:key="_id" class="swipe-row notification-swipe-row {{openNotificationActionKey === item.type ? 'swipe-row-open' : ''}}">
+        <view class="swipe-actions swipe-actions-single {{openNotificationActionKey === item.type ? 'swipe-actions-open' : ''}}">
+          <view
+            class="swipe-action swipe-action-read"
+            data-type="{{item.type}}"
+            data-unread-count="{{item.unreadCount}}"
+            catchtap="onNotificationCardMarkRead"
+          >已读</view>
+        </view>
+        <view 
+          class="message-item swipe-card {{openNotificationActionKey === item.type ? 'swipe-card-open' : ''}}"
+          data-id="{{item._id}}"
+          data-type="{{item.type}}"
+          data-total-count="{{item.totalCount}}"
+          data-action-key="{{item.type}}"
+          bindtap="onNotificationTap"
+          bindtouchstart="onNotificationTouchStart"
+          bindtouchend="onNotificationTouchEnd"
+        >
+          <view style="display: flex; align-items: flex-start; width: 100%; box-sizing: border-box;">
+            <view style="flex: 1; box-sizing: border-box; overflow: hidden;">
+              <view style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8rpx; width: 100%; box-sizing: border-box; overflow: hidden;">
+                <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{item.categoryTitle || item.type}}</text>
+                <text style="font-size: 18rpx; color: #9ca3af; white-space: nowrap;">{{item.formattedTime}}</text>
+              </view>
+              <view style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; overflow: hidden;">
+                <view style="flex: 1; box-sizing: border-box; overflow: hidden; padding-right: 24rpx;">
+                  <text style="font-size: 22rpx; color: #6b7280; line-height: 32rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{item.content}}</text>
+                </view>
+                <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: #ef4444; color: white; font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
+              </view>
+              <view style="display: flex; justify-content: space-between; align-items: center; margin-top: 8rpx;">
+                <view wx:if="{{item.isAdmin}}" style="display: inline-block; padding: 4rpx 12rpx; background-color: #f3f4f6; color: #6b7280; font-size: 18rpx; border-radius: 12rpx;">管理员通知</view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{notifications.length === 0}}" class="empty-message">
+        <text class="empty-text">暂无通知消息</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 分隔线 -->
+  <view wx:if="{{notifications.length > 0 && sessions.length > 0}}" class="divider"></view>
+  
+  <!-- 客服消息区域 -->
+  <view class="section-container {{isCustomerService ? 'section-container-cs' : ''}}">
+    <view class="session-list">
+      <view 
+        wx:for="{{sessions}}" 
+        wx:key="_id"
+        class="session-item"
+        data-session-id="{{item._id}}"
+        bindtap="onSessionTap"
+        style="padding: 24rpx; background-color: #ffffff; margin: 0 24rpx 16rpx; border-radius: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05); position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; width: calc(100% - 48rpx);"
+      >
+        <view style="display: flex; align-items: flex-start; width: 100%; box-sizing: border-box;">
+          <!-- 头像 -->
+          <view class="session-avatar" style="margin-right: 16rpx; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <image src="{{isCustomerService ? (item.userInfo && item.userInfo.avatarImage || '/images/icons/默认头像.png') : (item.customerServiceAvatar || '/images/icons/客服头像.png')}}" mode="aspectFill" style="width: 64rpx; height: 64rpx; border-radius: 50%;"></image>
+          </view>
+          
+          <!-- 消息内容 -->
+          <view style="flex: 1; box-sizing: border-box; overflow: hidden;">
+            <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; width: 100%; box-sizing: border-box; overflow: hidden;">
+              <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{isCustomerService ? (item.userInfo && item.userInfo.nickName || '用户') : ('客服 - ' + item.customerServiceName)}}</text>
+              <text style="font-size: 18rpx; color: #9ca3af; white-space: nowrap;">{{item.lastMessageTime}}</text>
+            </view>
+            <view style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; overflow: hidden;">
+              <view style="flex: 1; box-sizing: border-box; overflow: hidden; padding-right: 24rpx;">
+                <text style="font-size: 22rpx; color: #6b7280; line-height: 32rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{!item.lastMessage ? '[暂无消息]' : ((item.lastMessage.status === 'revoked' || item.lastMessage.type === 'revoked') ? ((item.lastMessage.openid && openid && item.lastMessage.openid === openid) ? '您撤回了一条消息' : '对方撤回了一条消息') : (item.lastMessage.type === 'image' ? '[图片]' : (item.lastMessage.type === 'video' ? '[视频]' : (item.lastMessage.type === 'product_card' ? '[商品卡片]' : (item.lastMessage.type === 'order_card' ? '[订单卡片]' : (item.lastMessage.type === 'location' ? '[位置]' : (item.lastMessage.content ? item.lastMessage.content : '[暂无消息]')))))))}}</text>
+              </view>
+              <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: #ef4444; color: white; font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view wx:if="{{sessions.length === 0 && isCustomerService}}" class="empty-session {{isCustomerService ? 'empty-session-cs' : ''}}">
+        <text class="empty-text">暂无用户消息</text>
+      </view>
+    </view>
+  </view>
+</view>

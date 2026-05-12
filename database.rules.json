@@ -1,0 +1,22 @@
+{
+  "notifications": {
+    "read": "auth.openid == doc.openid",
+    "write": "auth.openid == doc.openid"
+  },
+  "sessions": {
+    "read": "auth != null",
+    "write": "auth != null"
+  },
+  "messages": {
+    "read": "auth != null",
+    "write": "auth != null"
+  },
+  "customer_service_status": {
+    "read": "auth != null",
+    "write": "auth != null"
+  },
+  "orders": {
+    "read": "auth != null",
+    "write": "auth.openid == doc._openid"
+  }
+}

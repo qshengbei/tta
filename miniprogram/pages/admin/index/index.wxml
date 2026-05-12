@@ -1,0 +1,23 @@
+<view class="container">
+  <view class="header">
+    <text class="title">管理中心</text>
+  </view>
+  
+  <view class="menu">
+    <navigator url="/pages/admin/product-manage/index" class="menu-item">
+      <text>商品管理</text>
+    </navigator>
+    
+    <navigator url="/pages/admin/product-publish/index" class="menu-item">
+      <text>发布商品</text>
+    </navigator>
+    
+    <navigator url="/pages/admin/order-manage/index" class="menu-item">
+      <text>订单管理</text>
+    </navigator>
+    
+    <navigator url="/pages/admin/update-settings/index" class="menu-item">
+      <text>更新快递运费规则</text>
+    </navigator>
+  </view>
+</view>

@@ -1,9 +1,10 @@
+<wxs module="orderStatus" src="../../utils/orderStatus.wxs"></wxs>
 <view class="order-card" bindtap="onTap">
   <view class="order-card__header">
     <view class="order-card__no">
       订单号：{{order.orderNo}}
     </view>
-    <view class="order-card__status">
+    <view class="order-card__status" style="color: {{orderStatus.getOrderStatusColor(order.status, statusText)}}">
       {{statusText}}
     </view>
   </view>

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "商品管理",
+  "usingComponents": {
+    "search-filter-panel": "../../components/search-filter-panel"
+  }
+}

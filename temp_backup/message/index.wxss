@@ -1,0 +1,389 @@
+.message-container {
+  min-height: 100vh;
+  background-color: #f8f8f8;
+}
+
+/* 顶部操作栏 */
+.message-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 20rpx 32rpx;
+  background-color: #f8f8f8;
+  gap: 40rpx;
+}
+
+.message-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.mark-all-read {
+  font-size: 24rpx;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.mark-all-read:active {
+  color: #374151;
+}
+
+.enter-service {
+  font-size: 24rpx;
+  color: #6b7280;
+  transition: color 0.2s ease;
+}
+
+.enter-service:active {
+  color: #374151;
+}
+
+/* 区域容器 */
+.section-container {
+  margin-top: 0rpx;
+  background-color: #f8f8f8;
+}
+
+/* 客服身份的区域容器 */
+.section-container-cs {
+  margin-top: 0;
+  background-color: #f8f8f8;
+}
+
+/* 分隔线 */
+.divider {
+  height: 30rpx;
+  background-color: #f8f8f8;
+}
+
+/* 通知消息列表 */
+.message-list {
+  min-height: 100rpx;
+}
+
+.swipe-row {
+  position: relative;
+  margin: 0 24rpx 16rpx;
+  overflow: hidden;
+  border-radius: 16rpx;
+}
+
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  will-change: transform;
+  z-index: 1;
+}
+
+.swipe-row-open .swipe-actions {
+  transform: translateX(0);
+}
+
+.swipe-actions-open {
+  transform: translateX(0);
+}
+
+.swipe-actions-single {
+  width: 132rpx;
+}
+
+.swipe-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 132rpx;
+  height: 100%;
+  color: #ffffff;
+  font-size: 24rpx;
+}
+
+.swipe-action-read {
+  background-color: #2563eb;
+}
+
+.swipe-card {
+  margin: 0;
+  width: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.swipe-card-open {
+  transform: translateX(-132rpx);
+}
+
+.message-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 24rpx 32rpx;
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.message-item:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
+.unread-badge {
+  width: 10rpx;
+  height: 10rpx;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  margin-top: 12rpx;
+}
+
+.message-item {
+  padding: 24rpx 32rpx;
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+}
+
+.message-item-content {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.message-content {
+  flex: 1;
+  box-sizing: border-box;
+  margin-right: 32rpx;
+}
+
+.message-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.message-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1f2937;
+  flex: 1;
+  margin-right: 16rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.message-time {
+  font-size: 18rpx;
+  color: #9ca3af;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.message-text {
+  font-size: 22rpx;
+  color: #6b7280;
+  line-height: 32rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+  margin-right: 32rpx;
+}
+
+/* 管理员通知标签 */
+.message-role-tag {
+  display: inline-block;
+  padding: 4rpx 12rpx;
+  background-color: #f3f4f6;
+  color: #6b7280;
+  font-size: 18rpx;
+  border-radius: 12rpx;
+  margin-top: 8rpx;
+}
+
+.message-arrow {
+  width: 20rpx;
+  height: 20rpx;
+  margin-top: 12rpx;
+}
+
+.arrow-icon {
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+}
+
+/* 客服会话列表 */
+.session-list {
+  min-height: 100rpx;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 32rpx;
+  background-color: #ffffff;
+  margin: 0 24rpx 16rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.session-item:active {
+  transform: translateY(2rpx);
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
+.session-avatar {
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 20rpx;
+  background-color: #f3f4f6;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
+.avatar-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.session-content {
+  flex: 1;
+  margin-right: 16rpx;
+  padding-right: 16rpx;
+}
+
+.session-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.session-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.session-time {
+  font-size: 18rpx;
+  color: #9ca3af;
+}
+
+.session-last-message {
+  font-size: 22rpx;
+  color: #6b7280;
+  line-height: 32rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.unread-count {
+  min-width: 36rpx;
+  height: 36rpx;
+  background-color: #ef4444;
+  border-radius: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12rpx;
+  box-shadow: 0 2rpx 4rpx rgba(239, 68, 68, 0.2);
+}
+
+.unread-text {
+  font-size: 18rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* 空状态 */
+.empty-message,
+.empty-session {
+  padding: 120rpx 0;
+  text-align: center;
+  background-color: #f8f8f8;
+}
+
+.empty-session {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-icon {
+  width: 140rpx;
+  height: 140rpx;
+  margin-bottom: 40rpx;
+  opacity: 0.4;
+}
+
+.empty-text {
+  font-size: 24rpx;
+  color: #9ca3af;
+  margin-bottom: 48rpx;
+}
+
+/* 客服身份的空状态 */
+.empty-session-cs {
+  background-color: #f8f8f8;
+}
+
+.enter-service-btn {
+  width: 200rpx;
+  height: 64rpx;
+  background-color: #ffffff;
+  color: #6b7280;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 32rpx;
+  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.enter-service-btn:active {
+  background-color: #f3f4f6;
+  transform: translateY(2rpx);
+  box-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 底部提示 */
+.message-footer {
+  padding: 48rpx 0;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 18rpx;
+  color: #9ca3af;
+}

@@ -1,2 +1,192 @@
 <!--pages/my/index.wxml-->
-<text>pages/my/index.wxml</text>
+<view class="my-page">
+  <!-- 顶部个人信息区 -->
+  <view class="personal-info">
+    <view class="personal-info-content" catchtap="getUserInfo">
+      <image class="avatar" src="{{userInfo.avatarUrl || '../../images/icons/默认头像.png'}}"></image>
+      <view class="user-info">
+        <text class="nickname">{{userInfo.nickName || '点击显示微信头像'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 我的订单 -->
+  <view class="order-section">
+    <view class="order-header">
+      <text class="order-title">我的订单</text>
+      <text class="view-all" bindtap="viewAllOrders">查看全部</text>
+    </view>
+    <view class="order-status">
+      <view class="order-status-item" bindtap="goToOrderList" data-status="pending">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待支付.png"></image>
+          <view wx:if="{{orderCounts.pending}}" class="status-badge">{{orderCounts.pending}}</view>
+        </view>
+        <text class="status-text">待支付</text>
+      </view>
+      <view class="order-status-item" bindtap="goToOrderList" data-status="paid">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待发货.png"></image>
+          <view wx:if="{{orderCounts.paid}}" class="status-badge">{{orderCounts.paid}}</view>
+        </view>
+        <text class="status-text">待发货</text>
+      </view>
+      <view class="order-status-item" bindtap="goToOrderList" data-status="shipping">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待收货.png"></image>
+          <view wx:if="{{orderCounts.shipping + orderCounts.delivered > 0}}" class="status-badge">{{orderCounts.shipping + orderCounts.delivered}}</view>
+        </view>
+        <text class="status-text">待收货</text>
+      </view>
+      <view class="order-status-item" bindtap="goToOrderList" data-status="completed">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/已完成.png"></image>
+          <view wx:if="{{orderCounts.completed}}" class="status-badge">{{orderCounts.completed}}</view>
+        </view>
+        <text class="status-text">已完成</text>
+      </view>
+      <view class="order-status-item" bindtap="goToOrderList" data-status="refund">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/售后.png"></image>
+          <view wx:if="{{orderCounts.refund}}" class="status-badge">{{orderCounts.refund}}</view>
+        </view>
+        <text class="status-text">售后</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 上门自提 -->
+  <view wx:if="{{hasPickupOrders}}" class="delivery-section">
+    <view class="delivery-header">
+      <text class="delivery-title">上门自提</text>
+      <text class="view-all" bindtap="goToPickupOrders">查看全部</text>
+    </view>
+    <view class="delivery-status pickup-status">
+      <view class="delivery-status-item" bindtap="goToPickupOrders" data-status="pending">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待支付.png"></image>
+          <view wx:if="{{pickupCounts.pending}}" class="status-badge">{{pickupCounts.pending}}</view>
+        </view>
+        <text class="status-text">待支付</text>
+      </view>
+      <view class="delivery-status-item" bindtap="goToPickupOrders" data-status="paid">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待自提.png"></image>
+          <view wx:if="{{pickupCounts.paid}}" class="status-badge">{{pickupCounts.paid}}</view>
+        </view>
+        <text class="status-text">待自提</text>
+      </view>
+      <view class="delivery-status-item" bindtap="goToPickupOrders" data-status="completed">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/已完成.png"></image>
+          <view wx:if="{{pickupCounts.completed}}" class="status-badge">{{pickupCounts.completed}}</view>
+        </view>
+        <text class="status-text">已完成</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 同城配送 -->
+  <view wx:if="{{hasLocalOrders}}" class="delivery-section">
+    <view class="delivery-header">
+      <text class="delivery-title">同城配送</text>
+      <text class="view-all" bindtap="goToLocalOrders">查看全部</text>
+    </view>
+    <view class="delivery-status local-status">
+      <view class="delivery-status-item" bindtap="goToLocalOrders" data-status="pending">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待支付.png"></image>
+          <view wx:if="{{localCounts.pending}}" class="status-badge">{{localCounts.pending}}</view>
+        </view>
+        <text class="status-text">待支付</text>
+      </view>
+      <view class="delivery-status-item" bindtap="goToLocalOrders" data-status="paid">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/待配送.png"></image>
+          <view wx:if="{{localCounts.paid}}" class="status-badge">{{localCounts.paid}}</view>
+        </view>
+        <text class="status-text">待配送</text>
+      </view>
+      <view class="delivery-status-item" bindtap="goToLocalOrders" data-status="shipping">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/配送中.png"></image>
+          <view wx:if="{{localCounts.shipping}}" class="status-badge">{{localCounts.shipping}}</view>
+        </view>
+        <text class="status-text">配送中</text>
+      </view>
+      <view class="delivery-status-item" bindtap="goToLocalOrders" data-status="completed">
+        <view class="status-icon-container">
+          <image class="status-icon" src="../../images/icons/已完成.png"></image>
+          <view wx:if="{{localCounts.completed}}" class="status-badge">{{localCounts.completed}}</view>
+        </view>
+        <text class="status-text">已完成</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 常用功能列表 -->
+  <view class="function-section">
+    <view class="function-item" bindtap="chooseAddress">
+      <image class="function-icon" src="../../images/icons/地址管理.png"></image>
+      <text class="function-text">收货地址</text>
+    </view>
+    <button class="function-item customer-service-btn" open-type="contact" bindcontact="handleContact" hidden="true">
+      <image class="function-icon" src="../../images/icons/客服.png"></image>
+      <text class="function-text">客服消息</text>
+    </button>
+    <view class="function-item" bindtap="showWechatQRCode">
+      <image class="function-icon" src="../../images/icons/联系方式.png"></image>
+      <text class="function-text">添加微信</text>
+    </view>
+  </view>
+
+  <!-- 管理员后台管理区域 -->
+  <view wx:if="{{showAdminSection}}" class="admin-section">
+    <view class="admin-section__title">后台管理</view>
+    <view class="admin-section__items">
+      <view class="admin-section__item" bindtap="goToAdminDashboard">
+        <image class="admin-section__item-icon" src="../../images/icons/仪表盘.png"></image>
+        <text class="admin-section__item-text">仪表盘</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToOrderManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/订单管理.png"></image>
+        <text class="admin-section__item-text">订单管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToProductManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/商品管理.png"></image>
+        <text class="admin-section__item-text">商品管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToProductTypeManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/商品管理.png"></image>
+        <text class="admin-section__item-text">商品类型管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToClothManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/商品管理.png"></image>
+        <text class="admin-section__item-text">布料管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToSeriesManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/商品管理.png"></image>
+        <text class="admin-section__item-text">系列管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToUserManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/用户管理.png"></image>
+        <text class="admin-section__item-text">用户管理</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToSystemSettings">
+        <image class="admin-section__item-icon" src="../../images/icons/系统设置.png"></image>
+        <text class="admin-section__item-text">系统设置</text>
+      </view>
+      <view class="admin-section__item" bindtap="goToNotificationManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/系统设置.png"></image>
+        <text class="admin-section__item-text">通知管理</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 微信二维码弹窗 -->
+  <view wx:if="{{showWechatQRCodeModal}}" class="modal-overlay" bindtap="hideWechatQRCode">
+    <view class="modal-content" catchtap="stopPropagation">
+      <image class="wechat-qr-code" src="{{wechatQRCodeUrl}}" mode="aspectFit" show-menu-by-longpress="true"></image>
+    </view>
+  </view>
+</view>

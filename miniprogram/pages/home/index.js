@@ -18,6 +18,10 @@ Page({
     errorMessage: ''
   },
 
+  // 双击检测相关
+  lastTapTime: 0,
+  lastTapIndex: -1,
+
   /**
    * 生命周期函数--监听页面加载
    */
@@ -41,6 +45,57 @@ Page({
 
   onUnload() {
     this.stopNewCarousel();
+  },
+
+  /**
+   * 监听tabBar点击事件
+   */
+  onTabItemTap(item) {
+    const currentTime = Date.now();
+    const tapIndex = item.index;
+    
+    // 判断是否为双击（300ms内点击同一tab）
+    if (tapIndex === this.lastTapIndex && currentTime - this.lastTapTime < 300) {
+      // 双击触发刷新
+      console.log('双击首页tab，刷新页面');
+      this.refreshPage();
+    }
+    
+    this.lastTapTime = currentTime;
+    this.lastTapIndex = tapIndex;
+  },
+
+  /**
+   * 刷新页面数据
+   */
+  refreshPage() {
+    // 清除缓存，强制重新加载
+    wx.removeStorageSync('homeData');
+    
+    // 重置轮播
+    this.stopNewCarousel();
+    
+    // 重新加载数据
+    this.setData({
+      loading: true,
+      error: false,
+      errorMessage: ''
+    });
+    
+    // 滚动到顶部
+    wx.pageScrollTo({
+      scrollTop: 0,
+      duration: 300
+    });
+    
+    // 重新加载数据
+    this.loadProducts(() => {
+      wx.showToast({
+        title: '刷新成功',
+        icon: 'success',
+        duration: 1000
+      });
+    });
   },
 
   /**
@@ -86,8 +141,8 @@ Page({
 
     // 并行加载数据
     Promise.all([
-      // 加载系列数据，按创建时间倒序排序
-      categoryCollection.orderBy('createTime', 'desc').get(),
+      // 加载系列数据，筛选status为on的记录，按创建时间倒序排序
+      categoryCollection.where({ status: 'on' }).orderBy('createTime', 'desc').get(),
       // 加载商品数据
       productsCollection.get(),
       // 加载轮播图数据，筛选isBanner为true的记录
@@ -180,7 +235,8 @@ Page({
     const bannerCollection = getCollection('banner');
 
     Promise.all([
-      categoryCollection.orderBy('createTime', 'desc').get(),
+      // 加载系列数据，筛选status为on的记录，按创建时间倒序排序
+      categoryCollection.where({ status: 'on' }).orderBy('createTime', 'desc').get(),
       productsCollection.get(),
       // 加载轮播图数据，筛选isBanner为true的记录
       bannerCollection.where({ isBanner: true }).get()

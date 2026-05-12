@@ -1,1 +1,737 @@
 /* pages/admin/update-settings/index.wxss */
+.settings-page {
+  background-color: #f5f5f5;
+  min-height: 100vh;
+}
+
+/* 页面头部 */
+.admin-header {
+  background-color: #1989fa;
+  color: white;
+  padding: 45rpx 30rpx 30rpx;
+  text-align: center;
+}
+
+.admin-header__title {
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+/* 设置内容 */
+.settings-content {
+  padding: 30rpx;
+}
+
+.setting-item {
+  background-color: white;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.setting-label {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.setting-input-group {
+  display: flex;
+  align-items: center;
+}
+
+.setting-input {
+  flex: 1;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  padding: 15rpx 20rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+/* 购买须知textarea样式 */
+.setting-textarea {
+  width: 100%;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  padding: 15rpx 20rpx;
+  font-size: 26rpx;
+  color: #333;
+  min-height: 200rpx;
+  box-sizing: border-box;
+}
+
+.setting-unit {
+  margin-left: 20rpx;
+  font-size: 26rpx;
+  color: #666;
+}
+
+.service-time-field {
+  margin-top: 16rpx;
+}
+
+.service-time-field:first-of-type {
+  margin-top: 0;
+}
+
+.service-time-field__label {
+  display: block;
+  margin-bottom: 10rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.setting-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  padding: 18rpx 20rpx;
+  background: #fff;
+}
+
+.setting-picker-text {
+  font-size: 26rpx;
+  color: #333;
+}
+
+.setting-picker-arrow {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.selector-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 999;
+}
+
+.selector-sheet {
+  width: 100%;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  overflow: hidden;
+}
+
+.selector-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.selector-sheet__title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 600;
+}
+
+.selector-sheet__close {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.selector-sheet__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx 30rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.selector-sheet__option--active .selector-sheet__option-text,
+.selector-sheet__check {
+  color: #07c160;
+}
+
+.selector-sheet__option-text {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.selector-sheet__check {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+/* 微信二维码 */
+.wechat-qrcode {
+  margin-bottom: 20rpx;
+}
+
+.wechat-qrcode__image {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 12rpx;
+  margin-bottom: 15rpx;
+}
+
+.wechat-qrcode__placeholder {
+  width: 200rpx;
+  height: 200rpx;
+  border: 2rpx dashed #e0e0e0;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 15rpx;
+}
+
+.wechat-qrcode__placeholder-text {
+  font-size: 22rpx;
+  color: #999;
+  text-align: center;
+  padding: 0 20rpx;
+}
+
+.wechat-qrcode__button {
+  background-color: #f0f7ff;
+  color: #1989fa;
+  border: 2rpx solid #1989fa;
+  border-radius: 20rpx;
+  padding: 10rpx 20rpx;
+  font-size: 24rpx;
+  min-width: 120rpx;
+}
+
+/* 管理员OpenID列表 */
+.admin-openid-list {
+  margin-bottom: 20rpx;
+}
+
+.admin-openid-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 15rpx;
+  background-color: #f9f9f9;
+  border-radius: 8rpx;
+  margin-bottom: 10rpx;
+  overflow: hidden;
+}
+
+.admin-openid-item:last-child {
+  margin-bottom: 0;
+}
+
+.admin-openid-text {
+  font-size: 22rpx;
+  color: #666;
+  flex: 1;
+  white-space: nowrap;
+  overflow: visible;
+  margin-right: 10rpx;
+}
+
+.admin-openid-remove {
+  background-color: #ff4d4f;
+  color: white;
+  border-radius: 6rpx;
+  padding: 8rpx 0;
+  font-size: 22rpx;
+  text-align: center;
+  flex-shrink: 0;
+  width: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 管理员OpenID输入组 */
+.admin-openid-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+  padding: 0 0 0 0;
+  width: 100%;
+}
+
+.admin-openid-input {
+  flex: 1;
+  margin-right: 10rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 8rpx 15rpx;
+  font-size: 22rpx;
+  background-color: white;
+}
+
+.admin-openid-add-btn {
+  background-color: #07c160;
+  color: white;
+  border-radius: 6rpx;
+  padding: 8rpx 0;
+  font-size: 22rpx;
+  text-align: center;
+  flex-shrink: 0;
+  width: 80rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 时间输入组 */
+.time-input-group {
+  display: flex;
+  align-items: center;
+  gap: 15rpx;
+}
+
+.time-separator {
+  font-size: 26rpx;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* 快递运费规则项 */
+.express-rule-item {
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 15rpx;
+}
+
+.express-rule-header {
+  margin-bottom: 15rpx;
+  padding-bottom: 10rpx;
+  border-bottom: 1rpx solid #e0e0e0;
+}
+
+.express-rule-region {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #333;
+  margin-right: 15rpx;
+}
+
+.express-rule-provinces {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.express-rule-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.express-rule-field {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.express-rule-field-label {
+  font-size: 24rpx;
+  color: #666;
+  width: 100rpx;
+  white-space: nowrap;
+}
+
+.express-rule-field-input {
+  flex: 1;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 10rpx 15rpx;
+  font-size: 24rpx;
+  color: #333;
+}
+
+.express-rule-field-unit {
+  font-size: 24rpx;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* 同城配送规则项 */
+.delivery-rule-item {
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 15rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+}
+
+.delivery-rule-field {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.delivery-rule-field-label {
+  font-size: 24rpx;
+  color: #666;
+  width: 120rpx;
+  white-space: nowrap;
+}
+
+.delivery-rule-field-input {
+  flex: 1;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 10rpx 15rpx;
+  font-size: 24rpx;
+  color: #333;
+}
+
+.delivery-rule-field-unit {
+  font-size: 24rpx;
+  color: #666;
+  white-space: nowrap;
+}
+
+/* 保存按钮 */
+.save-item-button {
+  background-color: #1989fa;
+  color: white;
+  border: none;
+  border-radius: 20rpx;
+  padding: 15rpx 30rpx;
+  font-size: 26rpx;
+  margin-top: 20rpx;
+  width: 100%;
+}
+
+/* 快递100配置样式 */
+.express100-fields {
+  margin: 20rpx 0;
+}
+
+.express100-field {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20rpx;
+  gap: 10rpx;
+}
+
+.express100-field-label {
+  font-size: 24rpx;
+  color: #666;
+  width: 120rpx;
+  white-space: nowrap;
+}
+
+.express100-field-input {
+  flex: 1;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 8rpx;
+  padding: 10rpx 15rpx;
+  font-size: 24rpx;
+  color: #333;
+}
+
+.express100-field:last-child {
+  margin-bottom: 0;
+}
+
+/* 快递100接口配置样式 */
+.express100-api-config {
+  margin-top: 30rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+.express100-api-config-label {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+  display: block;
+}
+
+.express100-api-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15rpx;
+  padding: 10rpx 0;
+}
+
+.express100-api-item:last-child {
+  margin-bottom: 0;
+}
+
+.express100-api-item-label {
+  font-size: 24rpx;
+  color: #666;
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.express100-api-item switch {
+  transform: scale(0.8);
+}
+
+/* 发货地址配置样式 */
+.delivery-address-list {
+  margin-bottom: 20rpx;
+}
+
+.delivery-address-item {
+  background-color: #f9f9f9;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 15rpx;
+  border-left: 4rpx solid #1989fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delivery-address-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.delivery-address-detail {
+  font-size: 24rpx;
+  color: #333;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.delivery-address-actions {
+  display: flex;
+  gap: 10rpx;
+  margin-left: 15rpx;
+  flex-shrink: 0;
+}
+
+.delivery-address-item.add {
+  border-left: none;
+  border: 2rpx dashed #e0e0e0;
+  text-align: center;
+  padding: 30rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-direction: column;
+}
+
+.delivery-address-item.add:hover {
+  background-color: #f0f7ff;
+  border-color: #1989fa;
+}
+
+.delivery-address-action {
+  font-size: 20rpx;
+  padding: 6rpx 12rpx;
+  border-radius: 6rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.delivery-address-action:first-child {
+  background-color: #f0f7ff;
+  color: #1989fa;
+  border: 1rpx solid #1989fa;
+}
+
+.delivery-address-action:first-child:hover {
+  background-color: #1989fa;
+  color: white;
+}
+
+.delivery-address-action:last-child {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+  border: 1rpx solid #ff4d4f;
+}
+
+.delivery-address-detail {
+  font-size: 22rpx;
+  color: #666;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.delivery-address-add {
+  display: inline-block;
+  padding: 15rpx 30rpx;
+  border-radius: 20rpx;
+  transition: all 0.3s ease;
+}
+
+.delivery-address-add:hover {
+  background-color: rgba(25, 137, 250, 0.1);
+}
+
+.delivery-address-add-text {
+  font-size: 24rpx;
+  color: #1989fa;
+  font-weight: bold;
+}
+
+/* 发货地址编辑表单样式 */
+.delivery-address-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.delivery-address-form-container {
+  width: 100%;
+  background-color: white;
+  border-radius: 24rpx 24rpx 0 0;
+  box-sizing: border-box;
+  animation: slideUp 0.3s ease-out;
+}
+
+.delivery-address-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.delivery-address-form-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.delivery-address-form-close {
+  font-size: 32rpx;
+  color: #999;
+  cursor: pointer;
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.delivery-address-form-close:active {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.delivery-address-form-body {
+  padding: 30rpx;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  width: 100%;
+  padding: 16rpx 18rpx;
+  font-size: 24rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.form-input:focus {
+  border-color: #1989fa;
+  outline: none;
+}
+
+.form-input-placeholder {
+  color: #ccc;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 16rpx 18rpx;
+  font-size: 24rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 12rpx;
+  box-sizing: border-box;
+  min-height: 120rpx;
+  resize: vertical;
+  transition: border-color 0.3s ease;
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  border-color: #1989fa;
+  outline: none;
+}
+
+.delivery-address-form-actions {
+  display: flex;
+  gap: 15rpx;
+  padding: 30rpx;
+  border-top: 1rpx solid #f0f0f0;
+  background-color: #fafafa;
+  border-radius: 0 0 24rpx 24rpx;
+  justify-content: flex-end;
+}
+
+.form-btn {
+  min-width: 140rpx;
+  height: 56rpx;
+  border-radius: 12rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.form-btn-cancel {
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+}
+
+.form-btn-cancel:active {
+  background-color: #e0e0e0;
+}
+
+.form-btn-confirm {
+  background-color: #1989fa;
+  color: white;
+  border: none;
+}
+
+.form-btn-confirm:active {
+  background-color: #1872de;
+}

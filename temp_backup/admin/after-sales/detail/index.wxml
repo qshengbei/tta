@@ -1,0 +1,199 @@
+<!--pages/admin/after-sales/detail/index.wxml-->
+<view class="page-root">
+  
+  <view class="content">
+    <!-- 售后状态 -->
+    <view class="status-section">
+      <view class="status-section__status {{afterSales.statusClass}}">
+        {{afterSales.statusText}}
+        <text wx:if="{{autoProcessCountdown && (afterSales.status === 'submitted' || afterSales.status === 'pending') && !afterSales.autoProcessed}}" class="status-section__countdown">（{{autoProcessCountdown}}）</text>
+      </view>
+      <view class="status-section__desc">{{afterSales.statusDesc}}</view>
+    </view>
+    
+    <!-- 订单信息 -->
+    <view class="section">
+      <view class="section__title">订单信息</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">订单号：</text>
+          <text class="info-item__value">{{afterSales.orderNo || afterSales.orderId}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">申请时间：</text>
+          <text class="info-item__value">{{afterSales.createdAtText}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">更新时间：</text>
+          <text class="info-item__value">{{afterSales.updatedAtText}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 售后信息 -->
+    <view class="section">
+      <view class="section__title">售后信息</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">售后类型：</text>
+          <text class="info-item__value">{{afterSales.typeText}}</text>
+        </view>
+        <view wx:if="{{afterSales.goodsStatus}}" class="info-item">
+          <text class="info-item__label">货物状态：</text>
+          <text class="info-item__value">{{afterSales.goodsStatus === 'received' ? '已收到货' : '未收到货'}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">商品金额：</text>
+          <text class="info-item__value">¥{{afterSales.totalItemAmount}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">退款金额：</text>
+          <text class="info-item__value info-item__value--price">¥{{afterSales.refundAmount}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">申请件数：</text>
+          <text class="info-item__value">{{afterSales.totalApplyQty}} 件 / {{afterSales.itemCount}} 个商品项</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">售后原因：</text>
+          <text class="info-item__value info-item__value--multiline">{{afterSales.reason}}</text>
+        </view>
+        <view wx:if="{{afterSales.shippingResponsibilityText}}" class="info-item">
+          <text class="info-item__label">运费归属：</text>
+          <text class="info-item__value">{{afterSales.shippingResponsibilityText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{afterSalesItems.length > 0}}">
+      <view class="section__title">售后商品</view>
+      <view class="section__content">
+        <view class="case-item" wx:for="{{afterSalesItems}}" wx:key="_id">
+          <image wx:if="{{item.image}}" src="{{item.image}}" class="case-item__image"></image>
+          <view class="case-item__content">
+            <text class="case-item__name">{{item.name}}</text>
+            <text class="case-item__meta">{{item.skuName}}</text>
+            <view class="case-item__row">
+              <text class="case-item__tag">{{item.typeText}}</text>
+              <text class="case-item__qty">x{{item.applyQty}}</text>
+            </view>
+            <view class="case-item__row">
+              <text class="case-item__unit-price">¥{{item.unitPrice}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 描述与凭证 -->
+    <view class="section" wx:if="{{afterSales.description || (afterSales.proofImages && afterSales.proofImages.length > 0) || (afterSales.proofVideos && afterSales.proofVideos.length > 0)}}">
+      <view class="section__title">描述与凭证</view>
+      <view class="section__content">
+        <!-- 图片/视频凭证（合并显示，按上传顺序） -->
+        <view wx:if="{{(afterSales.proofImages && afterSales.proofImages.length > 0) || (afterSales.proofVideos && afterSales.proofVideos.length > 0)}}" class="proof-media">
+          <text class="proof-media__label">图片/视频凭证：</text>
+          <view class="media-grid">
+            <block wx:for="{{combinedMediaList}}" wx:key="index">
+              <!-- 图片 -->
+              <view wx:if="{{item.type === 'image'}}" class="media-grid__item media-grid__item--image">
+                <image src="{{item.path}}" class="media-grid__item-image" bindtap="previewImageFromCombined" data-index="{{index}}"></image>
+              </view>
+              <!-- 视频 -->
+              <view wx:else class="media-grid__item media-grid__item--video">
+                <image wx:if="{{item.thumb}}" src="{{item.thumb}}" class="media-grid__item-thumb"></image>
+                <view wx:else class="media-grid__item-default-thumb">
+                  <text class="media-grid__item-default-icon">🎬</text>
+                </view>
+                <view class="media-grid__item-play" bindtap="playVideoFromCombined" data-index="{{index}}">
+                  <text class="media-grid__item-play-icon">▶</text>
+                </view>
+              </view>
+            </block>
+          </view>
+        </view>
+        <!-- 详细说明 -->
+        <view wx:if="{{afterSales.description}}" class="description-item">
+          <text class="description-item__label">详细说明：</text>
+          <text class="description-item__content">{{afterSales.description}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 联系信息 -->
+    <view class="section">
+      <view class="section__title">联系信息</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">联系人：</text>
+          <text class="info-item__value">{{afterSales.contactName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">联系电话：</text>
+          <text class="info-item__value">{{afterSales.contactPhone}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 处理信息 -->
+    <view class="section" wx:if="{{afterSales.processInfo}}">
+      <view class="section__title">处理信息</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">处理意见：</text>
+          <text class="info-item__value info-item__value--multiline">{{afterSales.processInfo.opinion}}</text>
+        </view>
+        <view class="info-item" wx:if="{{afterSales.processInfo.processTimeText}}">
+          <text class="info-item__label">处理时间：</text>
+          <text class="info-item__value">{{afterSales.processInfo.processTimeText}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 底部按钮（管理员端） -->
+    <!-- 待处理/审核中：显示同意/拒绝/开始拦截 -->
+    <view class="footer" wx:if="{{afterSales.status === 'submitted' || afterSales.status === 'reviewing' || afterSales.status === 'pending'}}">
+      <button class="footer__btn footer__btn--reject" bindtap="handleReject">拒绝</button>
+      <button class="footer__btn footer__btn--secondary" bindtap="handleStartIntercepting">开始拦截</button>
+      <button class="footer__btn footer__btn--primary" bindtap="handleApprove">同意</button>
+    </view>
+    <!-- 拦截中：显示完成拦截按钮 -->
+    <view class="footer" wx:if="{{afterSales.status === 'intercepting'}}">
+      <button class="footer__btn footer__btn--primary" bindtap="showInterceptOptions">完成拦截</button>
+    </view>
+  </view>
+  
+  <!-- 拦截选项弹窗 -->
+  <view class="intercept-modal-mask" wx:if="{{showInterceptOptions}}" bindtap="hideInterceptOptions">
+    <view class="intercept-modal" catchtap="preventModalClose">
+      <view class="intercept-modal__header">
+        <text class="intercept-modal__title">物流拦截结果</text>
+        <text class="intercept-modal__close" bindtap="hideInterceptOptions">✕</text>
+      </view>
+      <view class="intercept-modal__body">
+        <text class="intercept-modal__desc">请根据拦截结果选择处理方式</text>
+        <view class="intercept-modal__buttons">
+          <button class="intercept-modal-btn intercept-modal-btn--success" bindtap="handleCompleteIntercepting" data-action="approve" data-reason="拦截物流成功，同意申请">
+            <text class="intercept-modal-btn__icon">✓</text>
+            <text class="intercept-modal-btn__text">拦截成功</text>
+            <text class="intercept-modal-btn__desc">同意申请</text>
+          </button>
+          <button class="intercept-modal-btn intercept-modal-btn--warning" bindtap="handleCompleteIntercepting" data-action="approve" data-reason="拦截物流失败，同意申请，请在快递送达后拒签或退回">
+            <text class="intercept-modal-btn__icon">⚠</text>
+            <text class="intercept-modal-btn__text">拦截失败</text>
+            <text class="intercept-modal-btn__desc">同意申请（请拒签）</text>
+          </button>
+          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="物流拦截失败，请在快递送达后拒签或退回">
+            <text class="intercept-modal-btn__icon">✗</text>
+            <text class="intercept-modal-btn__text">拦截失败</text>
+            <text class="intercept-modal-btn__desc">拒绝申请（请拒签）</text>
+          </button>
+          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="快递已送达，请拒签或退回">
+            <text class="intercept-modal-btn__icon">✗</text>
+            <text class="intercept-modal-btn__text">已送达</text>
+            <text class="intercept-modal-btn__desc">拒绝申请（请拒签）</text>
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

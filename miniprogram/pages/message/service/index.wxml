@@ -1,0 +1,333 @@
+<wxs module="orderStatus" src="../../../utils/orderStatus.wxs"></wxs>
+<view class="chat-container" bindtap="handleOutsideTap">
+  <!-- 消息列表 -->
+  <scroll-view 
+    id="message-list" 
+    class="message-list"
+    scroll-y="{{messageScrollEnabled}}"
+    enable-back-to-top="true"
+    enhanced="true"
+    bounces="false"
+    scroll-with-animation="false"
+    upper-threshold="320"
+    bindscrolltoupper="loadMoreMessages"
+    bindscroll="onScroll"
+    bindtouchstart="onMessageListTouchStart"
+    scroll-into-view="{{scrollIntoView}}"
+    bindtap="handleOutsideTap"
+    scroll-top="{{scrollTop}}"
+    style="opacity: {{messageListReady ? 1 : 0}};transition: opacity 80ms linear;overscroll-behavior: none;padding-bottom: calc({{listBottomSpaceRpx}}rpx + env(safe-area-inset-bottom));"
+  >
+    <view id="message-content">
+      <!-- 消息列表（微信风格：间隔>=5分钟才显示时间条） -->
+      <view wx:for="{{groupedMessages}}" wx:key="_id"
+        class="message-item-wrapper"
+      >
+        <!-- 时间条：仅间隔超过5分钟时显示 -->
+        <view wx:if="{{item.showTimeStrip}}" class="time-divider">
+          <text class="time-text">{{item.timeStripText}}</text>
+        </view>
+
+        <!-- 撤回提示：居中灰字，无气泡 -->
+        <view wx:if="{{item.isRevoked}}" class="revoked-center-row">
+          <text class="revoked-center-text">{{item.isSelfRevoked ? '您撤回了一条消息' : '对方撤回了一条消息'}}</text>
+          <text
+            wx:if="{{item.isSelfRevoked && item.type === 'text' && item.content}}"
+            class="revoked-reedit-btn"
+            bindtap="handleRevokedReedit"
+            data-message="{{item}}"
+          >重新编辑</text>
+        </view>
+
+        <!-- 消息气泡 -->
+        <view
+          wx:else
+          id="msg-{{item._id}}"
+          class="message-item {{(isCustomerService && item.role === 'customer_service') || (!isCustomerService && item.role === 'user') ? 'user-message' : 'cs-message'}}"
+        >
+          <view class="message-avatar">
+            <image 
+              src="{{item.role === 'customer_service' ? csInfo.avatarUrl || '/images/icons/客服.png' : userInfo.avatarUrl || '/images/icons/默认头像.png'}}" 
+              mode="aspectFit"
+            ></image>
+          </view>
+          <view id="msg-content-{{item._id}}" class="message-content {{(item.type === 'image' || item.type === 'video') ? 'message-content-media' : ''}} {{(item.type === 'product_card' || item.type === 'order_card') ? 'message-content-card' : ''}} {{item.type === 'image' ? 'message-content-image' : ''}} {{item.type === 'video' ? 'message-content-video' : ''}}" style="{{item.mediaBoxStyle}}" catchlongpress="handleMessageLongPress" data-message="{{item}}">
+            <block wx:if="{{item.type === 'product_card'}}">
+            <view class="message-card message-card--row" bindtap="handleCardTap" data-message="{{item}}">
+              <image class="message-card-thumb" src="{{item.cardData.coverImage}}" mode="aspectFill"></image>
+              <view class="message-card-body">
+                <text class="message-card-title">{{item.cardData.name}}</text>
+                <text wx:if="{{item.cardData.desc || item.cardData.description}}" class="message-card-desc">{{item.cardData.desc || item.cardData.description}}</text>
+                <text class="message-card-price">￥{{item.cardData.price}}</text>
+              </view>
+            </view>
+            </block>
+            <block wx:elif="{{item.type === 'order_card'}}">
+            <view class="message-card message-card--order" bindtap="handleCardTap" data-message="{{item}}">
+              <view class="message-card-order-header">
+                <image class="message-card-thumb" src="{{item.cardData.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
+                <view class="message-card-order-info">
+                  <view class="message-card-order-row">
+                    <text class="message-card-title">订单号：{{item.cardData.formattedOrderNumber || item.cardData.orderNumber || item.cardData.orderId}}</text>
+                  </view>
+                  <view class="message-card-order-row">
+                    <text class="message-card-desc">{{item.cardData.productName || item.cardData.name || item.cardData.goodsName || '商品'}}</text>
+                    <text class="message-card-order-quantity">x{{item.cardData.quantity || item.cardData.count || 1}}</text>
+                  </view>
+                  <view class="message-card-order-row">
+                    <text class="message-card-price">合计：￥{{item.cardData.totalAmount || item.cardData.amount || 0}}</text>
+                    <text class="message-card-order-status" style="color: {{orderStatus.getOrderStatusColor(item.cardData.status, item.cardData.statusText)}}">{{item.cardData.statusText || item.cardData.status || '未知状态'}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+            </block>
+            <block wx:elif="{{item.type === 'text' || !item.type}}">
+              <text class="message-text">{{item.content}}</text>
+            </block>
+            <block wx:elif="{{item.type === 'image' && item.content}}">
+              <image class="message-image" src="{{(item.mediaMeta && (item.mediaMeta.thumbnail || item.mediaMeta.thumb)) || item.content}}" mode="widthFix" show-menu-by-longpress="{{false}}" bindtap="handleImagePreview" catchlongpress="handleMessageLongPress" data-message="{{item}}" data-src="{{item.content}}" bindload="handleMediaLoad"></image>
+            </block>
+            <block wx:elif="{{item.type === 'video' && item.content}}">
+              <view class="message-video-card" bindtap="handleVideoPreview" catchlongpress="handleMessageLongPress" data-message="{{item}}" data-src="{{item.content}}">
+                <image
+                  wx:if="{{item.mediaMeta && item.mediaMeta.poster}}"
+                  class="message-video"
+                  src="{{item.mediaMeta.poster}}"
+                  mode="aspectFill"
+                  bindload="handleMediaLoad"
+                ></image>
+                <view wx:else class="message-video message-video-fallback"></view>
+                <view class="message-video-play-mask">
+                  <view class="message-video-play-icon"></view>
+                </view>
+              </view>
+            </block>
+            <block wx:elif="{{item.type === 'location' && item.content}}">
+              <view class="message-location">
+                <text wx:if="{{JSON.parse(item.content).name}}" class="location-name">{{JSON.parse(item.content).name}}</text>
+                <text wx:if="{{JSON.parse(item.content).address}}" class="location-address">{{JSON.parse(item.content).address}}</text>
+              </view>
+            </block>
+          </view>
+      </view>
+      </view>
+      
+      <!-- 空消息提示 -->
+      <view wx:if="{{messages.length === 0}}" class="empty-message">
+        <text class="empty-text">暂无消息</text>
+      </view>
+      <view id="bottom-anchor" style="height: 10rpx;"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 新消息提示条 -->
+  <view wx:if="{{newMessageCount > 0 && !isScrolledToBottom}}" class="new-message-tip" bindtap="onNewMessageTip" style="bottom: calc({{listBottomSpaceRpx}}rpx + env(safe-area-inset-bottom) + 10rpx);">
+    <text class="new-message-text">{{newMessageCount}} 条新消息</text>
+    <image class="new-message-arrow" src="/images/icons/chevron-down-white.svg" mode="aspectFit" />
+  </view>
+
+  <view wx:if="{{messageActionMenuVisible}}" class="message-action-mask" catchtap="closeMessageActionMenu" catchtouchmove="stopPreviewPropagation">
+    <view
+      class="message-action-popover"
+      style="left: {{messageActionMenuX}}px; top: {{messageActionMenuY}}px;"
+      catchtap="stopPreviewPropagation"
+      catchtouchmove="stopPreviewPropagation"
+    >
+      <view class="message-action-tail message-action-tail-{{messageActionMenuArrowDirection}}" style="left: {{messageActionMenuArrowX}}px;"></view>
+      <view wx:for="{{messageActionMenuActions}}" wx:key="*this" class="message-action-item" bindtap="handleMessageActionTap" data-action="{{item}}">
+        <text class="message-action-text">{{item === 'copy' ? '复制' : (item === 'save' ? '保存' : '撤回')}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 输入和表情区域容器 -->
+  <view class="input-emoji-container" catchtap="stopPreviewPropagation">
+    <!-- 输入区域 -->
+    <view class="input-area">
+      <view class="input-container">
+        <input 
+          class="input"
+          value="{{inputValue}}"
+          bindinput="onInputChange"
+          bindconfirm="onInputConfirm"
+          confirm-type="send"
+          placeholder="请输入消息..."
+          cursor-spacing="10"
+          focus="{{inputFocus}}"
+          bindfocus="onInputFocus"
+          bindblur="onInputBlur"
+          bindtap="onInputTap"
+        ></input>
+      </view>
+      <view class="action-buttons">
+        <button class="emoji-btn" bindtap="toggleEmojiPanel">
+          <image src="/images/icons/表情.png" mode="aspectFit"></image>
+        </button>
+        <button class="more-btn" bindtap="toggleMorePanel">
+          <image src="/images/icons/加号.png" mode="aspectFit"></image>
+        </button>
+      </view>
+    </view>
+    
+    <!-- 表情面板 -->
+    <view class="emoji-panel" wx:if="{{showEmojiPanel}}" catchtap="stopPreviewPropagation">
+      <view class="emoji-content">
+        <view class="emoji-section">
+          <view class="emoji-grid">
+            <block wx:for="{{allEmojis}}" wx:key="index">
+              <button class="emoji-grid-item" bindtap="selectEmoji" data-emoji="{{item}}">{{item}}</button>
+            </block>
+          </view>
+        </view>
+      </view>
+      <view class="emoji-footer">
+        <button class="emoji-action-btn emoji-action-btn--delete {{inputValue ? 'emoji-action-btn--active' : 'emoji-action-btn--disabled'}}" bindtap="deleteEmoji">⌫</button>
+        <button class="emoji-action-btn {{inputValue ? 'emoji-action-btn--active' : 'emoji-action-btn--disabled'}}" bindtap="sendMessage" disabled="{{!inputValue}}">发送</button>
+      </view>
+    </view>
+
+    <view class="more-panel" wx:if="{{showMorePanel}}" catchtap="stopPreviewPropagation">
+      <view class="more-list">
+        <view class="more-item" bindtap="openMoreAction" data-action="photo">
+          <image class="more-icon-img" src="/images/icons/照片.png" mode="aspectFit"></image>
+          <text class="more-text">照片/视频</text>
+        </view>
+        <view class="more-item" bindtap="openMoreAction" data-action="cart">
+          <image class="more-icon-img" src="/images/icons/购物车.png" mode="aspectFit"></image>
+          <text class="more-text">购物车</text>
+        </view>
+        <view class="more-item" bindtap="openMoreAction" data-action="order">
+          <image class="more-icon-img" src="/images/icons/订单.png" mode="aspectFit"></image>
+          <text class="more-text">{{isCustomerService ? '用户订单' : '我的订单'}}</text>
+        </view>
+      </view>
+    </view>
+    
+
+  </view>
+
+  <view wx:if="{{previewVisible}}" class="media-preview-mask" catchtap="closePreview" catchtouchmove="stopPreviewPropagation">
+    <swiper
+      class="media-preview-swiper"
+      current="{{previewMediaIndex}}"
+      bindchange="handlePreviewSwiperChange"
+      circular="{{false}}"
+      catchtap="stopPreviewPropagation"
+    >
+      <block wx:for="{{previewMediaList}}" wx:key="_id">
+        <swiper-item>
+          <view class="media-preview-slide" catchtap="stopPreviewPropagation">
+            <block wx:if="{{item.type === 'image'}}">
+              <image
+                class="media-preview-image"
+                src="{{item.src}}"
+                mode="aspectFit"
+                bindtap="closePreview"
+                catchlongpress="handlePreviewLongPress"
+                data-type="image"
+                data-src="{{item.src}}"
+              ></image>
+            </block>
+            <block wx:elif="{{item.type === 'video'}}">
+              <view class="media-preview-video-wrap" catchlongpress="handlePreviewLongPress" data-type="video" data-src="{{item.src}}">
+                <video
+                  class="media-preview-video"
+                  src="{{item.src}}"
+                  controls="{{true}}"
+                  show-fullscreen-btn="{{false}}"
+                  autoplay="{{previewMediaIndex === index}}"
+                  object-fit="contain"
+                ></video>
+              </view>
+            </block>
+          </view>
+        </swiper-item>
+      </block>
+    </swiper>
+    <view class="media-preview-counter">{{previewMediaIndex + 1}}/{{previewMediaList.length}}</view>
+    <view wx:if="{{previewType === 'video'}}" class="media-preview-close" bindtap="closePreview">×</view>
+  </view>
+
+  <view wx:if="{{showCardPicker}}" class="picker-mask" catchtap="closeCardPicker">
+    <view class="picker-panel" catchtap="stopPreviewPropagation">
+      <view class="picker-title">{{cardPickerTitle}}</view>
+      <block wx:if="{{cardPickerType === 'order_card'}}">
+        <scroll-view class="picker-delivery-tabs" scroll-x="true" enable-flex="true" show-scrollbar="false">
+          <view wx:for="{{cardPickerOrderDeliveryTabs}}" wx:key="key" class="picker-delivery-tab {{cardPickerOrderActiveDeliveryType === item.key ? 'picker-delivery-tab--active' : ''}}" bindtap="switchOrderPickerDeliveryTab" data-delivery-type="{{item.key}}">
+            <text class="picker-delivery-tab__label">{{item.label}}</text>
+            <text wx:if="{{item.count > 0}}" class="picker-delivery-tab__count">{{item.count}}</text>
+          </view>
+        </scroll-view>
+        <scroll-view class="picker-status-tabs" scroll-x="true" enable-flex="true" show-scrollbar="false">
+          <view wx:for="{{cardPickerOrderStatusTabs}}" wx:key="key" class="picker-status-tab {{cardPickerOrderActiveStatus === item.key ? 'picker-status-tab--active' : ''}}" bindtap="switchOrderPickerStatusTab" data-status="{{item.key}}">
+            <text class="picker-status-tab__label">{{item.label}}</text>
+          </view>
+        </scroll-view>
+      </block>
+      <scroll-view wx:if="{{cardPickerItems.length > 0}}" class="picker-list" scroll-y="true">
+        <block wx:if="{{cardPickerType === 'order_card'}}">
+          <view wx:for="{{cardPickerItems}}" wx:key="_id" class="picker-order-item" bindtap="sendCardFromPicker" data-index="{{index}}">
+            <view class="picker-order-item__header">
+              <text class="picker-order-item__shop">订单号：{{item.orderNumber || item.orderId}}</text>
+              <text class="picker-order-item__status" style="color: {{orderStatus.getOrderStatusColor(item.status, item.statusText)}}">{{item.statusText || '待支付'}}</text>
+            </view>
+
+            <view class="picker-order-item__content">
+              <view class="picker-order-item__product">
+                <image class="picker-order-item__image" src="{{item.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
+                <view class="picker-order-item__info">
+                  <text class="picker-order-item__name">{{item.productName || '商品名称'}}</text>
+                  <view class="picker-order-item__bottom">
+                    <text class="picker-order-item__price">¥{{item.productPrice || '0.00'}}</text>
+                    <text class="picker-order-item__quantity">x{{item.productQuantity || 1}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+
+            <view class="picker-order-item__footer">
+              <view class="picker-order-item__total">
+                <text class="picker-order-item__total-price">合计：¥{{item.totalAmount || '0.00'}}</text>
+              </view>
+            </view>
+          </view>
+        </block>
+        <block wx:else>
+          <view wx:for="{{cardPickerItems}}" wx:key="_id" class="picker-item" bindtap="sendCardFromPicker" data-index="{{index}}">
+            <image class="picker-item-image" src="{{item.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
+            <view class="picker-item-body">
+              <view class="picker-item-head">
+                <text class="picker-item-title">{{item.title}}</text>
+              </view>
+              <text class="picker-item-desc">{{item.desc}}</text>
+            </view>
+          </view>
+        </block>
+      </scroll-view>
+      <view wx:else class="picker-empty">
+        <text class="picker-empty-text">{{cardPickerType === 'product_card' ? '暂无商品' : '暂无该标签订单'}}</text>
+        <view class="picker-browse-btn" bindtap="goBrowseFromPicker">去逛逛</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{pendingEntryProductCardVisible && pendingEntryProductCard}}" class="entry-card-draft" catchtap="stopPreviewPropagation">
+    <view class="entry-card-draft__header">
+      <text class="entry-card-draft__title">发送商品给客服</text>
+      <text class="entry-card-draft__close" bindtap="closePendingEntryProductCard">关闭</text>
+    </view>
+    <view class="message-card message-card--row" bindtap="handlePendingEntryProductCardTap">
+      <image class="message-card-thumb" src="{{pendingEntryProductCard.coverImage || '/images/icons/暂无商品.png'}}" mode="aspectFill"></image>
+      <view class="message-card-body">
+        <text class="message-card-title">{{pendingEntryProductCard.name}}</text>
+        <text wx:if="{{pendingEntryProductCard.desc || pendingEntryProductCard.description}}" class="message-card-desc">{{pendingEntryProductCard.desc || pendingEntryProductCard.description}}</text>
+        <text class="message-card-price">￥{{pendingEntryProductCard.price}}</text>
+      </view>
+    </view>
+    <view class="entry-card-draft__actions">
+      <view class="entry-card-draft__btn entry-card-draft__btn--ghost" bindtap="closePendingEntryProductCard">不发送</view>
+      <view class="entry-card-draft__btn entry-card-draft__btn--primary" bindtap="sendPendingEntryProductCard">发送</view>
+    </view>
+  </view>
+</view>

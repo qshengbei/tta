@@ -82,7 +82,7 @@
     
     <!-- 空购物车状态 -->
     <view wx:if="{{cartItems.length === 0}}" class="cart__empty">
-      <image class="cart__empty-image" src="../../images/default-goods-image.png" mode="aspectFit"/>
+      <image class="cart__empty-image" src="../../images/icons/暂无商品.png" mode="aspectFit"/>
       <text class="cart__empty-text">购物车为空</text>
       <button class="cart__empty-btn" bindtap="goToHome">去逛逛</button>
     </view>

@@ -1,0 +1,116 @@
+<view class="category-page">
+  <!-- 标签切换 -->
+  <view class="tab-container">
+    <view class="tab {{activeTab === 'categories' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="categories">
+      <text class="tab-text">分类</text>
+    </view>
+    <view class="tab {{activeTab === 'series' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="series">
+      <text class="tab-text">系列</text>
+    </view>
+  </view>
+
+  <!-- 分类标签内容 -->
+  <view wx:if="{{activeTab === 'categories'}}" class="categories-content">
+    <view class="categories-container">
+      <!-- 左侧分类导航 -->
+      <view class="categories-nav">
+        <!-- 一级分类 -->
+        <view wx:for="{{level1Categories}}" wx:key="{{item._id}}" class="nav-item {{selectedCategory === item._id ? 'nav-item--active' : ''}}" bindtap="selectCategory" data-id="{{item._id}}">
+          <text class="nav-text">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 右侧内容区域 -->
+      <view class="categories-content-area">
+        <!-- 一级分类内容 -->
+        <view wx:if="{{selectedCategory}}" class="category-content">
+          <view class="level1-category" bindtap="goToCategoryProducts" data-id="{{selectedCategory}}">
+            <image class="category-image" src="{{selectedCategoryData.image}}" mode="aspectFill"/>
+            <view class="category-overlay">
+              <text class="category-text">探索全部</text>
+            </view>
+          </view>
+          <view class="level2-categories">
+            <view wx:for="{{level2Categories}}" wx:key="{{item._id}}" class="level2-category" bindtap="goToCategoryProducts" data-id="{{item._id}}">
+              <image class="category-image" src="{{item.image}}" mode="aspectFill"/>
+              <view class="category-overlay">
+                <text class="category-text">{{item.name}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 默认内容 -->
+        <view wx:else class="default-content">
+          <text class="default-text">请选择分类</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 系列标签内容 -->
+  <view wx:if="{{activeTab === 'series'}}" class="categories-content">
+    <view class="categories-container">
+      <!-- 左侧系列导航 -->
+      <view class="categories-nav">
+        <view wx:for="{{seriesList}}" wx:key="{{item._id}}" class="nav-item {{selectedSeries === item._id ? 'nav-item--active' : ''}}" bindtap="selectSeries" data-id="{{item._id}}">
+          <text class="nav-text">{{item.name}}</text>
+        </view>
+      </view>
+
+      <!-- 右侧内容区域 -->
+      <view class="categories-content-area">
+        <!-- 系列内容 -->
+        <view wx:if="{{selectedSeries}}" class="series-content">
+          <view class="series-header">
+            <text class="series-title">{{selectedSeriesData.name}}</text>
+            <text class="series-subtitle">{{selectedSeriesData.subtitle || ''}}</text>
+          </view>
+          <view class="series-image-container" bindtap="goToSeriesProducts" data-id="{{selectedSeries}}">
+            <image class="series-image" src="{{selectedSeriesData.image}}" mode="aspectFill"/>
+            <view class="category-overlay">
+              <text class="category-text">探索全部</text>
+            </view>
+          </view>
+          <view class="series-products">
+            <view wx:for="{{seriesProducts}}" wx:key="{{item._id}}" class="product-item">
+              <view class="product-content" bindtap="goToProductDetail" data-id="{{item._id}}">
+                <view class="product-image-container">
+                  <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+                  <view wx:if="{{item.stock === 0}}" class="product-sold-out">
+                    <text class="product-sold-out-text">补货中</text>
+                  </view>
+                </view>
+                <view class="product-info">
+                  <text class="product-name">{{item.name}}</text>
+                  <view class="price-and-tag">
+                    <text class="product-price">¥{{item.price}}</text>
+                    <image wx:if="{{item.isNew}}" class="new-tag" src="../../../images/icons/new.png" mode="aspectFit"/>
+                  </view>
+                </view>
+              </view>
+              <view class="product-actions">
+                <view wx:if="{{item.status === 'on'}}" class="action-button-down" bindtap="下架商品" data-id="{{item._id}}">
+                  <text class="action-button-text">下架</text>
+                </view>
+                <view wx:else class="action-button-down" bindtap="上架商品" data-id="{{item._id}}">
+                  <text class="action-button-text">上架</text>
+                </view>
+                <view class="action-button-edit" bindtap="编辑商品" data-id="{{item._id}}">
+                  <text class="action-button-text">编辑</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 默认内容 -->
+        <view wx:else class="default-content">
+          <text class="default-text">请选择系列</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+
+</view>

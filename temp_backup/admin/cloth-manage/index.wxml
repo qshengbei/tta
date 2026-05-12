@@ -1,0 +1,33 @@
+<!-- pages/admin/cloth-manage/index.wxml -->
+<view class="cloth-manage">
+  <!-- 布料列表 -->
+  <view class="cloth-list">
+    <view wx:for="{{cloths}}" wx:key="_id" class="cloth-item">
+      <image class="cloth-item__image" src="{{item.image || '../../../images/icons/default-cloth.png'}}" mode="aspectFill"></image>
+      <view class="cloth-item__info">
+        <text class="cloth-item__name">{{item.name}}</text>
+        <text class="cloth-item__style">风格: {{item.style}}</text>
+        <text class="cloth-item__type">类型: {{item.type}}</text>
+        <text class="cloth-item__color">颜色: {{item.color}}</text>
+      </view>
+      <view class="cloth-item__actions">
+        <button class="cloth-item__action-button edit-button" data-id="{{item._id}}" bindtap="editCloth">编辑</button>
+        <button class="cloth-item__action-button delete-button" data-id="{{item._id}}" bindtap="deleteCloth">删除</button>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view wx:if="{{cloths.length === 0 && !loading}}" class="empty-state">
+      <text class="empty-state__text">暂无布料</text>
+      <button class="empty-state__button" bindtap="addCloth">添加布料</button>
+    </view>
+    
+    <!-- 加载状态 -->
+    <view wx:if="{{loading}}" class="loading-state">
+      <text class="loading-state__text">加载中...</text>
+    </view>
+  </view>
+  
+  <!-- 底部固定添加按钮 -->
+  <button class="add-button fixed-bottom" bindtap="addCloth">添加布料</button>
+</view>

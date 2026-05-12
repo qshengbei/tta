@@ -1,0 +1,25 @@
+<view class="detail-container">
+  <!-- 顶部操作栏 -->
+  
+  
+  <!-- 消息内容 -->
+  <view wx:if="{{message}}" class="message-content">
+    <view class="content-header">
+      <text class="message-title">{{message.title}}</text>
+      <text class="message-time">{{message.formattedTime}}</text>
+    </view>
+    <view class="message-body">
+      <text class="message-text">{{message.content}}</text>
+    </view>
+    <view wx:if="{{message.relatedType}}" class="message-footer">
+      <button class="related-btn" bindtap="handleRelatedAction">
+        查看相关{{message.relatedType === 'order' ? '订单' : message.relatedType === 'product' ? '商品' : '活动'}}
+      </button>
+    </view>
+  </view>
+  
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="loading-container">
+    <text class="loading-text">加载中...</text>
+  </view>
+</view>

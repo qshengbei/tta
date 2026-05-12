@@ -1,0 +1,281 @@
+<!-- pages/admin/update-settings/index.wxml -->
+<view class="settings-page">
+  <!-- 设置内容 -->
+  <view class="settings-content">
+    <!-- 购买须知设置 -->
+    <view class="setting-item">
+      <text class="setting-label">购买须知</text>
+      <textarea class="setting-textarea" value="{{settings.buyTips}}" bindinput="inputBuyTips" placeholder="请输入购买须知内容" maxlength="2000" auto-height />
+      <button class="save-item-button" bindtap="saveBuyTips" loading="{{saving.buyTips}}">保存购买须知</button>
+    </view>
+
+    <!-- 倒计时设置 -->
+    <view class="setting-item">
+      <text class="setting-label">订单倒计时时间</text>
+      <view class="setting-input-group">
+        <input class="setting-input" type="number" value="{{settings.countDown}}" bindinput="inputCountdownTime" placeholder="请输入倒计时时间（分钟）" />
+        <text class="setting-unit">分钟</text>
+      </view>
+      <button class="save-item-button" bindtap="saveCountdownTime" loading="{{saving.countdownTime}}">保存倒计时时间</button>
+    </view>
+
+    <!-- 售后配置 -->
+    <view class="setting-item">
+      <text class="setting-label">售后配置</text>
+
+      <view class="service-time-field">
+        <text class="service-time-field__label">售后时效配置</text>
+        <view class="service-time-field">
+          <text class="service-time-field__label">自动确认收货时限</text>
+          <view class="setting-input-group">
+            <input class="setting-input" type="number" value="{{settings.autoConfirmReceiptDays}}" bindinput="inputAutoConfirmReceiptDays" placeholder="请输入自动确认收货天数" />
+            <text class="setting-unit">天</text>
+          </view>
+        </view>
+
+        <view class="service-time-field">
+          <text class="service-time-field__label">常规售后时限</text>
+          <view class="setting-input-group">
+            <input class="setting-input" type="number" value="{{settings.normalAfterSalesDays}}" bindinput="inputNormalAfterSalesDays" placeholder="请输入常规售后天数" />
+            <text class="setting-unit">天</text>
+          </view>
+        </view>
+
+        <view class="service-time-field">
+          <text class="service-time-field__label">质量售后时限</text>
+          <view class="setting-input-group">
+            <input class="setting-input" type="number" value="{{settings.qualityAfterSalesDays}}" bindinput="inputQualityAfterSalesDays" placeholder="请输入质量售后天数" />
+            <text class="setting-unit">天</text>
+          </view>
+        </view>
+      </view>
+
+      <button class="save-item-button" bindtap="saveServiceTimeConfig" loading="{{saving.serviceTimeConfig}}">保存售后配置</button>
+    </view>
+
+    <!-- 客服方法设置 -->
+    <view class="setting-item">
+      <text class="setting-label">客服方法</text>
+      <picker mode="selector" value="{{customerServiceMethodIndex}}" range="{{customerServiceMethodOptions}}" bindchange="inputCustomerServiceMethod">
+        <view class="setting-picker">
+          <text class="setting-picker-text">{{settings.customerServiceMethod === 'official' ? '官方客服' : '自定义客服'}}</text>
+          <text class="setting-picker-arrow">▼</text>
+        </view>
+      </picker>
+      <button class="save-item-button" bindtap="saveCustomerServiceMethod" loading="{{saving.customerServiceMethod}}">保存客服方法</button>
+    </view>
+
+    <!-- 微信号设置 -->
+    <view class="setting-item">
+      <text class="setting-label">客服微信号</text>
+      <input class="setting-input" type="text" value="{{settings.wechatId}}" bindinput="inputWechatId" placeholder="请输入客服微信号" />
+      <button class="save-item-button" bindtap="saveWechatId" loading="{{saving.wechatId}}">保存微信号</button>
+    </view>
+
+    <!-- 微信二维码设置 -->
+    <view class="setting-item">
+      <text class="setting-label">微信二维码</text>
+      <view class="wechat-qrcode">
+        <image wx:if="{{settings.wechatPicture}}" class="wechat-qrcode__image" src="{{settings.wechatPicture}}" mode="aspectFit"></image>
+        <view wx:else class="wechat-qrcode__placeholder">
+          <text class="wechat-qrcode__placeholder-text">点击上传微信二维码</text>
+        </view>
+        <button class="wechat-qrcode__button" bindtap="chooseWechatPicture">选择图片</button>
+      </view>
+      <button class="save-item-button" bindtap="saveWechatPicture" loading="{{saving.wechatPicture}}">保存微信二维码</button>
+    </view>
+
+    <!-- 管理员设置 -->
+    <view class="setting-item">
+      <text class="setting-label">管理员OpenID</text>
+      <view class="admin-openid-list">
+        <view wx:for="{{settings.adminOpenId}}" wx:key="index" class="admin-openid-item">
+          <text class="admin-openid-text">{{item}}</text>
+          <view class="admin-openid-remove" data-index="{{index}}" bindtap="removeAdminOpenId">删除</view>
+        </view>
+        <view class="admin-openid-item">
+          <input class="setting-input admin-openid-input" type="text" value="{{tempAdminOpenId}}" bindinput="inputAdminOpenId" placeholder="请输入管理员OpenID" />
+          <view class="admin-openid-add-btn" bindtap="addAdminOpenId">添加</view>
+        </view>
+      </view>
+      <button class="save-item-button" bindtap="saveAdminOpenId" loading="{{saving.adminOpenId}}">保存管理员列表</button>
+    </view>
+
+    <!-- 自提地址配置 -->
+    <view class="setting-item">
+      <text class="setting-label">自提地址</text>
+      <input class="setting-input" type="text" value="{{settings.pickupLocation}}" bindinput="inputPickupLocation" placeholder="请输入自提地址" />
+      <button class="save-item-button" bindtap="savePickupLocation" loading="{{saving.pickupLocation}}">保存自提地址</button>
+    </view>
+
+    <!-- 时间区间配置 -->
+    <view class="setting-item">
+      <text class="setting-label">可自提与配送时间区间</text>
+      <view class="time-input-group">
+        <input class="setting-input" type="time" value="{{settings.beginTime}}" bindinput="inputBeginTime" placeholder="开始时间" />
+        <text class="time-separator">至</text>
+        <input class="setting-input" type="time" value="{{settings.endTime}}" bindinput="inputEndTime" placeholder="结束时间" />
+      </view>
+      <button class="save-item-button" bindtap="saveTimeRange" loading="{{saving.timeRange}}">保存时间区间</button>
+    </view>
+
+    <!-- 快递运费配置 -->
+    <view class="setting-item">
+      <text class="setting-label">快递运费配置</text>
+      <view wx:for="{{settings.expressRules}}" wx:key="index" class="express-rule-item">
+        <view class="express-rule-header">
+          <text class="express-rule-region">{{item.region}}</text>
+          <text class="express-rule-provinces">{{item.provinces.join('、')}}</text>
+        </view>
+        <view class="express-rule-fields">
+          <view class="express-rule-field">
+            <text class="express-rule-field-label">运费：</text>
+            <input class="express-rule-field-input" type="number" value="{{item.fee}}" bindinput="inputExpressFee" data-index="{{index}}" placeholder="请输入运费" />
+            <text class="express-rule-field-unit">元</text>
+          </view>
+          <view class="express-rule-field">
+            <text class="express-rule-field-label">包邮条件：</text>
+            <input class="express-rule-field-input" type="number" value="{{item.freeShipping}}" bindinput="inputExpressFreeshipping" data-index="{{index}}" placeholder="请输入包邮条件" />
+            <text class="express-rule-field-unit">元</text>
+          </view>
+        </view>
+      </view>
+      <button class="save-item-button" bindtap="saveExpressRules" loading="{{saving.expressRules}}">保存快递运费配置</button>
+    </view>
+
+    <!-- 同城配送配送费配置 -->
+    <view class="setting-item">
+      <text class="setting-label">同城配送配送费配置</text>
+      <view wx:for="{{settings.deliveryRules}}" wx:key="index" class="delivery-rule-item">
+        <view class="delivery-rule-field">
+          <text class="delivery-rule-field-label">最大距离：</text>
+          <input class="delivery-rule-field-input" type="number" value="{{item.maxDistance}}" bindinput="inputDeliveryMaxDistance" data-index="{{index}}" placeholder="请输入最大距离" />
+          <text class="delivery-rule-field-unit">公里</text>
+        </view>
+        <view class="delivery-rule-field">
+          <text class="delivery-rule-field-label">配送费：</text>
+          <input class="delivery-rule-field-input" type="number" value="{{item.fee}}" bindinput="inputDeliveryFee" data-index="{{index}}" placeholder="请输入配送费" />
+          <text class="delivery-rule-field-unit">元</text>
+        </view>
+      </view>
+      <button class="save-item-button" bindtap="saveDeliveryRules" loading="{{saving.deliveryRules}}">保存同城配送配置</button>
+    </view>
+
+    <!-- 发货地址配置 -->
+    <view class="setting-item">
+      <text class="setting-label">发货地址配置</text>
+      <view class="delivery-address-list">
+        <view wx:for="{{settings.deliveryAddress}}" wx:key="index" class="delivery-address-item">
+          <view class="delivery-address-content">
+            <view class="delivery-address-detail">{{item}}</view>
+          </view>
+          <view class="delivery-address-actions">
+            <view class="delivery-address-action" bindtap="editDeliveryAddress" data-index="{{index}}">编辑</view>
+            <view class="delivery-address-action" bindtap="removeDeliveryAddress" data-index="{{index}}">删除</view>
+          </view>
+        </view>
+        <view class="delivery-address-item add">
+          <view class="delivery-address-add" bindtap="addDeliveryAddress">
+            <text class="delivery-address-add-text">+ 添加发货地址</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 发货地址编辑表单 -->
+      <view wx:if="{{showDeliveryAddressForm}}" class="delivery-address-form-overlay">
+        <view class="delivery-address-form-container">
+          <view class="delivery-address-form-header">
+            <text class="delivery-address-form-title">{{editingDeliveryAddressIndex >= 0 ? '编辑发货地址' : '添加发货地址'}}</text>
+            <view class="delivery-address-form-close" bindtap="closeDeliveryAddressForm">✕</view>
+          </view>
+          
+          <view class="delivery-address-form-body">
+            <view class="form-group">
+              <text class="form-label">发货地址</text>
+              <textarea 
+                class="form-textarea"
+                value="{{tempDeliveryAddress}}"
+                bindinput="inputDeliveryAddress"
+                placeholder="请输入完整的发货地址"
+                placeholder-class="form-input-placeholder"
+              />
+            </view>
+          </view>
+          
+          <view class="delivery-address-form-actions">
+            <view class="form-btn form-btn-cancel" bindtap="closeDeliveryAddressForm">取消</view>
+            <view class="form-btn form-btn-confirm" bindtap="confirmDeliveryAddress">确认</view>
+          </view>
+        </view>
+      </view>
+      
+      <button class="save-item-button" bindtap="saveDeliveryAddress" loading="{{saving.deliveryAddress}}">保存发货地址</button>
+    </view>
+
+    <!-- 快递100配置 -->
+    <view class="setting-item">
+      <text class="setting-label">快递100配置</text>
+      <view class="express100-fields">
+        <view class="express100-field">
+          <text class="express100-field-label">Key：</text>
+          <input class="express100-field-input" type="text" value="{{settings.express100Parameters && settings.express100Parameters.key ? settings.express100Parameters.key : ''}}" bindinput="inputExpress100Key" placeholder="请输入快递100 Key" />
+        </view>
+        <view class="express100-field">
+          <text class="express100-field-label">Customer：</text>
+          <input class="express100-field-input" type="text" value="{{settings.express100Parameters && settings.express100Parameters.customer ? settings.express100Parameters.customer : ''}}" bindinput="inputExpress100Customer" placeholder="请输入快递100 Customer" />
+        </view>
+      </view>
+      
+      <!-- 快递100接口配置 -->
+      <view class="express100-api-config">
+        <text class="express100-api-config-label">接口配置</text>
+        
+        <view class="express100-api-item">
+          <text class="express100-api-item-label">智能判断接口</text>
+          <switch checked="{{settings.express100Parameters && settings.express100Parameters.apiEnabled && settings.express100Parameters.apiEnabled.smartCheck ? settings.express100Parameters.apiEnabled.smartCheck : false}}" bindchange="toggleExpress100Api" data-api="smartCheck" />
+        </view>
+        
+        <view class="express100-api-item">
+          <text class="express100-api-item-label">快递信息实时查询接口</text>
+          <switch checked="{{settings.express100Parameters && settings.express100Parameters.apiEnabled && settings.express100Parameters.apiEnabled.realTimeQuery ? settings.express100Parameters.apiEnabled.realTimeQuery : false}}" bindchange="toggleExpress100Api" data-api="realTimeQuery" />
+        </view>
+        
+        <view class="express100-api-item">
+          <text class="express100-api-item-label">快递信息订阅接口</text>
+          <switch checked="{{settings.express100Parameters && settings.express100Parameters.apiEnabled && settings.express100Parameters.apiEnabled.subscribe ? settings.express100Parameters.apiEnabled.subscribe : false}}" bindchange="toggleExpress100Api" data-api="subscribe" />
+        </view>
+        
+        <view class="express100-api-item">
+          <text class="express100-api-item-label">快递查询地图轨迹接口</text>
+          <switch checked="{{settings.express100Parameters && settings.express100Parameters.apiEnabled && settings.express100Parameters.apiEnabled.mapTrack ? settings.express100Parameters.apiEnabled.mapTrack : false}}" bindchange="toggleExpress100Api" data-api="mapTrack" />
+        </view>
+        
+        <view class="express100-api-item">
+          <text class="express100-api-item-label">地图轨迹推送接口</text>
+          <switch checked="{{settings.express100Parameters && settings.express100Parameters.apiEnabled && settings.express100Parameters.apiEnabled.mapTrackPush ? settings.express100Parameters.apiEnabled.mapTrackPush : false}}" bindchange="toggleExpress100Api" data-api="mapTrackPush" />
+        </view>
+      </view>
+      
+      <button class="save-item-button" bindtap="saveExpress100Parameters" loading="{{saving.express100Parameters}}">保存快递100配置</button>
+    </view>
+
+    <view wx:if="{{showShippingResponsibilitySelector}}" class="selector-mask" bindtap="closeShippingResponsibilitySelector">
+      <view class="selector-sheet" catchtap="noop">
+        <view class="selector-sheet__header">
+          <text class="selector-sheet__title">{{currentShippingResponsibilityTitle || '选择运费归属'}}</text>
+          <text class="selector-sheet__close" bindtap="closeShippingResponsibilitySelector">取消</text>
+        </view>
+        <view
+          wx:for="{{shippingResponsibilityOptions}}"
+          wx:key="value"
+          class="selector-sheet__option {{currentShippingResponsibilityValue === item.value ? 'selector-sheet__option--active' : ''}}"
+          data-value="{{item.value}}"
+          bindtap="selectShippingResponsibilityOption"
+        >
+          <text class="selector-sheet__option-text">{{item.label}}</text>
+          <text wx:if="{{currentShippingResponsibilityValue === item.value}}" class="selector-sheet__check">✓</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

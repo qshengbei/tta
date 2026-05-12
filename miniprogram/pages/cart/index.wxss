@@ -10,7 +10,10 @@
   display: flex;
   align-items: center;
   padding: 16rpx 32rpx;
-  background-color: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
@@ -423,7 +426,7 @@
 }
 
 .cart__item-checkbox {
-  margin-right: 20rpx;
+  margin: 0 8rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -614,6 +617,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 50rpx;
 }
 
 .cart__item-price {
@@ -684,6 +688,36 @@
   padding: 0;
 }
 
+/* 简化数量显示 */
+.quantity-simple {
+  padding: 8rpx 16rpx;
+  background-color: #f8f8f8;
+  border-radius: 8rpx;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-simple:active {
+  background-color: #e8e8e8;
+  transform: translateY(1rpx);
+}
+
+.quantity-simple-text {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 完整数量选择器 */
+.quantity-full {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 /* 删除按钮 */
 .cart__item-delete {
   position: absolute;
@@ -712,9 +746,7 @@
   justify-content: center;
   align-items: center;
   height: 500rpx;
-  background-color: #fff;
-  border-radius: 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  background-color: #f8f8f8;
   margin: 20rpx;
 }
 
@@ -748,8 +780,10 @@
   bottom: 140rpx;
   left: 0;
   right: 0;
-  background-color: #f8f8f8;
-  border-top: none;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.3);
   padding: 16rpx 20rpx;
   z-index: 999;
 }
@@ -799,8 +833,10 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff;
-  border-top: 1rpx solid #f0f0f0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1rpx solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.05);
   padding: 20rpx 32rpx;
   height: 140rpx;

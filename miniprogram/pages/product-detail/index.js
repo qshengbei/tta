@@ -35,19 +35,27 @@ Page({
     showExpressRulesModal: false, // 显示快递计算规则弹窗
     sortedExpressRules: [], // 排序后的快递规则
     coverImageUrl: "", // 商品封面图的临时URL
-    showCartPreview: false // 购物车预览弹出层显示状态
+    showCartPreview: false, // 购物车预览弹出层显示状态
+    buyTips: "", // 购买须知
+    customerServiceMethod: "official" // 客服方法：official=官方客服，custom=自定义客服
   },
 
   onLoad(options) {
     const id = options.id || "";
     this.setData({ productId: id });
-    
+
     // 获取用户 openid
     this.getOpenid();
-    
+
     // 获取快递运费规则
     this.fetchExpressRules();
-    
+
+    // 获取购买须知
+    this.fetchBuyTips();
+
+    // 获取客服方法配置
+    this.fetchCustomerServiceMethod();
+
     if (id) {
       this.fetchProduct();
     } else {
@@ -56,6 +64,13 @@ Page({
         error: true,
         errorMessage: "未获取到商品信息"
       });
+    }
+  },
+
+  onShow() {
+    // 页面显示时重新获取商品信息，确保库存信息是最新的
+    if (this.data.productId) {
+      this.fetchProduct(true);
     }
   },
 
@@ -165,6 +180,62 @@ Page({
         // 计算运费
         this.calculateShippingFee();
       });
+  },
+
+  // 获取购买须知
+  fetchBuyTips() {
+    // 先尝试从缓存获取
+    const cachedBuyTips = wx.getStorageSync('buyTips');
+    if (cachedBuyTips) {
+      console.log('从缓存获取购买须知');
+      this.setData({ buyTips: this.formatBuyTips(cachedBuyTips) });
+      return;
+    }
+
+    const settings = getCollection("settings");
+    settings
+      .get()
+      .then((res) => {
+        let buyTips = "";
+        if (res.data && res.data.length > 0) {
+          const firstSetting = res.data[0];
+          buyTips = firstSetting.buyTips || "";
+        }
+        // 处理购买须知文本，将空格转换为换行
+        const formattedBuyTips = this.formatBuyTips(buyTips);
+        // 缓存购买须知（保存原始内容）
+        wx.setStorageSync('buyTips', buyTips);
+        this.setData({ buyTips: formattedBuyTips });
+      })
+      .catch((err) => {
+        console.error("获取购买须知失败", err);
+      });
+  },
+
+  // 获取客服方法配置
+  fetchCustomerServiceMethod() {
+    const settings = getCollection("settings");
+    settings
+      .get()
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          const firstSetting = res.data[0];
+          const method = firstSetting.customerServiceMethod || 'official';
+          console.log('获取客服方法配置:', method);
+          this.setData({ customerServiceMethod: method });
+        }
+      })
+      .catch((err) => {
+        console.error("获取客服方法配置失败", err);
+      });
+  },
+
+  // 格式化购买须知文本，将空格转换为换行
+  formatBuyTips(buyTips) {
+    if (!buyTips) return "";
+    // 将连续的空格或单个空格（在中文之间）转换为换行符
+    // 策略：将空格替换为换行符，但保留原有的换行符
+    return buyTips.replace(/ /g, '\n');
   },
 
   // 计算运费
@@ -313,54 +384,57 @@ Page({
     this.setData({ showExpressRulesModal: false });
   },
 
-  fetchProduct() {
-    // 先尝试从缓存获取
-    const cachedProduct = getCachedProduct(this.data.productId);
-    if (cachedProduct) {
-      console.log('从缓存获取商品详情');
-      const product = cachedProduct;
-      const stock = typeof product.stock === "number" ? product.stock : 99;
-      let displayPrice = formatPrice(product.price);
-      
-      // 确保images字段是一个数组
-      if (!product.images || !Array.isArray(product.images)) {
-        product.images = [];
-      }
-      
-      // 计算总图片数量
-      let totalImages = 1 + product.images.length; // 默认至少有一张封面图
-      
-      // 构建预览图片数组
-      let previewImageUrls = buildPreviewImages(product);
-      
-      // 获取同布料的商品
-      if (product.materialId) {
-        this.fetchSameMaterialProducts(product.materialId);
-      } else {
-        // 只显示当前商品
+  fetchProduct(forceRefresh = false) {
+    // 如果是强制刷新，直接从数据库获取
+    if (!forceRefresh) {
+      // 先尝试从缓存获取
+      const cachedProduct = getCachedProduct(this.data.productId);
+      if (cachedProduct) {
+        console.log('从缓存获取商品详情');
+        const product = cachedProduct;
+        const stock = typeof product.stock === "number" ? product.stock : 99;
+        let displayPrice = formatPrice(product.price);
+        
+        // 确保images字段是一个数组
+        if (!product.images || !Array.isArray(product.images)) {
+          product.images = [];
+        }
+        
+        // 计算总图片数量
+        let totalImages = 1 + product.images.length; // 默认至少有一张封面图
+        
+        // 构建预览图片数组
+        let previewImageUrls = buildPreviewImages(product);
+        
+        // 获取同布料的商品
+        if (product.materialId) {
+          this.fetchSameMaterialProducts(product.materialId);
+        } else {
+          // 只显示当前商品
+          this.setData({
+            groupedProducts: [{
+              type: '当前商品',
+              products: [product]
+            }]
+          });
+        }
+        
         this.setData({
-          groupedProducts: [{
-            type: '当前商品',
-            products: [product]
-          }]
+          product,
+          maxQuantity: stock > 0 ? stock : 1,
+          displayPrice,
+          totalImages,
+          previewImageUrls,
+          loading: false
         });
+        
+        // 获取商品封面图的临时URL
+        this.getCoverImageUrl(product.coverImage);
+        
+        // 计算运费
+        this.calculateShippingFee();
+        return;
       }
-      
-      this.setData({
-        product,
-        maxQuantity: stock > 0 ? stock : 1,
-        displayPrice,
-        totalImages,
-        previewImageUrls,
-        loading: false
-      });
-      
-      // 获取商品封面图的临时URL
-      this.getCoverImageUrl(product.coverImage);
-      
-      // 计算运费
-      this.calculateShippingFee();
-      return;
     }
 
     this.setData({ loading: true, error: false, errorMessage: "" });
@@ -477,9 +551,15 @@ Page({
 
   // 确认加入购物车
   confirmAddToCart() {
-    if (!this.data.productId) return;
+    console.log('开始加入购物车');
+    if (!this.data.productId) {
+      console.log('商品ID为空');
+      return;
+    }
     const db = wx.cloud.database();
     const cart = db.collection("cart");
+    const openid = wx.getStorageSync('openid') || '';
+    console.log('当前用户openid:', openid);
 
     const productSnapshot = {
       productId: this.data.productId,
@@ -489,13 +569,18 @@ Page({
       category: this.data.product.category
     };
 
+    console.log('准备查询购物车商品:', this.data.productId);
     cart
       .where({
-        productId: this.data.productId
+        _openid: openid,
+        productId: this.data.productId,
+        isDelete: false
       })
       .get()
       .then((res) => {
+        console.log('查询结果:', res.data);
         if (res.data && res.data.length > 0) {
+          console.log('商品已存在，更新数量');
           const docId = res.data[0]._id;
           return cart.doc(docId).update({
             data: {
@@ -505,13 +590,15 @@ Page({
             }
           });
         } else {
+          console.log('商品不存在，添加新商品');
           // 获取当前用户的最大sort值
-          const openid = wx.getStorageSync('openid') || '';
           return cart.where({ _openid: openid, isDelete: false }).orderBy('sort', 'desc').limit(1).get().then(sortRes => {
+            console.log('获取sort值结果:', sortRes.data);
             let sort = 1;
             if (sortRes.data && sortRes.data.length > 0) {
               sort = sortRes.data[0].sort + 1;
             }
+            console.log('生成的sort值:', sort);
             return cart.add({
               data: {
                 productId: this.data.productId,
@@ -528,7 +615,8 @@ Page({
           });
         }
       })
-      .then(() => {
+      .then((addRes) => {
+        console.log('加入购物车成功:', addRes);
         wx.showToast({
           title: "已加入购物车",
           icon: "success"
@@ -610,6 +698,122 @@ Page({
     // e.detail.query: 用户点击的消息参数
   },
 
+  // 打开自定义客服
+  async openCustomService() {
+    console.log('打开自定义客服');
+    try {
+      console.log('进入客服聊天开始');
+      const loginRes = await wx.cloud.callFunction({
+        name: 'login'
+      });
+      
+      console.log('login云函数返回结果:', loginRes);
+      
+      if (!loginRes.result || !loginRes.result.openid) {
+        console.error('获取OPENID失败');
+        wx.showToast({ title: '获取用户信息失败，请重试', icon: 'none' });
+        return;
+      }
+      
+      const OPENID = loginRes.result.openid;
+      console.log('获取到用户OPENID:', OPENID);
+      
+      // 检查是否已有会话
+      const db = wx.cloud.database();
+      const sessionRes = await db.collection('sessions')
+        .where({ 
+          userId: OPENID,
+          status: 'active'
+        })
+        .get();
+      
+      console.log('查询会话结果:', sessionRes.data.length);
+      
+      const serviceCardPayload = await this.buildServiceProductCardPayload();
+      const serviceCardParam = encodeURIComponent(JSON.stringify(serviceCardPayload || {}));
+
+      if (sessionRes.data.length > 0) {
+        // 已有活跃会话，进入最近的会话
+        const session = sessionRes.data[0];
+        console.log('已有活跃会话，进入会话ID:', session._id);
+        wx.navigateTo({
+          url: `/pages/message/service/index?sessionId=${session._id}&entryProductCard=${serviceCardParam}`,
+          success: function(res) {
+            console.log('跳转成功');
+          },
+          fail: function(err) {
+            console.error('跳转失败:', err);
+            wx.showToast({ title: '跳转失败，请重试', icon: 'none' });
+          }
+        });
+      } else {
+        // 创建新会话
+        console.log('创建新会话');
+        const createRes = await wx.cloud.callFunction({
+          name: 'createSession',
+          data: {
+            userId: OPENID
+          }
+        });
+        
+        console.log('创建会话结果:', createRes.result);
+        
+        if (createRes.result.success) {
+          console.log('会话创建成功，会话ID:', createRes.result.sessionId);
+          wx.navigateTo({
+            url: `/pages/message/service/index?sessionId=${createRes.result.sessionId}&entryProductCard=${serviceCardParam}`,
+            success: function(res) {
+              console.log('跳转成功');
+            },
+            fail: function(err) {
+              console.error('跳转失败:', err);
+              wx.showToast({ title: '跳转失败，请重试', icon: 'none' });
+            }
+          });
+        } else {
+          console.error('创建会话失败:', createRes.result.error);
+          wx.showToast({ title: `创建会话失败: ${createRes.result.error}`, icon: 'none' });
+        }
+      }
+    } catch (error) {
+      console.error('进入客服聊天失败', error);
+      wx.showToast({ title: `操作失败: ${error.message}`, icon: 'none' });
+    }
+  },
+
+  async resolveCoverImageForServiceCard() {
+    const { coverImageUrl, product } = this.data;
+    if (coverImageUrl && coverImageUrl.startsWith('http')) {
+      return coverImageUrl;
+    }
+    const rawCover = (product && product.coverImage) || '';
+    if (!rawCover) return '';
+    if (rawCover.startsWith('http://') || rawCover.startsWith('https://')) {
+      return rawCover;
+    }
+    try {
+      const res = await wx.cloud.getTempFileURL({ fileList: [rawCover] });
+      const fileItem = (res.fileList && res.fileList[0]) || {};
+      return fileItem.tempFileURL || rawCover;
+    } catch (e) {
+      return rawCover;
+    }
+  },
+
+  async buildServiceProductCardPayload() {
+    const { product, displayPrice } = this.data;
+    if (!product || !product._id) return null;
+    const coverImage = await this.resolveCoverImageForServiceCard();
+    return {
+      productId: product._id,
+      name: product.name || '商品',
+      price: displayPrice || product.price || 0,
+      desc: product.description || '',
+      description: product.description || '',
+      coverImage: coverImage || product.coverImage || ''
+    };
+  },
+
   // 获取商品封面图的临时URL
   getCoverImageUrl(coverImage) {
     if (coverImage) {
@@ -687,7 +891,7 @@ Page({
     replenishment
       .where({
         'productData.productId': product._id,
-        'productData.isReplenished': false
+        status: 'pending'
       })
       .get()
       .then((res) => {
@@ -770,6 +974,7 @@ Page({
               data: {
                 productData: productData,
                 users: [userData],
+                status: 'pending',
                 createdAt: new Date(),
                 updatedAt: new Date()
               }

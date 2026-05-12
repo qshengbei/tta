@@ -1,0 +1,186 @@
+<!--pages/after-sales/exchange/index.wxml-->
+<view class="page-root">
+  <view class="header">
+    <view class="header__back" bindtap="goBack">
+      <text class="header__back-icon">←</text>
+    </view>
+    <text class="header__title">申请换货</text>
+    <view class="header__placeholder"></view>
+  </view>
+
+  <view class="content">
+    <view class="order-info">
+      <view class="order-info__order-no">订单号：{{displayOrderNo}}</view>
+      <view wx:if="{{currentProduct}}" class="order-info__product">
+        <image src="{{currentProduct.image || currentProduct.coverImage || currentProduct.productImage}}" class="order-info__product-image"></image>
+        <view class="order-info__product-info">
+          <text class="order-info__product-name">{{currentProduct.productName || currentProduct.name}}</text>
+          <text class="order-info__product-spec">{{currentProduct.skuName || currentProduct.spec || currentProduct.specs}}</text>
+          <text class="order-info__product-price">¥{{currentProduct.price || currentProduct.productPrice}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 如果是从选择页面跳过来的，直接显示已选择的换货原因 -->
+    <view wx:if="{{reason}}" class="reason-info">
+      <view class="reason-info__item">
+        <text class="reason-info__label">换货原因</text>
+        <text class="reason-info__value">{{reason}}</text>
+      </view>
+    </view>
+
+    <!-- 如果没有参数，显示选择步骤 -->
+    <view wx:if="{{!reason}}" class="step-section">
+      <view class="step-section__header">
+        <text class="step-section__title">换货原因</text>
+        <text class="step-section__hint">选择售后原因</text>
+      </view>
+      <view class="step-section__content">
+        <view class="step-item" bindtap="showReasonModal">
+          <text class="step-item__value">{{exchangeReason || '请选择换货原因'}}</text>
+          <text class="step-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{(reason || exchangeReason)}}" class="step-section">
+      <view class="step-section__header">
+        <text class="step-section__title">换新商品</text>
+        <text class="step-section__hint">选择更换的商品规格</text>
+      </view>
+      <view class="step-section__content">
+        <view class="step-item" bindtap="showProductSelectModal">
+          <text class="step-item__value">{{newProductSpec || '请选择换新商品规格'}}</text>
+          <text class="step-item__arrow">›</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{reason || exchangeReason}}" class="meta-info">
+      <view class="meta-info__row">
+        <text class="meta-info__label">剩余售后时限</text>
+        <text class="meta-info__value">剩余{{remainingDays}}天</text>
+      </view>
+    </view>
+
+    <view class="address-section">
+      <view class="address-section__header">
+        <text class="address-section__title">收货地址</text>
+      </view>
+      <view class="address-section__content">
+        <view class="address-info">
+          <text class="address-info__text">{{address}}</text>
+          <view class="address-info__actions">
+            <view class="address-info__action" bindtap="copyAddress">复制</view>
+            <view class="address-info__action">修改</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="upload-section">
+      <view class="upload-section__header">
+        <text class="upload-section__title">补充描述和凭证</text>
+        <text class="upload-section__hint">选填</text>
+      </view>
+      
+      <view class="upload-section__description">
+        <textarea class="upload-section__textarea" 
+                  value="{{description}}" 
+                  bindinput="onDescriptionInput"
+                  placeholder="有助于帮助客服更好的处理售后问题" 
+                  placeholder-style="color: #999;"></textarea>
+      </view>
+
+      <view class="upload-section__images">
+        <view class="upload-container">
+          <view wx:for="{{proofImages}}" wx:key="index" class="upload-item upload-item--image">
+            <image src="{{item}}" class="upload-item__image"></image>
+            <view class="upload-item__delete" bindtap="deleteImage" data-index="{{index}}">×</view>
+          </view>
+          <view wx:if="{{proofImages.length < 9}}" class="upload-item upload-item--add" bindtap="chooseImage">
+            <text class="upload-item__add-icon">+</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="contact-section">
+      <view class="contact-section__header">
+        <text class="contact-section__title">联系信息</text>
+      </view>
+      <view class="contact-section__content">
+        <view class="contact-item">
+          <text class="contact-item__label">联系人</text>
+          <input class="contact-item__input" 
+                 type="text" 
+                 value="{{contactName}}" 
+                 bindinput="onContactNameChange"
+                 placeholder="请输入联系人姓名"></input>
+        </view>
+        <view class="contact-item">
+          <text class="contact-item__label">联系电话</text>
+          <input class="contact-item__input" 
+                 type="number" 
+                 value="{{contactPhone}}" 
+                 bindinput="onContactPhoneChange"
+                 placeholder="请输入联系电话"></input>
+        </view>
+      </view>
+    </view>
+
+    <view class="tip-section">
+      <text class="tip-section__text">仅限更换同款同价相同价格商品，换货的商品以换货发货时效为准</text>
+    </view>
+  </view>
+
+  <view class="footer">
+    <button class="footer__submit" bindtap="submitExchange">提交申请</button>
+  </view>
+
+  <!-- 换货原因选择弹窗 -->
+  <view wx:if="{{showReasonModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeReasonModal"></view>
+    <view class="modal__content">
+      <view class="modal__header">
+        <text class="modal__title">换货原因</text>
+        <view class="modal__close" bindtap="closeReasonModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view wx:for="{{EXCHANGE_REASONS}}" wx:key="value" class="modal__item" bindtap="selectReason" data-reason="{{JSON.stringify(item)}}">
+          <text class="modal__item-name">{{item.label}}</text>
+          <view class="modal__item-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 商品规格选择弹窗 -->
+  <view wx:if="{{showProductSelectModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeProductSelectModal"></view>
+    <view class="modal__content">
+      <view class="modal__header">
+        <text class="modal__title">选择换新商品</text>
+        <view class="modal__close" bindtap="closeProductSelectModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view wx:if="{{currentProduct}}" class="modal__product-info">
+          <image src="{{currentProduct.image || currentProduct.coverImage || currentProduct.productImage}}" class="modal__product-image"></image>
+          <view class="modal__product-details">
+            <text class="modal__product-name">{{currentProduct.productName || currentProduct.name}}</text>
+            <text class="modal__product-spec">当前规格：{{currentProduct.skuName || currentProduct.spec || currentProduct.specs}}</text>
+          </view>
+        </view>
+        <view class="modal__spec-list">
+          <view class="modal__spec-title">可选规格</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="颜色：红色">颜色：红色</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="颜色：蓝色">颜色：蓝色</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="颜色：粉色">颜色：粉色</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="颜色：紫色">颜色：紫色</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="款式：A款">款式：A款</view>
+          <view class="modal__spec-item" bindtap="selectProductSpec" data-spec="款式：B款">款式：B款</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

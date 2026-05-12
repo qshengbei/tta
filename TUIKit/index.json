@@ -1,0 +1,7 @@
+{
+  "component": true,
+  "usingComponents": {
+    "TUIConversation": "./components/TUIConversation/index",
+    "TUIChat": "./components/TUIChat/index"
+  }
+}

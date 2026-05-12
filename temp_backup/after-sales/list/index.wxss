@@ -1,0 +1,260 @@
+/* pages/after-sales/list/index.wxss */
+.page-root {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  background-color: #fff;
+  padding: 0 16rpx;
+  border-bottom: 1rpx solid #e5e5e5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+.header-left {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.back-icon {
+  width: 24rpx;
+  height: 24rpx;
+}
+
+.header-title {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.header-right {
+  width: 44px;
+}
+
+.content {
+  padding: 20rpx 20rpx;
+}
+
+.after-sales-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.after-sales-item {
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.after-sales-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.after-sales-item__header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.after-sales-item__order-no {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.after-sales-item__type {
+  font-size: 20rpx;
+  color: #999;
+  background-color: #f5f5f5;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+  align-self: flex-start;
+}
+
+.after-sales-item__status {
+  font-size: 24rpx;
+  font-weight: 500;
+  padding: 4rpx 16rpx;
+  border-radius: 16rpx;
+}
+
+.after-sales-item__status--pending {
+  color: #faad14;
+  background-color: #fff7e6;
+}
+
+.after-sales-item__status--approved {
+  color: #52c41a;
+  background-color: #f6ffed;
+}
+
+.after-sales-item__status--rejected {
+  color: #ff4d4f;
+  background-color: #fff2f0;
+}
+
+.after-sales-item__status--completed {
+  color: #1890ff;
+  background-color: #e6f7ff;
+}
+
+.after-sales-item__status--cancelled {
+  color: #999;
+  background-color: #f5f5f5;
+}
+
+.after-sales-item__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.after-sales-item__reason {
+  display: flex;
+  align-items: flex-start;
+}
+
+.after-sales-item__reason-label {
+  width: 120rpx;
+  font-size: 24rpx;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.after-sales-item__reason-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #333;
+  line-height: 1.4;
+}
+
+.after-sales-item__amount {
+  display: flex;
+  align-items: center;
+}
+
+.after-sales-item__amount-label {
+  width: 120rpx;
+  font-size: 24rpx;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.after-sales-item__amount-text {
+  flex: 1;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #ff4d4f;
+}
+
+.after-sales-item__time {
+  display: flex;
+  align-items: center;
+}
+
+.after-sales-item__time-label {
+  width: 120rpx;
+  font-size: 24rpx;
+  color: #666;
+  flex-shrink: 0;
+}
+
+.after-sales-item__time-text {
+  flex: 1;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.after-sales-item__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12rpx;
+}
+
+.after-sales-item__btn {
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.after-sales-item__btn--primary {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.after-sales-item__btn--cancel {
+  background-color: #fff;
+  color: #666;
+  border: 1rpx solid #e5e5e5;
+}
+
+.after-sales-item__btn::after {
+  border: none;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+  gap: 24rpx;
+}
+
+.empty-state__image {
+  width: 160rpx;
+  height: 160rpx;
+  opacity: 0.5;
+}
+
+.empty-state__text {
+  font-size: 28rpx;
+  color: #999;
+}
+
+.empty-state__btn {
+  padding: 12rpx 48rpx;
+  background-color: #1890ff;
+  color: #fff;
+  font-size: 24rpx;
+  border-radius: 8rpx;
+  margin-top: 20rpx;
+}
+
+.empty-state__btn::after {
+  border: none;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 0;
+}
+
+.loading__text {
+  font-size: 28rpx;
+  color: #999;
+}

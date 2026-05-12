@@ -1,20 +1,246 @@
+<wxs module="orderStatus" src="../../utils/orderStatus.wxs"></wxs>
 <view class="order-detail">
-  <view class="order-detail__header">
-    <text class="order-detail__title">订单详情</text>
-    <text class="order-detail__back" bindtap="goBack">×</text>
-  </view>
-  
   <view wx:if="{{loading}}" class="order-detail__loading">
     <view class="order-detail__loading-spinner"></view>
     <text class="order-detail__loading-text">加载中...</text>
   </view>
-  
+
   <view wx:elif="{{error}}" class="order-detail__error">
     <text class="order-detail__error-text">{{errorMessage}}</text>
     <button class="order-detail__error-button" bindtap="goBack">返回</button>
   </view>
-  
+
   <view wx:else class="order-detail__content">
+    <!-- 快递运输 -->
+    <block wx:if="{{order.deliveryType === 'express'}}">
+      <view class="order-detail__section">
+        <text class="order-detail__section-title">收货地址</text>
+        <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+          <text class="order-detail__info-label">收件人：</text>
+          <text class="order-detail__info-value">{{order.address.userName}}</text>
+        </view>
+        <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+          <text class="order-detail__info-label">手机号：</text>
+          <text class="order-detail__info-value">{{order.address.telNumber}}</text>
+        </view>
+        <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+          <text class="order-detail__info-label">地址：</text>
+          <text class="order-detail__info-value">{{order.address.provinceName}}{{order.address.cityName}}{{order.address.countyName}}{{order.address.detailInfo}}</text>
+        </view>
+      </view>
+    </block>
+
+    <!-- 上门自提 -->
+    <block wx:elif="{{order.deliveryType === 'pickup'}}">
+      <view class="order-detail__section">
+        <text class="order-detail__section-title">自提信息</text>
+        <view class="order-detail__info-item" style="justify-content: flex-start; align-items: center;">
+          <text class="order-detail__info-label">自提地址：</text>
+          <text class="order-detail__info-value">{{order.pickupAddress || ''}}</text>
+          <view class="address-actions">
+            <view class="address-action-icon" bindtap="copyAddress" data-address="{{order.pickupAddress}}">
+              <image src="../../images/icons/复制.png" class="address-action-icon-img" mode="aspectFit"></image>
+            </view>
+            <view class="address-action-icon" bindtap="navigateToAddress" data-address="{{order.pickupAddress}}">
+              <image src="../../images/icons/导航.png" class="address-action-icon-img" mode="aspectFit"></image>
+            </view>
+          </view>
+        </view>
+        <view class="order-detail__info-item" style="justify-content: flex-start;">
+          <text class="order-detail__info-label">自提时间：</text>
+          <text class="order-detail__info-value">{{order.fullPickupTime || (order.pickupTime || '') + ' - ' + (order.pickupTimeEnd || '')}}</text>
+        </view>
+        <view class="order-detail__info-item" style="justify-content: flex-start;">
+          <text class="order-detail__info-label">取件号码：</text>
+          <text class="order-detail__info-value">{{order.pickupCode || ''}}</text>
+        </view>
+      </view>
+    </block>
+
+    <!-- 同城配送 -->
+    <block wx:elif="{{order.deliveryType === 'local'}}">
+      <view class="order-detail__section">
+      <text class="order-detail__section-title">配送地址</text>
+      <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-label">收件人：</text>
+        <text class="order-detail__info-value">{{order.address.userName}}</text>
+      </view>
+      <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-label">手机号：</text>
+        <text class="order-detail__info-value">{{order.address.telNumber}}</text>
+      </view>
+      <view wx:if="{{order.address}}" class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-label">地址：</text>
+        <text class="order-detail__info-value">{{order.address.provinceName}}{{order.address.cityName}}{{order.address.countyName}}{{order.address.detailInfo}}</text>
+      </view>
+      <view wx:if="{{order.distance}}" class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-label">配送距离：</text>
+        <text class="order-detail__info-value">{{order.distance}} km</text>
+      </view>
+      <view wx:if="{{order.deliveryFee}}" class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-label">配送费：</text>
+        <text class="order-detail__info-value">{{order.deliveryFee}} 元</text>
+      </view>
+        <!-- 同城配送地图信息 -->
+        <view class="local-delivery-info__map">
+          <!-- 配送范围图例 -->
+          <view class="local-delivery-info__legend">
+            <view class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: #00ff99"></view>
+              <text class="local-delivery-info__legend-text">0-2公里 免费</text>
+            </view>
+            <view class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: #ffff99"></view>
+              <text class="local-delivery-info__legend-text">2-5公里 5元</text>
+            </view>
+            <view class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: #ff9999"></view>
+              <text class="local-delivery-info__legend-text">5-10公里 10元</text>
+            </view>
+            <view class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: #999999"></view>
+              <text class="local-delivery-info__legend-text">＞10公里 不配送</text>
+            </view>
+          </view>
+          <view class="local-delivery-info__map-container">
+            <map class="local-delivery-info__map-view"
+                 id="map"
+                 longitude="{{pickupLocation.longitude}}"
+                 latitude="{{pickupLocation.latitude}}"
+                 scale="15"
+                 markers="{{markers}}"
+                 circles="{{circles}}"
+                 show-location="true"
+                 style="width: 100%; height: {{mapHeight}}rpx;">
+            </map>
+            <!-- 地图控制按钮 -->
+            <view class="map-controls">
+              <view class="map-controls__button" bindtap="resetMap" title="重置地图">
+                <image src="../../images/icons/reset.svg" class="map-controls__button-icon" />
+              </view>
+              <view wx:if="{{!isMapFullScreen}}" class="map-controls__button" bindtap="fullScreenMap" title="全屏地图">
+                <image src="../../images/icons/fullScreen.svg" class="map-controls__button-icon" />
+              </view>
+              <view wx:else class="map-controls__button" bindtap="exitFullScreenMap" title="退出全屏">
+                <image src="../../images/icons/canFullScreen.svg" class="map-controls__button-icon" />
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="order-detail__section">
+        <text class="order-detail__section-title">配送信息</text>
+        <view wx:if="{{order.pickupTime}}" class="order-detail__info-item">
+          <text class="order-detail__info-label">配送时间</text>
+          <text class="order-detail__info-value">{{order.fullPickupTime || (order.pickupTime || '') + ' - ' + (order.pickupTimeEnd || '')}}</text>
+        </view>
+        <view wx:if="{{order.pickupCode}}" class="order-detail__info-item">
+          <text class="order-detail__info-label">取件号码</text>
+          <text class="order-detail__info-value">{{order.pickupCode}}</text>
+        </view>
+      </view>
+    </block>
+
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">商品信息</text>
+      <view wx:for="{{order.products}}" wx:key="_id" class="order-detail__product-item" bindtap="goToProductDetail" data-product-id="{{item.productId}}">
+        <image class="order-detail__product-image" src="{{item.coverImage}}" mode="aspectFill"></image>
+        <view class="order-detail__product-info">
+          <text class="order-detail__product-name">{{item.name}}</text>
+          <view class="order-detail__product-tags">
+            <text wx:if="{{item.supportNoReasonReturn}}" class="order-detail__product-tag">支持7天无理由</text>
+            <!-- 商品级别的售后状态标签（只显示进行中的售后） -->
+            <text wx:if="{{order.productHasAfterSales && (order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].statusType === 'active' && order.productHasAfterSales[index][0].statusText) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].statusType === 'active' && order.productHasAfterSales[String(index)][0].statusText)}}" 
+                  class="order-detail__product-tag order-detail__product-tag--after-sales">
+              {{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].statusText) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].statusText)}}
+            </text>
+          </view>
+          <view class="order-detail__product-bottom">
+            <text class="order-detail__product-price">¥{{item.price}}</text>
+            <view class="order-detail__product-actions">
+              <!-- 售后中：显示查看售后按钮 -->
+              <button wx:if="{{(order.hasActiveAfterSales && (order.hasActiveAfterSales[index] || order.hasActiveAfterSales[String(index)]))}}" 
+                      class="order-detail__product-btn" 
+                      catchtap="viewAfterSalesByProduct" 
+                      data-order-id="{{order._id}}" 
+                      data-product-index="{{index}}"
+                      data-case-id="{{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].caseId) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].caseId)}}">
+                查看售后
+              </button>
+              <!-- 已完成：显示历史售后入口 -->
+              <button wx:elif="{{(order.hasCompletedAfterSales && (order.hasCompletedAfterSales[index] || order.hasCompletedAfterSales[String(index)]))}}" 
+                      class="order-detail__product-btn order-detail__product-btn--history" 
+                      catchtap="viewAfterSalesByProduct" 
+                      data-order-id="{{order._id}}" 
+                      data-product-index="{{index}}"
+                      data-case-id="{{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].caseId) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].caseId)}}">
+                历史售后
+              </button>
+              <!-- 已取消/已拒绝：显示申请售后按钮 + 历史售后入口 -->
+              <block wx:elif="{{(order.hasCancelledAfterSales && (order.hasCancelledAfterSales[index] || order.hasCancelledAfterSales[String(index)]))}}">
+                <button class="order-detail__product-btn" 
+                        catchtap="afterSalesByProduct" 
+                        data-order-id="{{order._id}}" 
+                        data-product-index="{{index}}">
+                  申请售后
+                </button>
+                <button class="order-detail__product-btn order-detail__product-btn--history" 
+                        catchtap="viewAfterSalesByProduct" 
+                        data-order-id="{{order._id}}" 
+                        data-product-index="{{index}}">
+                  历史售后
+                </button>
+              </block>
+              <!-- 无售后：显示申请售后按钮（有未收到货退款且物流未签收时，其他商品不能申请） -->
+              <button wx:elif="{{(!order.productHasAfterSales || !order.productHasAfterSales[index] || order.productHasAfterSales[index].length === 0) && (order.status === 'completed' || order.status === 'shipping' || order.status === 'delivered' || order.status === 'refund') && (order.deliveryType === 'express' || order.deliveryType === 'local') && !order.blockOtherAfterSales}}" 
+                      class="order-detail__product-btn" 
+                      catchtap="afterSalesByProduct" 
+                      data-order-id="{{order._id}}" 
+                      data-product-index="{{index}}">
+                申请售后
+              </button>
+              <!-- 加入购物车按钮 -->
+              <button class="order-detail__product-btn" catchtap="addToCart" data-product-id="{{item.productId}}">
+                加入购物车
+              </button>
+            </view>
+          </view>
+        </view>
+        <text class="order-detail__product-quantity">×{{item.quantity}}</text>
+      </view>
+      <view wx:if="{{order.message}}" class="order-detail__message-item">
+        <text class="order-detail__message-label">留言：</text>
+        <text class="order-detail__message-value">{{order.message}}</text>
+      </view>
+    </view>
+
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">订单金额</text>
+      <view class="order-detail__amount-item">
+        <text class="order-detail__amount-label">商品金额：</text>
+        <text class="order-detail__amount-value">¥{{order.productTotalAmount || 0}}</text>
+      </view>
+      <view wx:if="{{order.deliveryType === 'local' && order.distance}}" class="order-detail__amount-item">
+        <text class="order-detail__amount-label">配送距离：</text>
+        <text class="order-detail__amount-value">{{order.distance}} km</text>
+      </view>
+      <view wx:if="{{order.deliveryType !== 'pickup'}}" class="order-detail__amount-item">
+        <text class="order-detail__amount-label">{{order.deliveryType === 'local' ? '配送费：' : '运费：'}}</text>
+        <text class="order-detail__amount-value">{{order.deliveryType === 'local' ? (order.totalPrice > order.productTotalAmount ? '¥' + (order.totalPrice - order.productTotalAmount) : '免配送费') : (order.totalPrice > order.productTotalAmount ? '¥' + (order.totalPrice - order.productTotalAmount) : '已包邮')}}</text>
+      </view>
+      <view class="order-detail__amount-item">
+        <text class="order-detail__amount-label">实付金额：</text>
+        <text class="order-detail__amount-value order-detail__amount-value--total">¥{{order.totalPrice}}</text>
+      </view>
+    </view>
+
+    <view class="order-detail__section">
+      <text class="order-detail__section-title">订单备注</text>
+      <view class="order-detail__info-item" style="justify-content: flex-start;">
+        <text class="order-detail__info-value">{{order.remark || '暂无备注'}}</text>
+      </view>
+    </view>
+
     <view class="order-detail__section">
       <text class="order-detail__section-title">订单信息</text>
       <view class="order-detail__info-item">
@@ -22,37 +248,547 @@
         <text class="order-detail__info-value">{{order.orderNumber}}</text>
       </view>
       <view class="order-detail__info-item">
-        <text class="order-detail__info-label">订单状态：</text>
-        <text class="order-detail__info-value">{{order.statusText}}</text>
+        <text class="order-detail__info-label">创建时间：</text>
+        <text class="order-detail__info-value">{{order.createTime}}</text>
+      </view>
+      <view wx:if="{{order.payTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">支付时间：</text>
+        <text class="order-detail__info-value">{{order.payTime}}</text>
+      </view>
+      <view wx:if="{{order.shippingTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">发货时间：</text>
+        <text class="order-detail__info-value">{{order.shippingTime}}</text>
+      </view>
+      <view wx:if="{{order.deliveryType === 'express' && order.signTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">签收时间：</text>
+        <text class="order-detail__info-value">{{order.signTime}}</text>
+      </view>
+      <view wx:if="{{order.deliveryTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">送达时间：</text>
+        <text class="order-detail__info-value">{{order.deliveryTime}}</text>
+      </view>
+      <view wx:if="{{order.receiptTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">收货时间：</text>
+        <text class="order-detail__info-value">{{order.receiptTime}}</text>
+      </view>
+      <view wx:if="{{order.cancelTime}}" class="order-detail__info-item">
+        <text class="order-detail__info-label">取消时间：</text>
+        <text class="order-detail__info-value">{{order.cancelTime}}</text>
       </view>
       <view class="order-detail__info-item">
-        <text class="order-detail__info-label">创建时间：</text>
-        <text class="order-detail__info-value">{{order.createdAt}}</text>
+        <text class="order-detail__info-label">订单状态：</text>
+        <text class="order-detail__info-value" style="color: {{orderStatus.getOrderStatusColor(order.status, order.statusText)}}">{{order.statusText}}</text>
+      </view>
+
+    </view>
+
+    <!-- 订单操作按钮 -->
+    <view class="order-detail__footer fixed-bottom">
+      <view class="order-detail__total"></view>
+      <view class="order-detail__actions">
+        <button wx:if="{{order.status === 'pending' || (order.status === 'paid' && order.canCancel)}}" class="order-detail__btn" bindtap="cancelOrder" data-order-id="{{order._id}}">
+          取消订单
+        </button>
+        <button wx:elif="{{order.status === 'paid' && !order.canCancel}}" class="order-detail__btn" bindtap="contactService" data-order-id="{{order._id}}">
+          联系客服
+        </button>
+        <button wx:if="{{order.status === 'pending'}}" class="order-detail__btn order-detail__btn--primary" bindtap="goToPayment" data-order-id="{{order._id}}">
+          去支付{{countdownText}}
+        </button>
+        <button wx:elif="{{order.status === 'shipping'}}" class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
+          查看物流
+        </button>
+        <button wx:elif="{{order.status === 'delivered'}}" class="order-detail__btn order-detail__btn--primary" bindtap="confirmReceipt" data-order-id="{{order._id}}">
+          确认收货
+        </button>
+        <button wx:if="{{(order.status === 'completed' || order.status === 'refund_completed') && order.deliveryType === 'express'}}" class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
+          查看物流
+        </button>
+        <button wx:if="{{order.status === 'refund' || order.status === 'refund_completed'}}" class="order-detail__btn" bindtap="viewAfterSales" data-order-id="{{order._id}}">
+          查看售后
+        </button>
+        <button wx:elif="{{order.status === 'cancelled'}}" class="order-detail__btn" bindtap="deleteOrder" data-order-id="{{order._id}}">
+          删除订单
+        </button>
       </view>
     </view>
-    
-    <view class="order-detail__section">
-      <text class="order-detail__section-title">商品信息</text>
-      <view wx:for="{{order.products}}" wx:key="_id" class="order-detail__product-item">
-        <image class="order-detail__product-image" src="{{item.coverImage}}" mode="aspectFill"></image>
-        <view class="order-detail__product-info">
-          <text class="order-detail__product-name">{{item.name}}</text>
-          <text class="order-detail__product-price">¥{{item.price}}</text>
+  </view>
+
+  <!-- 售后类型选择弹窗 -->
+  <view wx:if="{{showAfterSalesTypeModal}}" class="after-sales-modal">
+    <view class="after-sales-modal__mask" bindtap="closeAfterSalesTypeModal"></view>
+    <view class="after-sales-modal__content">
+      <view class="after-sales-modal__header">
+        <text class="after-sales-modal__title">
+              {{afterSalesStep === 1 ? '选择售后类型' : (afterSalesStep === 2 ? '选择售后原因' : (afterSalesStep === 3 ? '上传凭证/说明' : '确认售后信息'))}}
+            </text>
+      </view>
+      <view class="after-sales-modal__body">
+        <!-- 步骤1：选择售后类型 -->
+        <view wx:if="{{afterSalesStep === 1}}">
+          <!-- 商品信息 -->
+          <view wx:if="{{selectedProductIndex >= 0 && order.products[selectedProductIndex]}}" class="after-sales-modal__product">
+            <view class="after-sales-modal__product-image-wrap">
+              <image class="after-sales-modal__product-image" src="{{order.products[selectedProductIndex].coverImage}}" mode="aspectFill"></image>
+              <view wx:if="{{goodsStatusText}}" class="after-sales-modal__product-sign">{{goodsStatusText}}</view>
+            </view>
+            <view class="after-sales-modal__product-info">
+              <text class="after-sales-modal__product-name">{{order.products[selectedProductIndex].name}}</text>
+              <text class="after-sales-modal__product-spec">
+                {{order.products[selectedProductIndex].skuName || order.products[selectedProductIndex].spec || ''}}
+              </text>
+              <text class="after-sales-modal__product-price">¥{{order.products[selectedProductIndex].price}}</text>
+            </view>
+            <text class="after-sales-modal__product-count">x{{order.products[selectedProductIndex].quantity || 1}}</text>
+          </view>
+          <!-- 服务标签 -->
+          <view class="after-sales-modal__service">
+            <text class="after-sales-modal__service-icon">🛡️</text>
+            <text class="after-sales-modal__service-text">服务</text>
+          </view>
+          <!-- 售后类型列表 -->
+          <view class="after-sales-modal__type-list">
+            <!-- 未签收：仅显示"未收到货退款" -->
+            <view wx:if="{{order.status === 'shipping'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'not_received_refund' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="not_received_refund">
+              <view class="after-sales-modal__type-left">
+                <text class="after-sales-modal__type-icon">📦</text>
+                <view class="after-sales-modal__type-info">
+                  <text class="after-sales-modal__type-name">未收到货退款</text>
+                  <text class="after-sales-modal__type-desc">申请后将拦截物流，拦截成功后退款</text>
+                </view>
+              </view>
+              <view class="after-sales-modal__type-check {{selectedAfterSalesType === 'not_received_refund' ? 'after-sales-modal__type-check--active' : ''}}"></view>
+            </view>
+            
+            <!-- 已签收/已完成/售后中：显示"退货/退款"和"换货" -->
+            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'refund' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="refund">
+              <view class="after-sales-modal__type-left">
+                <text class="after-sales-modal__type-icon">🔄</text>
+                <view class="after-sales-modal__type-info">
+                  <text class="after-sales-modal__type-name">退货/退款</text>
+                  <text class="after-sales-modal__type-desc">建议先与客服协商一致</text>
+                </view>
+              </view>
+              <view class="after-sales-modal__type-check {{selectedAfterSalesType === 'refund' ? 'after-sales-modal__type-check--active' : ''}}"></view>
+            </view>
+            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'exchange' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="exchange">
+              <view class="after-sales-modal__type-left">
+                <text class="after-sales-modal__type-icon">🔄</text>
+                <view class="after-sales-modal__type-info">
+                  <text class="after-sales-modal__type-name">换货</text>
+                  <text class="after-sales-modal__type-desc">需要更换商品</text>
+                </view>
+              </view>
+              <view class="after-sales-modal__type-check {{selectedAfterSalesType === 'exchange' ? 'after-sales-modal__type-check--active' : ''}}"></view>
+            </view>
+          </view>
         </view>
-        <text class="order-detail__product-quantity">×{{item.quantity}}</text>
+
+        <!-- 步骤2：选择售后原因 -->
+    <view wx:if="{{afterSalesStep === 2 && selectedAfterSalesType === 'refund'}}" class="after-sales-reason">
+      <!-- 剩余售后时限提示 -->
+      <view wx:if="{{remainingQualityAfterSalesDays > 0 || remainingNormalAfterSalesDays > 0}}" class="after-sales-reason__time-tip">
+        <text wx:if="{{remainingQualityAfterSalesDays > 0 && remainingNormalAfterSalesDays > 0}}">剩余常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：{{remainingQualityAfterSalesDays}}天</text>
+        <text wx:elif="{{remainingQualityAfterSalesDays > 0}}">剩余质量售后：{{remainingQualityAfterSalesDays}}天</text>
+        <text wx:else>剩余常规售后：{{remainingNormalAfterSalesDays}}天</text>
+      </view>
+      <!-- 已过售后时效提示 -->
+      <view wx:if="{{remainingQualityAfterSalesDays === 0 && remainingNormalAfterSalesDays === 0}}" class="after-sales-reason__expired-tip">
+        <text>已过售后时效</text>
+      </view>
+      
+      <!-- 退款类型 -->
+      <view wx:if="{{displayReasonList.length > 0}}" class="after-sales-reason__tabs">
+        <view class="after-sales-reason__tab {{selectedRefundType === 'refund_only' ? 'after-sales-reason__tab--active' : ''}}" bindtap="setRefundType" data-type="refund_only">退款</view>
+        <view class="after-sales-reason__tab {{selectedRefundType === 'return_refund' ? 'after-sales-reason__tab--active' : ''}}" bindtap="setRefundType" data-type="return_refund">退货退款</view>
+      </view>
+
+      <!-- 货物状态（仅退款时显示） -->
+      <view wx:if="{{selectedRefundType === 'refund_only' && displayReasonList.length > 0}}" class="after-sales-reason__goods-status">
+        <view wx:for="{{goodsStatusOptions}}" wx:key="value" class="after-sales-reason__goods-item {{selectedGoodsStatus === item.value ? 'after-sales-reason__goods-item--active' : ''}}" bindtap="setGoodsStatus" data-status="{{item.value}}">
+          {{item.label}}
+        </view>
+      </view>
+
+      <!-- 原因列表 -->
+      <view wx:if="{{displayReasonList.length > 0}}" class="after-sales-reason__list">
+        <view wx:for="{{displayReasonList}}" wx:key="value" class="after-sales-reason__item {{selectedReason === item.value ? 'after-sales-reason__item--active' : ''}}" bindtap="setReason" data-value="{{item.value}}" data-label="{{item.label}}">
+          <view class="after-sales-reason__item-info">
+            <text class="after-sales-reason__item-text">{{item.label}}</text>
+          </view>
+          <view class="after-sales-reason__item-check {{selectedReason === item.value ? 'after-sales-reason__item-check--active' : ''}}"></view>
+        </view>
       </view>
     </view>
-    
-    <view class="order-detail__section">
-      <text class="order-detail__section-title">订单金额</text>
-      <view class="order-detail__amount-item">
-        <text class="order-detail__amount-label">商品金额：</text>
-        <text class="order-detail__amount-value">¥{{order.totalPrice}}</text>
+
+        <!-- 未收到货退款原因选择（派件中/运输中时） -->
+        <view wx:if="{{afterSalesStep === 2 && selectedAfterSalesType === 'not_received_refund'}}" class="after-sales-reason">
+          <!-- 剩余售后时限提示 -->
+          <view wx:if="{{remainingQualityAfterSalesDays > 0 || remainingNormalAfterSalesDays > 0}}" class="after-sales-reason__time-tip">
+            <text>未收到货退款无时间限制</text>
+          </view>
+          
+          <!-- 原因列表（选填） -->
+          <view class="after-sales-reason__list">
+            <view wx:for="{{notReceivedRefundReasons}}" wx:key="value" class="after-sales-reason__item {{selectedReason === item.value ? 'after-sales-reason__item--active' : ''}}" bindtap="setReason" data-value="{{item.value}}" data-label="{{item.label}}">
+              <view class="after-sales-reason__item-info">
+                <text class="after-sales-reason__item-text">{{item.label}}</text>
+              </view>
+              <view class="after-sales-reason__item-check {{selectedReason === item.value ? 'after-sales-reason__item-check--active' : ''}}"></view>
+            </view>
+          </view>
+          <view class="after-sales-reason__optional-tip">
+            <text>以上原因选填，可直接提交</text>
+          </view>
+        </view>
+
+        <!-- 换货流程 -->
+        <view wx:if="{{afterSalesStep === 2 && selectedAfterSalesType === 'exchange'}}" class="after-sales-reason">
+          <!-- 剩余售后时限提示 -->
+          <view wx:if="{{remainingQualityAfterSalesDays > 0 || remainingNormalAfterSalesDays > 0}}" class="after-sales-reason__time-tip">
+            <text wx:if="{{remainingQualityAfterSalesDays > 0 && remainingNormalAfterSalesDays > 0}}">剩余常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：{{remainingQualityAfterSalesDays}}天</text>
+            <text wx:elif="{{remainingQualityAfterSalesDays > 0}}">剩余质量售后：{{remainingQualityAfterSalesDays}}天</text>
+            <text wx:else>剩余常规售后：{{remainingNormalAfterSalesDays}}天</text>
+          </view>
+          <!-- 已过售后时效提示 -->
+          <view wx:if="{{remainingQualityAfterSalesDays === 0 && remainingNormalAfterSalesDays === 0}}" class="after-sales-reason__expired-tip">
+            <text>已过售后时效</text>
+          </view>
+          
+          <!-- 换货原因列表 -->
+          <view wx:if="{{displayReasonList.length > 0}}" class="after-sales-reason__list">
+            <view wx:for="{{displayReasonList}}" wx:key="value" class="after-sales-reason__item {{selectedExchangeReason === item.value ? 'after-sales-reason__item--active' : ''}}" bindtap="setExchangeReason" data-value="{{item.value}}" data-label="{{item.label}}">
+              <view class="after-sales-reason__item-info">
+                <text class="after-sales-reason__item-text">{{item.label}}</text>
+              </view>
+              <view class="after-sales-reason__item-check {{selectedExchangeReason === item.value ? 'after-sales-reason__item-check--active' : ''}}"></view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 步骤3：上传凭证 -->
+        <view wx:if="{{afterSalesStep === 3}}" class="after-sales-form">
+          <!-- 上传凭证区域 -->
+          <view class="after-sales-form__upload">
+            <view class="after-sales-form__upload-header">
+              <text class="after-sales-form__upload-title">图片/视频凭证</text>
+              <view class="after-sales-form__upload-header-right">
+                <text class="after-sales-form__upload-required">必填</text>
+                <text class="after-sales-form__upload-tip-btn" bindtap="showVideoTips">视频录制建议</text>
+              </view>
+            </view>
+            <text class="after-sales-form__upload-tip">为了更快的帮助您处理问题，请上传说明/凭证。</text>
+            <view class="after-sales-form__upload-images">
+              <!-- 图片 -->
+              <view wx:for="{{afterSalesImages}}" wx:key="index" class="after-sales-form__image-item">
+                <image src="{{item.path}}" class="after-sales-form__image" mode="aspectFill" bindtap="previewAfterSalesImage" data-index="{{index}}"></image>
+                <view class="after-sales-form__image-delete" bindtap="deleteAfterSalesImage" data-index="{{index}}">×</view>
+              </view>
+              <!-- 视频 -->
+              <view wx:for="{{afterSalesVideos}}" wx:key="index" class="after-sales-form__video-item">
+                <view wx:if="{{!item.thumb}}" class="after-sales-form__video-default-thumb">
+                  <text class="after-sales-form__video-default-icon">🎬</text>
+                </view>
+                <image wx:else src="{{item.thumb}}" class="after-sales-form__video-thumb" mode="aspectFill" bindtap="playAfterSalesVideo" data-index="{{index}}"></image>
+                <view class="after-sales-form__video-play" bindtap="playAfterSalesVideo" data-index="{{index}}">
+                  <text class="after-sales-form__video-play-icon">▶</text>
+                </view>
+                <view class="after-sales-form__image-delete" bindtap="deleteAfterSalesVideo" data-index="{{index}}">×</view>
+              </view>
+              <!-- 添加按钮 -->
+              <view wx:if="{{afterSalesImages.length + afterSalesVideos.length < 9}}" class="after-sales-form__image-add" bindtap="chooseAfterSalesMedia">
+                <image class="after-sales-form__image-add-icon" src="/images/icons/上传图片.png"></image>
+                <text class="after-sales-form__image-add-text">可上传9个</text>
+              </view>
+            </view>
+            <view class="after-sales-form__description">
+              <view class="after-sales-form__description-header">
+                <text class="after-sales-form__description-label">详细说明</text>
+                <text class="after-sales-form__upload-required">必填</text>
+              </view>
+              <textarea class="after-sales-form__description-input" value="{{afterSalesDescription}}" bindinput="onAfterSalesDescriptionInput" placeholder="必填，请您填写文字说明" maxlength="200"></textarea>
+              <text class="after-sales-form__description-count">{{afterSalesDescription.length || 0}}/200</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 步骤4：填写信息 -->
+        <view wx:if="{{afterSalesStep === 4}}" class="after-sales-form">
+          <!-- 未收到货退款提示 -->
+          <view wx:if="{{selectedAfterSalesType === 'not_received_refund'}}" class="after-sales-form__notice">
+            <view class="after-sales-form__notice-icon">⚠️</view>
+            <view class="after-sales-form__notice-text">
+              <text wx:if="{{order.products && order.products.length > 1}}">由于您选择未收到货退款，</text>
+              申请后将进入"拦截物流中"状态，拦截成功后才会退款<text wx:if="{{order.products && order.products.length > 1}}">（订单中所有商品将一起退款，其他商品将不再支持单独申请售后）</text>，拦截失败则售后取消。
+            </view>
+          </view>
+
+          <!-- 商品信息 -->
+          <view wx:if="{{selectedProductIndex >= 0 && order.products[selectedProductIndex]}}" class="after-sales-form__product">
+            <view class="after-sales-form__product-image-wrapper">
+              <image src="{{order.products[selectedProductIndex].coverImage}}" class="after-sales-form__product-image" mode="aspectFill"></image>
+              <view wx:if="{{order.status === 'delivered'}}" class="after-sales-form__product-tag">已签收</view>
+            </view>
+            <view class="after-sales-form__product-info">
+              <text class="after-sales-form__product-name">{{order.products[selectedProductIndex].name}}</text>
+              <text class="after-sales-form__product-spec">{{order.products[selectedProductIndex].skuName || order.products[selectedProductIndex].spec || ''}}</text>
+              <text class="after-sales-form__product-price">¥{{order.products[selectedProductIndex].price}}</text>
+            </view>
+            <text class="after-sales-form__product-count">x{{order.products[selectedProductIndex].quantity || 1}}</text>
+          </view>
+
+          <!-- 退款原因 -->
+          <view wx:if="{{selectedAfterSalesType === 'refund'}}" class="after-sales-form__reason-item">
+            <text class="after-sales-form__type-label">退款原因</text>
+            <view class="after-sales-form__reason-right">
+              <text class="after-sales-form__type-value">{{selectedReasonLabel}}</text>
+              <text class="after-sales-form__reason-hint">{{shippingResponsibility === 'seller' ? '若此原因属实，运费由卖家承担' : '此原因，运费由买家承担'}}</text>
+            </view>
+          </view>
+          <view wx:elif="{{selectedAfterSalesType === 'exchange'}}" class="after-sales-form__type-item">
+            <text class="after-sales-form__type-label">换货原因</text>
+            <text class="after-sales-form__type-value">{{selectedExchangeReasonLabel}}</text>
+          </view>
+
+          <!-- 换新商品（换货时显示在换货原因下方） -->
+          <view wx:if="{{selectedAfterSalesType === 'exchange'}}" class="after-sales-form__new-product">
+            <text class="after-sales-form__new-product-title">换新商品</text>
+            <view wx:if="{{selectedProductIndex >= 0 && order.products[selectedProductIndex]}}" class="after-sales-form__product after-sales-form__product--new">
+              <view class="after-sales-form__product-image-wrapper">
+                <image src="{{order.products[selectedProductIndex].coverImage}}" class="after-sales-form__product-image" mode="aspectFill"></image>
+              </view>
+              <view class="after-sales-form__product-info">
+                <text class="after-sales-form__product-name">{{order.products[selectedProductIndex].name}}</text>
+                <text class="after-sales-form__product-spec">{{order.products[selectedProductIndex].skuName || order.products[selectedProductIndex].spec || ''}}</text>
+                <text class="after-sales-form__product-price after-sales-form__product-price--black">¥{{order.products[selectedProductIndex].price}}</text>
+              </view>
+              <text class="after-sales-form__product-count">x{{order.products[selectedProductIndex].quantity || 1}}</text>
+            </view>
+            
+            <!-- 凭证/说明（换货时显示） -->
+            <view wx:if="{{afterSalesImages.length > 0 || afterSalesDescription}}" class="after-sales-form__upload-info" bindtap="viewUploadInfo">
+              <view class="after-sales-form__upload-info-row">
+                <text class="after-sales-form__upload-info-label">凭证/说明</text>
+                <view class="after-sales-form__upload-info-right">
+                  <text class="after-sales-form__upload-info-desc">{{afterSalesDescription}}</text>
+                  <text class="after-sales-form__upload-info-arrow">›</text>
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 退款金额 -->
+          <view wx:if="{{selectedAfterSalesType === 'refund' || selectedAfterSalesType === 'not_received_refund'}}" class="after-sales-form__amount">
+            <text class="after-sales-form__amount-title">退款金额</text>
+            <view class="after-sales-form__amount-right">
+              <view class="after-sales-form__amount-input-wrap">
+                <text class="after-sales-form__amount-symbol">¥</text>
+                <input class="after-sales-form__amount-input" type="digit" value="{{refundAmount}}" bindinput="onRefundAmountInput" placeholder="0.00" style="width: {{amountInputWidth}}px;" />
+                <text class="after-sales-form__amount-mirror">{{refundAmount || '0.00'}}</text>
+                <image class="after-sales-form__amount-edit-icon" src="/images/icons/编辑金额.png"></image>
+              </view>
+              <text class="after-sales-form__amount-hint">最多可退 ¥{{maxRefundAmount}}</text>
+            </view>
+          </view>
+
+          <!-- 凭证/说明（非换货类型时显示） -->
+          <view wx:if="{{selectedAfterSalesType !== 'exchange' && needProof && (afterSalesImages.length > 0 || afterSalesDescription)}}" class="after-sales-form__upload-info" bindtap="viewUploadInfo">
+            <view class="after-sales-form__upload-info-row">
+              <text class="after-sales-form__upload-info-label">凭证/说明</text>
+              <view class="after-sales-form__upload-info-right">
+                <text class="after-sales-form__upload-info-desc">{{afterSalesDescription}}</text>
+                <text class="after-sales-form__upload-info-arrow">›</text>
+              </view>
+            </view>
+          </view>
+
+          <!-- 退货方式 -->
+          <view wx:if="{{selectedAfterSalesType === 'refund' && selectedRefundType === 'return_refund'}}" class="after-sales-form__return-method">
+            <text class="after-sales-form__return-method-label">退货方式</text>
+            <view class="after-sales-form__return-method-right">
+              <view class="after-sales-form__return-method-item after-sales-form__return-method-item--active">
+                <text class="after-sales-form__return-method-name">自行寄回</text>
+              </view>
+              <text class="after-sales-form__return-method-hint">需填写单号</text>
+            </view>
+          </view>
+
+          <!-- 收货地址（换货时显示） -->
+          <view wx:if="{{selectedAfterSalesType === 'exchange'}}" class="after-sales-form__address" bindtap="editAddress">
+            <view class="after-sales-form__address-header">
+              <text class="after-sales-form__address-label">收货地址</text>
+              <view class="after-sales-form__address-right">
+                <text class="after-sales-form__address-selected">选择其他地址</text>
+                <text class="after-sales-form__address-arrow">›</text>
+              </view>
+            </view>
+            <view class="after-sales-form__address-content">
+              <view class="after-sales-form__address-info">
+                <text class="after-sales-form__address-name">{{contactName}}</text>
+                <text class="after-sales-form__address-phone">{{contactPhone}}</text>
+              </view>
+              <text class="after-sales-form__address-detail">{{contactAddress}}</text>
+            </view>
+          </view>
+
+          <!-- 联系信息（非换货时显示） -->
+          <view wx:if="{{selectedAfterSalesType !== 'exchange'}}" class="after-sales-form__contact">
+            <view class="after-sales-form__contact-item">
+              <text class="after-sales-form__contact-label">联系人</text>
+              <input class="after-sales-form__contact-input" type="text" value="{{contactName}}" bindinput="onContactNameInput" placeholder="请输入联系人姓名"></input>
+            </view>
+            <view class="after-sales-form__contact-item">
+              <text class="after-sales-form__contact-label">联系电话</text>
+              <input class="after-sales-form__contact-input" type="number" value="{{contactPhone}}" bindinput="onContactPhoneInput" placeholder="请输入联系电话"></input>
+            </view>
+          </view>
+        </view>
       </view>
-      <view class="order-detail__amount-item order-detail__amount-item--total">
-        <text class="order-detail__amount-label">实付金额：</text>
-        <text class="order-detail__amount-value order-detail__amount-value--total">¥{{order.totalPrice}}</text>
+
+      <!-- 底部按钮 -->
+      <view class="after-sales-modal__footer">
+        <view wx:if="{{afterSalesStep > 1}}" class="after-sales-modal__footer-btns">
+          <button class="after-sales-modal__btn-prev" bindtap="backAfterSalesStep">上一步</button>
+          <button class="after-sales-modal__btn-next" bindtap="{{afterSalesStep === 4 ? 'submitAfterSalesApply' : 'nextAfterSalesStep'}}" disabled="{{!canSubmitAfterSales}}">{{afterSalesStep === 4 ? '提交申请' : '下一步'}}</button>
+        </view>
+        <button wx:if="{{afterSalesStep === 1}}" class="after-sales-modal__btn-next" bindtap="nextAfterSalesStep" disabled="{{!selectedAfterSalesType}}">下一步</button>
       </view>
+
+      <!-- 查看凭证弹窗（上滑样式） -->
+      <view wx:if="{{showUploadInfoModal}}" class="upload-info-modal">
+        <view class="upload-info-modal__mask" bindtap="closeUploadInfoModal"></view>
+        <view class="upload-info-modal__content">
+          <view class="upload-info-modal__header">
+            <text class="upload-info-modal__title">凭证/说明</text>
+            <view class="upload-info-modal__close" bindtap="closeUploadInfoModal">×</view>
+          </view>
+          <view class="upload-info-modal__body">
+            <!-- 图片/视频凭证（合并显示，按上传顺序） -->
+            <view class="upload-info-modal__section">
+              <text class="upload-info-modal__section-title">图片/视频凭证</text>
+              <view wx:if="{{(afterSalesImages && afterSalesImages.length > 0) || (afterSalesVideos && afterSalesVideos.length > 0)}}" class="upload-info-modal__media">
+                <!-- 按上传顺序混合显示图片和视频 -->
+                <block wx:for="{{combinedMediaList}}" wx:key="index">
+                  <!-- 图片 -->
+                  <image wx:if="{{item.type === 'image'}}" src="{{item.path}}" class="upload-info-modal__media-item upload-info-modal__media-item--image" mode="aspectFill" bindtap="previewAfterSalesImageFromCombined" data-index="{{item.originalIndex}}"></image>
+                  <!-- 视频 -->
+                  <view wx:else class="upload-info-modal__media-item upload-info-modal__media-item--video">
+                    <image wx:if="{{item.thumb}}" src="{{item.thumb}}" class="upload-info-modal__video-thumb" mode="aspectFill"></image>
+                    <view wx:else class="upload-info-modal__video-default-thumb">
+                      <text class="upload-info-modal__video-default-icon">🎬</text>
+                    </view>
+                    <view class="upload-info-modal__video-play" bindtap="playAfterSalesVideoFromCombined" data-index="{{item.originalIndex}}">
+                      <text class="upload-info-modal__video-play-icon">▶</text>
+                    </view>
+                  </view>
+                </block>
+              </view>
+              <text wx:else class="upload-info-modal__empty">暂无凭证</text>
+            </view>
+            <!-- 详细说明 -->
+            <view class="upload-info-modal__section">
+              <text class="upload-info-modal__section-title">详细说明</text>
+              <text class="upload-info-modal__section-content">{{afterSalesDescription || '暂无描述'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 物流信息弹窗 -->
+  <view wx:if="{{showLogistics}}" class="logistics-modal">
+    <view class="logistics-modal__mask" bindtap="closeLogistics"></view>
+    <view class="logistics-modal__content">
+      <!-- 弹窗头部 -->
+      <view class="logistics-modal__header">
+        <text class="logistics-modal__title">物流信息</text>
+      </view>
+      
+      <!-- 物流基本信息 -->
+      <view class="logistics-modal__info">
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">快递公司：</text>
+          <text class="logistics-modal__info-value">{{logisticsMapData.companyName || logisticsData.com}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">运单号：</text>
+          <text class="logistics-modal__info-value">{{logisticsData.nu || logisticsMapData.trackingNumber}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">物流状态：</text>
+          <text class="logistics-modal__info-value" style="color: {{logisticsData.state === '3' ? '#52c41a' : logisticsData.state === '2' ? '#1890ff' : logisticsData.state === '1' ? '#faad14' : logisticsData.state === '4' ? '#ff4d4f' : '#999'}}">
+            {{logisticsData.displayStateText || logisticsData.stateName || (logisticsData.state === '0' ? '无轨迹' : logisticsData.state === '1' ? '已揽收' : logisticsData.state === '2' ? '在途中' : logisticsData.state === '3' ? '已签收' : logisticsData.state === '4' ? '问题件' : '待发货')}}
+          </text>
+        </view>
+      </view>
+      
+      <!-- 物流轨迹时间线 -->
+      <view class="logistics-modal__track">
+        <view class="logistics-modal__track-title">物流轨迹</view>
+        <view class="logistics-modal__track-list">
+          <view wx:for="{{logisticsData.data}}" wx:key="{{index}}" class="logistics-modal__track-item">
+            <view class="logistics-modal__track-dot" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-line" wx:if="{{index < logisticsData.data.length - 1}}" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-content">
+              <text class="logistics-modal__track-text">{{item.context}}</text>
+              <text class="logistics-modal__track-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 地图轨迹（如果启用了地图轨迹接口） -->
+      <view wx:if="{{logisticsTrackPoints.length > 0}}" class="logistics-modal__map-section">
+        <view class="logistics-modal__map-title">地图轨迹</view>
+        <view class="logistics-modal__map-container">
+          <map class="logistics-modal__map"
+               id="logisticsMap"
+               longitude="{{logisticsMapCenter.longitude}}"
+               latitude="{{logisticsMapCenter.latitude}}"
+               scale="{{logisticsMapScale}}"
+               markers="{{logisticsTrackPoints}}"
+               show-location="true"
+               style="width: 100%; height: 100%;">
+          </map>
+        </view>
+        <view class="logistics-modal__map-buttons">
+          <button class="logistics-modal__map-btn" bindtap="resetMap">重置地图</button>
+          <button class="logistics-modal__map-btn" bindtap="fullScreenMap">全屏</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 视频录制建议弹窗 -->
+<view wx:if="{{showVideoTipsModal}}" class="video-tips-modal">
+  <view class="video-tips-modal__mask" bindtap="closeVideoTipsModal"></view>
+  <view class="video-tips-modal__content">
+    <view class="video-tips-modal__header">
+      <text class="video-tips-modal__title">视频录制建议</text>
+      <view class="video-tips-modal__close" bindtap="closeVideoTipsModal">×</view>
+    </view>
+    <view class="video-tips-modal__body">
+      <view class="video-tips-modal__tip">
+        <text class="video-tips-modal__tip-icon">📦</text>
+        <text class="video-tips-modal__tip-text">先展示快递单号，证明包裹归属</text>
+      </view>
+      <view class="video-tips-modal__tip">
+        <text class="video-tips-modal__tip-icon">✂️</text>
+        <text class="video-tips-modal__tip-text">快速拆箱，重点录制问题部位</text>
+      </view>
+      <view class="video-tips-modal__tip">
+        <text class="video-tips-modal__tip-icon">⏱️</text>
+        <text class="video-tips-modal__tip-text">单个视频最长30秒，可分段录制</text>
+      </view>
+      <view class="video-tips-modal__tip">
+        <text class="video-tips-modal__tip-icon">📷</text>
+        <text class="video-tips-modal__tip-text">可同时上传图片和视频（最多9个）</text>
+      </view>
+    </view>
+    <view class="video-tips-modal__footer">
+      <button class="video-tips-modal__btn" bindtap="closeVideoTipsModal">知道了</button>
     </view>
   </view>
 </view>

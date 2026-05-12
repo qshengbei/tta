@@ -46,3 +46,15 @@
   --space-lg: 32rpx;
   --space-xl: 40rpx;
 }
+
+/* 订单状态颜色 */
+:root {
+  --order-status-pending: #FF9800;   /* 待支付 - 橙色 */
+  --order-status-paid: #2196F3;       /* 待发货/待自提/待配送 - 蓝色 */
+  --order-status-shipping: #9C27B0;   /* 配送中 - 紫色 */
+  --order-status-completed: #4CAF50; /* 已完成 - 绿色 */
+  --order-status-cancelled: #9E9E9E; /* 已取消 - 灰色 */
+  --order-status-refund: #FF9800;    /* 售后中/退款中 - 橙色 */
+  --order-status-refund-completed: #4CAF50; /* 售后完成/退款完成 - 绿色 */
+  --order-status-default: #9E9E9E;    /* 默认 - 灰色 */
+}

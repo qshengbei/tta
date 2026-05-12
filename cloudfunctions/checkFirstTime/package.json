@@ -1,0 +1,14 @@
+{
+  "name": "checkFirstTime",
+  "version": "1.0.0",
+  "description": "检查用户是否第一次进入并创建欢迎消息",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

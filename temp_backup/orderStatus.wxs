@@ -1,0 +1,119 @@
+/**
+ * 订单状态颜色工具函数
+ * 用于根据订单状态显示对应颜色的通用规则
+ */
+
+/**
+ * 获取订单状态对应的颜色
+ * @param {string} status - 订单状态值
+ * @param {string} statusText - 订单状态文本（备用，当status无法匹配时使用）
+ * @returns {string} - 返回对应的颜色值
+ */
+function getOrderStatusColor(status, statusText) {
+  if (!status && !statusText) return '#9E9E9E';
+
+  var statusLower = (status || '').toLowerCase();
+  var statusTextLower = (statusText || '').toLowerCase();
+
+  // 待支付
+  if (statusLower === 'pending' || statusTextLower.indexOf('待支付') !== -1) {
+    return '#FF9800';
+  }
+
+  // 待发货（快递）/ 待自提 / 待配送（同城）
+  if (statusLower === 'paid' ||
+      statusTextLower.indexOf('待发货') !== -1 ||
+      statusTextLower.indexOf('待自提') !== -1 ||
+      statusTextLower.indexOf('待配送') !== -1) {
+    return '#2196F3';
+  }
+
+  // 配送中（快递）/ 同城配送中 / 待确认收货
+  if (statusLower === 'shipping' ||
+      statusLower === 'local_shipping' ||
+      statusLower === 'delivered' ||
+      statusTextLower.indexOf('配送中') !== -1 ||
+      statusTextLower.indexOf('配送') !== -1 ||
+      statusTextLower.indexOf('待确认收货') !== -1) {
+    return '#9C27B0';
+  }
+
+  // 已完成
+  if (statusLower === 'completed' || statusTextLower.indexOf('已完成') !== -1) {
+    return '#4CAF50';
+  }
+
+  // 已取消
+  if (statusLower === 'cancelled' || statusTextLower.indexOf('已取消') !== -1) {
+    return '#9E9E9E';
+  }
+
+  // 售后中 / 退款中
+  if (statusLower === 'refund' || statusTextLower.indexOf('售后') !== -1 || statusTextLower.indexOf('退款') !== -1) {
+    return '#FF9800';
+  }
+
+  // 售后完成 / 退款完成
+  if (statusLower === 'refund_completed' || statusTextLower.indexOf('售后完成') !== -1 || statusTextLower.indexOf('退款完成') !== -1) {
+    return '#4CAF50';
+  }
+
+  // 默认灰色
+  return '#9E9E9E';
+}
+
+/**
+ * 获取订单状态对应的颜色变量名（用于CSS变量）
+ * @param {string} status - 订单状态值
+ * @param {string} statusText - 订单状态文本（备用）
+ * @returns {string} - 返回对应的CSS变量名
+ */
+function getOrderStatusColorVar(status, statusText) {
+  if (!status && !statusText) return 'var(--order-status-default)';
+
+  var statusLower = (status || '').toLowerCase();
+  var statusTextLower = (statusText || '').toLowerCase();
+
+  if (statusLower === 'pending' || statusTextLower.indexOf('待支付') !== -1) {
+    return 'var(--order-status-pending)';
+  }
+
+  if (statusLower === 'paid' ||
+      statusTextLower.indexOf('待发货') !== -1 ||
+      statusTextLower.indexOf('待自提') !== -1 ||
+      statusTextLower.indexOf('待配送') !== -1) {
+    return 'var(--order-status-paid)';
+  }
+
+  if (statusLower === 'shipping' ||
+      statusLower === 'local_shipping' ||
+      statusLower === 'delivered' ||
+      statusTextLower.indexOf('配送中') !== -1 ||
+      statusTextLower.indexOf('配送') !== -1 ||
+      statusTextLower.indexOf('待确认收货') !== -1) {
+    return 'var(--order-status-shipping)';
+  }
+
+  if (statusLower === 'completed' || statusTextLower.indexOf('已完成') !== -1) {
+    return 'var(--order-status-completed)';
+  }
+
+  if (statusLower === 'cancelled' || statusTextLower.indexOf('已取消') !== -1) {
+    return 'var(--order-status-cancelled)';
+  }
+
+  if (statusLower === 'refund' || statusTextLower.indexOf('售后') !== -1 || statusTextLower.indexOf('退款') !== -1) {
+    return 'var(--order-status-refund)';
+  }
+
+  if (statusLower === 'refund_completed' || statusTextLower.indexOf('售后完成') !== -1 || statusTextLower.indexOf('退款完成') !== -1) {
+    return 'var(--order-status-refund-completed)';
+  }
+
+  return 'var(--order-status-default)';
+}
+
+module.exports = {
+  getOrderStatusColor: getOrderStatusColor,
+  getOrderStatusColorVar: getOrderStatusColorVar
+};
