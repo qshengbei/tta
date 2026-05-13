@@ -1104,6 +1104,35 @@ Page({
     });
   },
 
+  // 再次购买
+  buyAgain(e) {
+    const orderId = e.currentTarget.dataset.orderId;
+    // 获取订单详情
+    getCollection("orders").doc(orderId).get()
+      .then(res => {
+        const order = res.data;
+        if (order && order.products && order.products.length > 0) {
+          // 将商品信息编码后传递给订单确认页面
+          const productsData = encodeURIComponent(JSON.stringify(order.products));
+          wx.navigateTo({
+            url: `/pages/order-confirm/index?products=${productsData}`
+          });
+        } else {
+          wx.showToast({
+            title: '订单商品信息异常',
+            icon: 'none'
+          });
+        }
+      })
+      .catch(err => {
+        console.error('获取订单信息失败:', err);
+        wx.showToast({
+          title: '获取订单信息失败',
+          icon: 'none'
+        });
+      });
+  },
+
   // 删除订单（软删除）
   deleteOrder(e) {
     const orderId = e.currentTarget.dataset.orderId;

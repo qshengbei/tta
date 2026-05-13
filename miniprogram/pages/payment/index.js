@@ -238,14 +238,36 @@ Page({
               // 确保订单ID存在
               console.log('支付成功时的订单ID:', orderId);
               if (orderId) {
-                // 更新订单状态为已支付（统一走云函数，自动发送通知）
-                this.updateOrderStatus(orderId, 'paid', new Date());
+                // 模拟支付方式：随机选择零钱或银行卡
+                const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB'];
+                const bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)];
+                const tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
                 
-                // 更新订单数量缓存，状态从pending（待支付）更新为paid（已支付）
-                this.updateOrderCountCache(order.deliveryType, 'pending', 'paid');
-                
-                // 删除购物车中对应的商品（软删除）
-                this.deleteCartItems();
+                // 先更新订单的支付方式和交易号
+                const orders = getCollection("orders");
+                orders.doc(orderId).update({
+                  data: {
+                    bankType: bankType,
+                    tradeNo: tradeNo,
+                    payTime: new Date()
+                  }
+                }).then(() => {
+                  console.log('订单支付方式更新成功');
+                  // 更新订单状态为已支付（统一走云函数，自动发送通知）
+                  this.updateOrderStatus(orderId, 'paid', new Date());
+                  
+                  // 更新订单数量缓存，状态从pending（待支付）更新为paid（已支付）
+                  this.updateOrderCountCache(order.deliveryType, 'pending', 'paid');
+                  
+                  // 删除购物车中对应的商品（软删除）
+                  this.deleteCartItems();
+                }).catch(err => {
+                  console.error('更新订单支付方式失败:', err);
+                  // 即使更新支付方式失败，也继续处理支付
+                  this.updateOrderStatus(orderId, 'paid', new Date());
+                  this.updateOrderCountCache(order.deliveryType, 'pending', 'paid');
+                  this.deleteCartItems();
+                });
               } else {
                 console.error('订单ID为空，无法更新订单状态');
               }
@@ -447,9 +469,13 @@ Page({
         updatedAt: createTime
       };
       
-      // 如果是已支付状态，添加支付时间
+      // 如果是已支付状态，添加支付时间和支付方式
       if (status === 'paid') {
         orderData.payTime = createTime;
+        // 模拟支付方式：随机选择零钱或银行卡
+        const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB'];
+        orderData.bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)];
+        orderData.tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
       }
       
       // 打印准备创建的订单数据

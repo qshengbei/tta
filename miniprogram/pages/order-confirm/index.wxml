@@ -189,6 +189,12 @@
           <image class="product-item__image" src="{{item.coverImage}}" mode="aspectFill"/>
           <view class="product-item__info">
             <text class="product-item__name">{{item.name}}</text>
+            <view class="product-item__stock" wx:if="{{item.stock !== undefined}}">
+              <text class="product-item__stock-text {{item.stock < item.quantity ? 'product-item__stock-text--low' : ''}}">
+                库存：{{item.stock}}件
+                <text wx:if="{{item.stock < item.quantity}}" class="product-item__stock-warning">（库存不足）</text>
+              </text>
+            </view>
             <view class="product-item__bottom">
               <text class="product-item__price">¥{{item.price}}</text>
               <text class="product-item__quantity">x{{item.quantity}}</text>
@@ -228,7 +234,9 @@
       <view class="bottom-bar__left">
         <text class="bottom-bar__price">¥{{totalPrice}}</text>
       </view>
-      <button class="bottom-bar__btn {{isOutOfRange ? 'bottom-bar__btn--disabled' : ''}}" bindtap="submitOrder" disabled="{{isOutOfRange}}">{{isOutOfRange ? '超出配送范围' : '提交订单'}}</button>
+      <button class="bottom-bar__btn {{isOutOfRange || hasStockIssue ? 'bottom-bar__btn--disabled' : ''}}" bindtap="submitOrder" disabled="{{isOutOfRange || hasStockIssue}}">
+        {{isOutOfRange ? '超出配送范围' : hasStockIssue ? '部分商品库存不足' : '提交订单'}}
+      </button>
     </view>
 
     <!-- 配送方式选择弹窗 -->

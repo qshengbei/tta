@@ -388,17 +388,40 @@ function mapCaseStatusToOrderStatus(caseStatus, originalOrderStatus, caseItems, 
     const completedItemCount = caseItems.filter(item => String(item.itemStatus || '') === 'completed').length;
     const totalProductCount = orderProducts && orderProducts.length ? orderProducts.length : 1;
     
-    // 如果只有部分商品完成售后，订单状态保持不变
-    if (completedItemCount < totalProductCount) {
+    // 如果所有商品都完成了售后（拦截成功的情况），订单状态变为退款完成
+    if (completedItemCount >= totalProductCount) {
       return {
-        status: originalOrderStatus,
+        status: 'refund_completed',
         afterSalesStatus: 'completed'
       };
     }
     
-    // 所有商品都完成售后，订单状态变为退款完成
+    // 如果只有部分商品完成售后（拦截失败但同意申请的情况）
+    // 检查是否所有商品都有售后记录（不管是进行中还是已完成）
+    const hasAfterSalesIndices = new Set(caseItems.map(item => String(item.orderItemIndex)));
+    const allProductsHaveAfterSales = orderProducts && orderProducts.length 
+      ? orderProducts.every((_, index) => hasAfterSalesIndices.has(String(index)))
+      : true;
+    
+    // 如果所有商品都有售后记录，订单状态变为退款完成
+    if (allProductsHaveAfterSales) {
+      return {
+        status: 'refund_completed',
+        afterSalesStatus: 'completed'
+      };
+    }
+    
+    // 如果还有商品没有售后记录，恢复订单状态，允许其他商品继续申请售后
+    if (originalOrderStatus === 'refund' || originalOrderStatus === 'afterSales') {
+      return {
+        status: 'shipping',
+        afterSalesStatus: 'completed'
+      };
+    }
+    
+    // 其他部分完成的情况，订单状态保持不变
     return {
-      status: 'refund_completed',
+      status: originalOrderStatus,
       afterSalesStatus: 'completed'
     };
   }
@@ -412,10 +435,27 @@ function mapCaseStatusToOrderStatus(caseStatus, originalOrderStatus, caseItems, 
   }
 
   if (caseStatus === 'cancelled' || caseStatus === 'rejected') {
-    // 如果原来的订单状态是待收货（delivered），恢复为待收货状态
-    if (originalOrderStatus === 'delivered') {
+    // 如果原来的订单状态是配送中（shipping）或待确认收货（delivered），恢复为原来的状态
+    if (originalOrderStatus === 'shipping' || originalOrderStatus === 'delivered') {
       return {
-        status: 'delivered',
+        status: originalOrderStatus,
+        afterSalesStatus: 'cancelled'
+      };
+    }
+    // 如果原来的订单状态是售后中（refund），需要恢复原状态
+    // 但由于 mapCaseStatusToOrderStatus 函数无法直接访问订单的 originalStatusBeforeRefund 字段
+    // 这里只能保守地返回 completed 状态
+    // 实际恢复逻辑应该在 refreshAfterSalesAggregation 中通过查询订单的 originalStatusBeforeRefund 来实现
+    if (originalOrderStatus === 'refund' || originalOrderStatus === 'afterSales') {
+      return {
+        status: 'completed',
+        afterSalesStatus: 'cancelled'
+      };
+    }
+    // 如果原来的订单状态是其他非完成状态，也恢复为原来的状态
+    if (originalOrderStatus && originalOrderStatus !== 'completed' && originalOrderStatus !== 'refund_completed') {
+      return {
+        status: originalOrderStatus,
         afterSalesStatus: 'cancelled'
       };
     }
@@ -443,15 +483,25 @@ async function refreshAfterSalesAggregation(order, caseDoc, now, resultText) {
   const caseItems = caseItemsRes.data || [];
   console.log('找到的售后明细:', caseItems.map(i => ({ id: i._id, status: i.itemStatus })));
   
+  // 获取订单的所有售后明细（用于计算订单状态）
+  const allOrderCaseItemsRes = await db.collection('after_sales_case_items').where({
+    orderId: order._id
+  }).limit(100).get();
+  const allOrderCaseItems = allOrderCaseItemsRes.data || [];
+  console.log('找到的订单所有售后明细:', allOrderCaseItems.map(i => ({ id: i._id, status: i.itemStatus })));
+  
   const caseStatus = calcCaseStatusFromItems(caseItems);
   console.log('计算出的售后单状态:', caseStatus);
+  console.log('售后明细数量:', caseItems.length);
+  console.log('售后明细详情:', caseItems.map(i => ({ id: i._id, orderItemIndex: i.orderItemIndex, approvedRefundAmount: i.approvedRefundAmount, itemStatus: i.itemStatus })));
   const approvedAmount = roundAmount(caseItems.reduce((sum, item) => sum + (Number(item.approvedRefundAmount || 0) || 0), 0));
+  console.log('计算出的approvedAmount:', approvedAmount);
   const refundedAmount = roundAmount(caseItems
     .filter((item) => String(item.itemStatus || '') === 'completed')
     .reduce((sum, item) => sum + (Number(item.approvedRefundAmount || 0) || 0), 0));
 
-  // 计算订单状态信息
-  const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, caseItems, order.products);
+  // 计算订单状态信息（使用订单的所有售后明细）
+  const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, allOrderCaseItems, order.products);
   console.log('计算出的订单状态信息:', orderStatusInfo);
 
   console.log('准备更新售后单:', caseDoc._id);
@@ -459,6 +509,11 @@ async function refreshAfterSalesAggregation(order, caseDoc, now, resultText) {
     caseStatus,
     processSummary: resultText ? { result: resultText, processTime: now, operatorType: 'admin' } : caseDoc.processSummary || null
   });
+  
+  // 计算所有售后明细的总数量和总金额
+  const totalApplyQty = caseItems.reduce((sum, item) => sum + (Number(item.applyQty || 0) || 0), 0);
+  const totalApplyAmount = roundAmount(caseItems.reduce((sum, item) => sum + (Number(item.applyRefundAmount || 0) || 0), 0));
+  const itemCount = caseItems.length;
   
   const updateRes = await db.collection('after_sales_cases').doc(caseDoc._id).update({
     data: {
@@ -468,6 +523,9 @@ async function refreshAfterSalesAggregation(order, caseDoc, now, resultText) {
         approvedAmount,
         refundedAmount
       },
+      totalApplyQty,
+      totalApplyAmount,
+      itemCount,
       processSummary: resultText
         ? {
             result: resultText,
@@ -486,15 +544,57 @@ async function refreshAfterSalesAggregation(order, caseDoc, now, resultText) {
 
   // 更新订单状态和售后结果
   const orderUpdateData = {
-    status: orderStatusInfo.status,
     updatedAt: now
   };
   
-  // 如果有处理结果文本，设置售后结果
-  if (resultText) {
-    orderUpdateData.afterSalesResult = resultText;
-    orderUpdateData.afterSalesProcessTime = now;
-    orderUpdateData.afterSalesStatus = orderStatusInfo.afterSalesStatus;
+  // 如果售后被拒绝或取消，且订单有 originalStatusBeforeRefund，恢复原状态
+  if ((caseStatus === 'cancelled' || caseStatus === 'rejected') && order.originalStatusBeforeRefund) {
+    orderUpdateData.status = order.originalStatusBeforeRefund;
+    orderUpdateData.afterSalesStatus = 'cancelled';
+    console.log('售后被拒绝/取消，恢复订单原状态:', order.originalStatusBeforeRefund);
+  } else if (caseStatus === 'completed' && order.originalStatusBeforeRefund) {
+    // 如果售后完成，检查是否需要恢复原状态
+    // 需要检查订单的所有售后明细，而不是当前售后单的售后明细
+    
+    // 获取订单的所有售后明细
+    const allOrderCaseItemsRes = await db.collection('after_sales_case_items').where({
+      orderId: order._id
+    }).limit(100).get();
+    const allOrderCaseItems = allOrderCaseItemsRes.data || [];
+    
+    const completedItemCount = allOrderCaseItems.filter(item => String(item.itemStatus || '') === 'completed').length;
+    const totalProductCount = order.products && order.products.length ? order.products.length : 1;
+    
+    // 检查是否所有商品都有有效的售后记录（排除已取消的记录）
+    // 已取消的售后记录不算，因为用户放弃了售后，商品应该还能继续申请售后
+    const validCaseItems = allOrderCaseItems.filter(item => !['cancelled', 'rejected'].includes(String(item.itemStatus || '')));
+    const hasValidAfterSalesIndices = new Set(validCaseItems.map(item => String(item.orderItemIndex)));
+    const allProductsHaveValidAfterSales = order.products && order.products.length 
+      ? order.products.every((_, index) => hasValidAfterSalesIndices.has(String(index)))
+      : true;
+    
+    console.log('=== 订单状态更新检查 ===');
+    console.log('completedItemCount:', completedItemCount);
+    console.log('totalProductCount:', totalProductCount);
+    console.log('allProductsHaveValidAfterSales:', allProductsHaveValidAfterSales);
+    
+    // 如果不是所有商品都完成售后，且不是所有商品都有有效的售后记录，恢复原状态
+    if (completedItemCount < totalProductCount && !allProductsHaveValidAfterSales) {
+      orderUpdateData.status = order.originalStatusBeforeRefund;
+      orderUpdateData.afterSalesStatus = 'completed';
+      console.log('售后完成但还有商品未完成售后，恢复订单原状态:', order.originalStatusBeforeRefund);
+    } else {
+      orderUpdateData.status = orderStatusInfo.status;
+      console.log('所有商品都已完成售后或都有有效售后记录，订单状态更新为:', orderStatusInfo.status);
+    }
+  } else {
+    orderUpdateData.status = orderStatusInfo.status;
+    // 如果有处理结果文本，设置售后结果
+    if (resultText) {
+      orderUpdateData.afterSalesResult = resultText;
+      orderUpdateData.afterSalesProcessTime = now;
+      orderUpdateData.afterSalesStatus = orderStatusInfo.afterSalesStatus;
+    }
   }
   
   await db.collection('orders').doc(order._id).update({
@@ -1869,8 +1969,13 @@ async function handleCompleteInterceptingOperation(order, params) {
   if (finalAction === 'approve' && isInterceptSuccess) {
       console.log('=== 拦截成功，处理订单所有商品 ===');
       
-      // 获取订单中的所有商品索引
-      const orderProducts = order.products || order.productsList || [];
+      // 获取订单中的所有商品索引（使用标准化函数确保字段正确）
+      const orderProducts = normalizeOrderProducts(order);
+      
+      // 获取订单的所有售后明细（包括其他售后单的）
+      const allCaseItemsRes = await db.collection('after_sales_case_items').where({
+        orderId: order._id
+      }).limit(100).get();
       
       // 先处理现有的售后明细
       await Promise.all((caseItemsRes.data || []).map((item) => {
@@ -1890,35 +1995,42 @@ async function handleCompleteInterceptingOperation(order, params) {
         });
       }));
       
-      // 如果订单中有其他商品没有售后记录，也需要创建售后完成记录
-      const existingItemIndices = new Set(caseItemsRes.data.map(item => String(item.orderItemIndex)));
+      // 如果订单中有其他商品没有有效的售后记录，也需要创建售后完成记录
+      // 排除已完成或进行中的售后记录对应的商品
+      const validAllCaseItems = (allCaseItemsRes.data || []).filter(item => 
+        !['cancelled', 'rejected'].includes(String(item.itemStatus || ''))
+      );
+      const existingItemIndices = new Set(validAllCaseItems.map(item => String(item.orderItemIndex)));
       console.log('现有售后商品索引:', existingItemIndices);
+      console.log('订单商品数量:', orderProducts.length);
       
       for (let i = 0; i < orderProducts.length; i++) {
+        const product = orderProducts[i];
+        console.log('检查商品索引:', i, 'product.index:', product.index, 'existingItemIndices.has(String(i)):', existingItemIndices.has(String(i)));
         if (!existingItemIndices.has(String(i))) {
           console.log('为商品索引', i, '创建售后完成记录');
           
-          const product = orderProducts[i];
-          const unitPrice = Number(product.price || product.productPrice || product.unitPrice || 0);
-          const quantity = Number(product.quantity || product.buyQty || product.count || 1);
-          const totalAmount = unitPrice * quantity;
+          const buyQty = product.buyQty || 1;
+          const totalAmount = product.lineAmount || 0;
           
           // 创建售后明细记录
           const newCaseItem = await db.collection('after_sales_case_items').add({
             data: {
               caseId: activeCase._id,
               orderId: order._id,
-              orderItemId: `${order._id}_${i}`,
-              orderItemIndex: i,
-              productId: product.productId || product._id,
-              productNameSnapshot: product.name || product.productName,
-              coverImageSnapshot: product.coverImage || product.imageUrl || '',
-              afterSalesType: 'refund',
-              applyQty: quantity,
+              orderItemId: product.orderItemId,
+              orderItemIndex: product.index,
+              productId: product.productId,
+              productNameSnapshot: product.productName,
+              coverImageSnapshot: product.coverImage || '',
+              afterSalesType: activeCase.primaryAfterSalesType || activeCase.type || 'refund',
+              applyQty: buyQty,
               applyRefundAmount: totalAmount,
               itemStatus: 'completed',
-              approvedQty: quantity,
+              approvedQty: buyQty,
               approvedRefundAmount: totalAmount,
+              unitPriceSnapshot: product.unitPrice || 0,
+              payableAmountSnapshot: totalAmount,
               processNote: '拦截成功，订单全部商品退款',
               createdAt: now,
               updatedAt: now,
@@ -1930,6 +2042,9 @@ async function handleCompleteInterceptingOperation(order, params) {
         }
       }
     }
+    
+    // 定义售后明细状态
+    const itemStatus = finalAction === 'approve' ? 'completed' : 'rejected';
     
     // 不是拦截成功，只处理现有的售后明细
     if (!(finalAction === 'approve' && isInterceptSuccess)) {
@@ -1951,8 +2066,6 @@ async function handleCompleteInterceptingOperation(order, params) {
         });
       }));
     }
-    
-    const itemStatus = finalAction === 'approve' ? 'completed' : 'rejected';
     
     await createAfterSalesLog({
       caseId: activeCase._id,

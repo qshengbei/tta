@@ -310,6 +310,145 @@
 
 
 
+/* 物流弹窗 */
+.logistics-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.logistics-modal__mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.logistics-modal__content {
+  position: relative;
+  width: 100%;
+  max-height: 75vh;
+  background-color: #fff;
+  border-radius: 32rpx 32rpx 0 0;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.logistics-modal__header {
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+  text-align: center;
+}
+
+.logistics-modal__title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.logistics-modal__info {
+  padding: 24rpx;
+  background-color: #fafafa;
+}
+
+.logistics-modal__info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+}
+
+.logistics-modal__info-label {
+  font-size: 26rpx;
+  color: #999;
+}
+
+.logistics-modal__info-value {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.logistics-modal__track {
+  padding: 24rpx;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.logistics-modal__track-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.logistics-modal__track-list {
+  padding-left: 20rpx;
+}
+
+.logistics-modal__track-item {
+  display: flex;
+  padding: 16rpx 0;
+  position: relative;
+}
+
+.logistics-modal__track-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background-color: #d9d9d9;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.logistics-modal__track-line {
+  position: absolute;
+  left: 7rpx;
+  top: 36rpx;
+  bottom: 0;
+  width: 2rpx;
+  background-color: #d9d9d9;
+}
+
+.logistics-modal__track-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.logistics-modal__track-text {
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.5;
+}
+
+.logistics-modal__track-time {
+  font-size: 22rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+
 /* 动画 */
 @keyframes spin {
   to {

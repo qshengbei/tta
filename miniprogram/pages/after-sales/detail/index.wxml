@@ -151,6 +151,35 @@
       </view>
     </view>
     
+    <!-- 退款信息 -->
+    <view class="section" wx:if="{{afterSales.refundInfo}}">
+      <view class="section__title">退款信息</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">退款状态：</text>
+          <text class="info-item__value {{afterSales.refundInfo.status === 'success' ? 'info-item__value--success' : 'info-item__value--pending'}}">
+            {{afterSales.refundInfo.status === 'success' ? '退款成功' : '退款处理中'}}
+          </text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">退款金额：</text>
+          <text class="info-item__value info-item__value--price">¥{{afterSales.refundInfo.amount}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">退款方式：</text>
+          <text class="info-item__value">{{afterSales.refundInfo.refundType || '原路退回'}}</text>
+        </view>
+        <view class="info-item" wx:if="{{afterSales.refundInfo.completeTimeText}}">
+          <text class="info-item__label">退款时间：</text>
+          <text class="info-item__value">{{afterSales.refundInfo.completeTimeText}}</text>
+        </view>
+        <view class="info-item" wx:if="{{afterSales.refundInfo.message}}">
+          <text class="info-item__label">退款说明：</text>
+          <text class="info-item__value">{{afterSales.refundInfo.message}}</text>
+        </view>
+      </view>
+    </view>
+    
     <!-- 底部按钮 -->
     <view class="footer" wx:if="{{afterSales.status === 'submitted' || afterSales.status === 'reviewing' || afterSales.status === 'pending'}}">
       <button class="footer__btn footer__btn--cancel" bindtap="cancelAfterSales">取消申请</button>

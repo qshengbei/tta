@@ -148,7 +148,10 @@
             <button wx:if="{{item.status === 'refund'}}" class="order-item__btn" catchtap="viewOrderDetail" data-order-id="{{item._id}}">
               查看售后
             </button>
-            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled'}}" class="order-item__btn order-item__btn--delete" catchtap="deleteOrder" data-order-id="{{item._id}}">
+            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn" catchtap="buyAgain" data-order-id="{{item._id}}">
+              再次购买
+            </button>
+            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn order-item__btn--delete" catchtap="deleteOrder" data-order-id="{{item._id}}">
               删除订单
             </button>
           </view>

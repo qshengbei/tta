@@ -213,6 +213,7 @@ Page({
   normalizeCaseRecord(record) {
     const status = record.caseStatus || 'submitted';
     const type = record.primaryAfterSalesType || 'refund';
+    const isNotReceivedRefund = type === 'refund_not_received' || type === 'not_received_refund' || record.goodsStatus === 'not_received';
     return {
       _id: record._id,
       orderId: record.orderId,
@@ -224,7 +225,7 @@ Page({
       statusText: STATUS_TEXT_MAP[status] || status,
       statusDesc: STATUS_DESC_MAP[status] || '',
       statusClass: STATUS_CLASS_MAP[status] || '',
-      refundAmount: Number(record.totalApplyAmount || 0) || 0,
+      refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       reason: record.applyReasonText || '',
       autoProcessed: record.autoProcessed || false,
       createdAt: record.createdAt,
@@ -245,7 +246,8 @@ Page({
       itemCount: Number(record.itemCount || 0) || 0,
       totalApplyQty: Number(record.totalApplyQty || 0) || 0,
       reasonCode: record.applyReasonCode || record.reasonCode || '',
-      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode))
+      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode)),
+      isNotReceivedRefund: isNotReceivedRefund
     };
   },
 

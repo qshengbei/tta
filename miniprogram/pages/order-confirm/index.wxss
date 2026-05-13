@@ -223,6 +223,23 @@
   color: #999;
 }
 
+.product-item__stock {
+  margin-bottom: 8rpx;
+}
+
+.product-item__stock-text {
+  font-size: 22rpx;
+  color: #666;
+}
+
+.product-item__stock-text--low {
+  color: #ff4d4f;
+}
+
+.product-item__stock-warning {
+  color: #ff4d4f;
+}
+
 .product-message {
   padding-top: 16rpx;
   font-size: 24rpx;

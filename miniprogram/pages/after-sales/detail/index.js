@@ -147,6 +147,26 @@ Page({
     }
   },
 
+  onShow() {
+    // 页面显示时刷新数据，确保显示最新的售后状态和退款信息
+    if (this.caseId) {
+      this.fetchAfterSalesDetail(this.caseId);
+    }
+  },
+
+  onPullDownRefresh() {
+    // 下拉刷新
+    if (this.caseId) {
+      this.fetchAfterSalesDetail(this.caseId).then(() => {
+        wx.stopPullDownRefresh();
+      }).catch(() => {
+        wx.stopPullDownRefresh();
+      });
+    } else {
+      wx.stopPullDownRefresh();
+    }
+  },
+
   onUnload() {
     this.clearCountdown();
   },
@@ -154,7 +174,7 @@ Page({
   fetchAfterSalesDetail(id) {
     wx.showLoading({ title: '加载中...' });
 
-    getCollection('after_sales_cases').doc(id).get()
+    return getCollection('after_sales_cases').doc(id).get()
       .then((res) => {
         if (!res.data) {
           return this.fetchLegacyAfterSalesDetail(id);
@@ -162,7 +182,6 @@ Page({
 
         return getCollection('after_sales_case_items').where({ caseId: id }).orderBy('createdAt', 'asc').get()
           .then((itemsRes) => {
-            wx.hideLoading();
             const items = (itemsRes.data || []).map((item) => this.normalizeCaseItem(item));
             const totalItemAmount = items.reduce((sum, item) => sum + (item.unitPrice * item.applyQty), 0);
             const afterSales = {
@@ -177,6 +196,9 @@ Page({
               combinedMediaList: this.generateCombinedMediaList(afterSales.proofImages, afterSales.proofVideos, afterSales.proofVideoThumbs)
             });
             this.startAutoProcessCountdown();
+            // 获取退款记录
+            this.fetchRefundRecord(id);
+            wx.hideLoading();
           });
       })
       .catch(() => this.fetchLegacyAfterSalesDetail(id));
@@ -220,7 +242,7 @@ Page({
       statusText: STATUS_TEXT_MAP[status] || status,
       statusDesc: STATUS_DESC_MAP[status] || '',
       statusClass: STATUS_CLASS_MAP[status] || '',
-      refundAmount: Number(record.totalApplyAmount || 0) || 0,
+      refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       reason: record.applyReasonText || '',
       autoProcessed: record.autoProcessed || false,
       createdAt: record.createdAt,
@@ -618,6 +640,30 @@ Page({
       wx.hideLoading();
       console.error('自动处理失败:', err);
       this.setData({ processingExpired: false });
+    });
+  },
+
+  fetchRefundRecord(caseId) {
+    if (!caseId) return;
+
+    wx.cloud.callFunction({
+      name: 'refund',
+      data: {
+        action: 'query',
+        caseId: caseId
+      }
+    }).then(res => {
+      if (res.result.success && res.result.data && res.result.data.length > 0) {
+        const refundRecord = res.result.data[0];
+        this.setData({
+          'afterSales.refundInfo': {
+            ...refundRecord,
+            completeTimeText: formatTime(refundRecord.completeTime)
+          }
+        });
+      }
+    }).catch(err => {
+      console.error('获取退款记录失败:', err);
     });
   }
 });

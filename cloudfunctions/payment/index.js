@@ -56,6 +56,11 @@ async function handleUnifiedOrder({ orderId, amount, body, openid }) {
   const tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`
   const now = new Date()
   
+  // 模拟支付方式：随机选择零钱或银行卡
+  // CFT表示微信零钱，其他表示银行卡
+  const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB']
+  const bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)]
+  
   const paymentResult = {
     success: true,
     message: '统一下单成功',
@@ -73,7 +78,8 @@ async function handleUnifiedOrder({ orderId, amount, body, openid }) {
         signType: 'MD5',
         paySign: '模拟签名_' + Date.now()
       },
-      message: '支付成功'
+      message: '支付成功',
+      bankType: bankType
     }
   }
   
@@ -88,9 +94,23 @@ async function handleUnifiedOrder({ orderId, amount, body, openid }) {
       transactionId: `TRANS${Date.now()}`,
       createTime: now,
       payTime: now,
-      openid: openid || ''
+      openid: openid || '',
+      bankType: bankType
     }
   })
+  
+  // 同时更新订单表，保存支付方式
+  try {
+    await db.collection('orders').doc(orderId).update({
+      data: {
+        bankType: bankType,
+        tradeNo: tradeNo
+      }
+    })
+    console.log('订单支付方式更新成功')
+  } catch (err) {
+    console.error('更新订单支付方式失败:', err)
+  }
   
   console.log('=== 支付记录创建成功 ===')
   console.log('tradeNo:', tradeNo)

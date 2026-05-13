@@ -53,9 +53,43 @@ async function handleRefund({ orderId, caseId, amount, transactionId, outTradeNo
   const now = new Date()
   
   let order = null
+  let bankType = null
+  
+  // 先尝试从订单表获取支付方式
   if (orderId) {
-    const orderRes = await db.collection('orders').doc(orderId).get()
-    order = orderRes.data
+    try {
+      const orderRes = await db.collection('orders').doc(orderId).get()
+      order = orderRes.data
+      bankType = order?.bankType
+    } catch (err) {
+      console.error('获取订单信息失败:', err)
+    }
+  }
+  
+  // 如果订单中没有支付方式，尝试从支付记录表获取
+  if (!bankType && orderId) {
+    try {
+      const paymentRes = await db.collection('payment_records')
+        .where({ orderId: orderId, status: 'success' })
+        .orderBy('createTime', 'desc')
+        .limit(1)
+        .get()
+      if (paymentRes.data && paymentRes.data.length > 0) {
+        bankType = paymentRes.data[0].bankType
+      }
+    } catch (err) {
+      console.error('获取支付记录失败:', err)
+    }
+  }
+  
+  // 根据支付方式确定退款说明
+  let refundMessage = '退款已原路退回'
+  if (bankType === 'CFT') {
+    // 微信零钱，实时到账
+    refundMessage = '退款已原路退回微信零钱，实时到账'
+  } else if (bankType) {
+    // 银行卡，1-3个工作日到账
+    refundMessage = '退款已原路退回银行卡，预计1-3个工作日到账'
   }
   
   const refundRecord = {
@@ -72,7 +106,8 @@ async function handleRefund({ orderId, caseId, amount, transactionId, outTradeNo
     completeTime: now,
     refundNo: refundId,
     result: '退款成功',
-    message: '退款已原路退回，预计1-3个工作日到账'
+    message: refundMessage,
+    bankType: bankType || ''
   }
   
   await db.collection('refund_records').add({
@@ -90,9 +125,10 @@ async function handleRefund({ orderId, caseId, amount, transactionId, outTradeNo
       amount: Number(amount),
       status: 'success',
       refundNo: refundId,
-      message: '退款已原路退回，预计1-3个工作日到账',
+      message: refundMessage,
       createTime: now,
-      completeTime: now
+      completeTime: now,
+      bankType: bankType || ''
     }
   }
 }

@@ -53,7 +53,7 @@ Page({
   },
 
   onLoad(options) {
-    const { productId, quantity, message, cartItems } = options;
+    const { productId, quantity, message, cartItems, products } = options;
     
     let cartItemsArray = [];
     if (cartItems) {
@@ -64,11 +64,21 @@ Page({
       }
     }
     
+    let productsArray = [];
+    if (products) {
+      try {
+        productsArray = JSON.parse(decodeURIComponent(products));
+      } catch (err) {
+        console.error("解析商品数据失败", err);
+      }
+    }
+    
     this.setData({
       productId: productId || "",
       quantity: parseInt(quantity) || 1,
       message: message ? decodeURIComponent(message) : "",
-      cartItems: cartItemsArray
+      cartItems: cartItemsArray,
+      reBuyProducts: productsArray
     });
     
     // 生成取件号码
@@ -85,6 +95,8 @@ Page({
     
     if (productId) {
       this.fetchProduct();
+    } else if (productsArray.length > 0) {
+      this.fetchRebuyProducts();
     } else if (cartItemsArray.length > 0) {
       this.fetchCartProducts();
     } else {
@@ -103,7 +115,7 @@ Page({
     const cartItems = this.data.cartItems;
     const productIds = cartItems.map(item => item.productId);
     
-    // 批量获取商品信息
+    // 批量获取商品信息（包含最新库存）
     const productPromises = productIds.map(productId => {
       return products.doc(productId).get();
     });
@@ -121,18 +133,24 @@ Page({
           return;
         }
         
-        // 计算总价格
+        // 计算总价格并检查库存
         let totalPrice = 0;
+        let hasStockIssue = false;
         const cartProducts = cartItems.map(cartItem => {
           const product = productsData.find(p => p._id === cartItem.productId);
           if (product) {
             const itemTotal = product.price * cartItem.quantity;
             totalPrice += itemTotal;
+            // 检查库存
+            if ((product.stock || 0) < cartItem.quantity) {
+              hasStockIssue = true;
+            }
             return {
               ...product,
               quantity: cartItem.quantity,
               message: cartItem.message,
-              supportNoReasonReturn: product.supportNoReasonReturn || false // 确保有默认值
+              supportNoReasonReturn: product.supportNoReasonReturn || false,
+              stock: product.stock || 0 // 添加库存字段
             };
           }
           return null;
@@ -141,7 +159,8 @@ Page({
         this.setData({
           products: cartProducts,
           totalPrice,
-          loading: false
+          loading: false,
+          hasStockIssue
         });
         
         // 计算运费
@@ -156,6 +175,98 @@ Page({
           error: true,
           errorMessage: "加载商品信息失败，请稍后重试"
         });
+      });
+  },
+  
+  // 获取再次购买的商品信息
+  fetchRebuyProducts() {
+    this.setData({ loading: true, error: false, errorMessage: "" });
+    
+    const reBuyProducts = this.data.reBuyProducts;
+    
+    if (reBuyProducts.length === 0) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMessage: "商品信息不存在"
+      });
+      return;
+    }
+    
+    // 获取最新库存信息
+    const products = getCollection("products");
+    const productIds = reBuyProducts.map(p => p.productId);
+    
+    const productPromises = productIds.map(productId => {
+      return products.doc(productId).get().catch(() => ({ data: null }));
+    });
+    
+    Promise.all(productPromises)
+      .then((results) => {
+        const stockMap = {};
+        results.forEach((result, index) => {
+          if (result.data) {
+            stockMap[productIds[index]] = result.data.stock || 0;
+          }
+        });
+        
+        // 计算总价格并检查库存
+        let totalPrice = 0;
+        let hasStockIssue = false;
+        const productsData = reBuyProducts.map(product => {
+          const currentStock = stockMap[product.productId] || (product.stock || 0);
+          const quantity = product.quantity || 1;
+          const itemTotal = product.price * quantity;
+          totalPrice += itemTotal;
+          
+          // 检查库存
+          if (currentStock < quantity) {
+            hasStockIssue = true;
+          }
+          
+          return {
+            ...product,
+            supportNoReasonReturn: product.supportNoReasonReturn || false,
+            stock: currentStock
+          };
+        });
+        
+        this.setData({
+          products: productsData,
+          totalPrice,
+          loading: false,
+          hasStockIssue
+        });
+        
+        // 计算运费
+        if (this.data.deliveryType === 'express' && this.data.address) {
+          this.calculateShippingFee();
+        }
+      })
+      .catch((err) => {
+        console.error("获取库存信息失败", err);
+        // 如果获取库存失败，仍然显示商品信息，但不检查库存
+        let totalPrice = 0;
+        const productsData = reBuyProducts.map(product => {
+          const quantity = product.quantity || 1;
+          const itemTotal = product.price * quantity;
+          totalPrice += itemTotal;
+          return {
+            ...product,
+            supportNoReasonReturn: product.supportNoReasonReturn || false,
+            stock: product.stock || 0
+          };
+        });
+        
+        this.setData({
+          products: productsData,
+          totalPrice,
+          loading: false
+        });
+        
+        if (this.data.deliveryType === 'express' && this.data.address) {
+          this.calculateShippingFee();
+        }
       });
   },
 
@@ -1087,7 +1198,7 @@ Page({
       } else if (this.data.products && this.data.products.length > 0) {
         // 多个商品
         orderData.products = this.data.products.map(item => ({
-          productId: item._id,
+          productId: item.productId || item._id, // 优先使用productId，兼容再次购买的情况
           name: item.name,
           price: item.price,
           quantity: item.quantity,
