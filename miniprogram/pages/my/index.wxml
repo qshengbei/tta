@@ -2,10 +2,11 @@
 <view class="my-page">
   <!-- 顶部个人信息区 -->
   <view class="personal-info">
-    <view class="personal-info-content" catchtap="getUserInfo">
+    <view class="personal-info-content">
       <image class="avatar" src="{{userInfo.avatarUrl || '../../images/icons/默认头像.png'}}"></image>
       <view class="user-info">
-        <text class="nickname">{{userInfo.nickName || '点击显示微信头像'}}</text>
+        <text class="nickname">{{userInfo.nickName || 'Aura-******'}}</text>
+        <image class="edit-icon" src="../../images/icons/编辑.png" bindtap="goToProfileEdit"></image>
       </view>
     </view>
   </view>

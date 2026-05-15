@@ -8,6 +8,7 @@
     "pages/message/list/index",
     "pages/cart/index",
     "pages/my/index",
+    "pages/profile-edit/index",
     "pages/product-list/index",
     "pages/product-detail/index",
     "pages/order-confirm/index",

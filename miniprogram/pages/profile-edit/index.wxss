@@ -1,0 +1,105 @@
+/* pages/profile-edit/index.wxss */
+page {
+  background-color: #f5f5f5;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.profile-edit-page {
+  background-color: #f5f5f5;
+  padding-bottom: 40rpx;
+}
+
+/* 内容区域 */
+.content {
+  margin: 20rpx;
+  margin-top: 0;
+  background-color: white;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.form-item {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 30rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.form-item:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #333;
+  width: 120rpx;
+}
+
+.avatar-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 1rpx solid #e0e0e0;
+}
+
+.arrow {
+  font-size: 32rpx;
+  color: #999;
+  margin-left: 20rpx;
+}
+
+.nickname-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+  text-align: right;
+}
+
+.input-placeholder {
+  color: #999;
+}
+
+/* 保存按钮容器 */
+.save-btn-container {
+  padding: 30rpx 20rpx;
+}
+
+/* 保存按钮 */
+.save-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #000;
+  color: white;
+  font-size: 30rpx;
+  border-radius: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.save-btn::after {
+  border: none;
+}
+
+/* 头像选择按钮 */
+.avatar-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.avatar-btn::after {
+  border: none;
+}

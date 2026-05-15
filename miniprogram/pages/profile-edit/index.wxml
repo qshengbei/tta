@@ -1,0 +1,25 @@
+<!--pages/profile-edit/index.wxml-->
+<view class="profile-edit-page">
+  <!-- 内容区域 -->
+  <view class="content">
+    <!-- 头像选择 -->
+    <view class="form-item">
+      <text class="label">头像</text>
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image class="avatar" src="{{userInfo.avatarUrl || '../../images/icons/默认头像.png'}}"></image>
+        <view class="arrow">›</view>
+      </button>
+    </view>
+
+    <!-- 昵称输入 -->
+    <view class="form-item">
+      <text class="label">昵称</text>
+      <input class="nickname-input" type="nickname" placeholder="点击获取微信昵称" value="{{userInfo.nickName}}" bindinput="onNicknameInput" placeholder-class="input-placeholder"></input>
+    </view>
+  </view>
+
+  <!-- 保存按钮 -->
+  <view class="save-btn-container">
+    <button class="save-btn" bindtap="saveUserInfo">保存</button>
+  </view>
+</view>

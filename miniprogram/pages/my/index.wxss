@@ -54,18 +54,25 @@
 .user-info {
   margin-left: 20rpx;
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .nickname {
   font-size: 28rpx;
   font-weight: 500;
   color: #333333;
-  margin-bottom: 8rpx;
 }
 
 .user-action {
   font-size: 22rpx;
   color: #999999;
+}
+
+.edit-icon {
+  width: 32rpx;
+  height: 32rpx;
+  margin-left: 10rpx;
 }
 
 /* 订单管理区 */

@@ -1,0 +1,176 @@
+// pages/profile-edit/index.js
+const db = wx.cloud.database();
+
+Page({
+  data: {
+    userInfo: {},
+    openid: ''
+  },
+
+  onLoad(options) {
+    const that = this;
+    const openid = wx.getStorageSync('openid');
+    const userInfo = wx.getStorageSync('userInfo') || {};
+    
+    this.setData({
+      openid,
+      userInfo
+    });
+
+    // 如果没有openid，尝试获取
+    if (!openid) {
+      wx.cloud.callFunction({
+        name: 'login',
+        success: (res) => {
+          const newOpenid = res.result.openid;
+          that.setData({ openid: newOpenid });
+          wx.setStorageSync('openid', newOpenid);
+        }
+      });
+    }
+  },
+
+  // 返回上一页
+  goBack() {
+    wx.navigateBack();
+  },
+
+  // 头像选择回调
+  onChooseAvatar(e) {
+    console.log('选择头像:', e);
+    const avatarUrl = e.detail.avatarUrl;
+    this.setData({
+      userInfo: {
+        ...this.data.userInfo,
+        avatarUrl: avatarUrl
+      }
+    });
+  },
+
+  // 昵称输入
+  onNicknameInput(e) {
+    console.log('昵称输入:', e);
+    const nickName = e.detail.value;
+    this.setData({
+      userInfo: {
+        ...this.data.userInfo,
+        nickName: nickName
+      }
+    });
+  },
+
+  // 保存用户信息
+  saveUserInfo() {
+    const { userInfo, openid } = this.data;
+    const { nickName, avatarUrl } = userInfo;
+
+    if (!nickName || nickName.trim() === '') {
+      wx.showToast({
+        title: '请输入昵称',
+        icon: 'none'
+      });
+      return;
+    }
+
+    wx.showLoading({ title: '保存中...' });
+
+    const saveUserInfo = (finalAvatarUrl) => {
+      // 更新本地存储
+      const finalUserInfo = {
+        ...userInfo,
+        avatarUrl: finalAvatarUrl
+      };
+      wx.setStorageSync('userInfo', finalUserInfo);
+
+      // 更新数据库
+      db.collection('users').where({ _openid: openid }).get({
+        success: (res) => {
+          if (res.data && res.data.length > 0) {
+            db.collection('users').doc(res.data[0]._id).update({
+              data: {
+                nickName,
+                avatarImage: finalAvatarUrl,
+                updatedAt: new Date()
+              },
+              success: () => {
+                wx.hideLoading();
+                wx.showToast({
+                  title: '保存成功',
+                  icon: 'success'
+                });
+                setTimeout(() => {
+                  wx.navigateBack();
+                }, 1000);
+              },
+              fail: (err) => {
+                wx.hideLoading();
+                console.error('更新用户信息失败:', err);
+                wx.showToast({
+                  title: '保存失败',
+                  icon: 'none'
+                });
+              }
+            });
+          } else {
+            db.collection('users').add({
+              data: {
+                _openid: openid,
+                nickName,
+                avatarImage: finalAvatarUrl,
+                createdAt: new Date(),
+                updatedAt: new Date()
+              },
+              success: () => {
+                wx.hideLoading();
+                wx.showToast({
+                  title: '保存成功',
+                  icon: 'success'
+                });
+                setTimeout(() => {
+                  wx.navigateBack();
+                }, 1000);
+              },
+              fail: (err) => {
+                wx.hideLoading();
+                console.error('创建用户信息失败:', err);
+                wx.showToast({
+                  title: '保存失败',
+                  icon: 'none'
+                });
+              }
+            });
+          }
+        },
+        fail: (err) => {
+          wx.hideLoading();
+          console.error('查询用户信息失败:', err);
+          wx.showToast({
+            title: '保存失败',
+            icon: 'none'
+          });
+        }
+      });
+    };
+
+    // 如果有新头像且不是云存储路径，先上传
+    if (avatarUrl && !avatarUrl.startsWith('cloud://')) {
+      wx.cloud.uploadFile({
+        cloudPath: `avatars/${openid}_${Date.now()}.jpg`,
+        filePath: avatarUrl,
+        success: (res) => {
+          saveUserInfo(res.fileID);
+        },
+        fail: (err) => {
+          wx.hideLoading();
+          console.error('上传头像失败:', err);
+          wx.showToast({
+            title: '头像上传失败',
+            icon: 'none'
+          });
+        }
+      });
+    } else {
+      saveUserInfo(avatarUrl);
+    }
+  }
+});
