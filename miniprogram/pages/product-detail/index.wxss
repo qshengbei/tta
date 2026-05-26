@@ -754,10 +754,12 @@ wx-button:not([size=mini]) {
   gap: 16rpx;
 }
 
+.product-detail__notice-text,
 .product-detail__notice-item {
   font-size: 24rpx;
   color: #666;
-  line-height: 1.5;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 /* 分享弹窗样式 */

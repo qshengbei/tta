@@ -98,6 +98,17 @@
   margin-top: 20rpx;
 }
 
+.init-btn {
+  width: 100%;
+  padding: 20rpx;
+  background-color: #f5f5f5;
+  color: #666;
+  font-size: 28rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 5rpx;
+  margin-top: 15rpx;
+}
+
 /* 空状态 */
 .empty-state {
   display: flex;

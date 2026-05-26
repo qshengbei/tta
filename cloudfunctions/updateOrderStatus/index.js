@@ -787,7 +787,9 @@ exports.main = async (event, context) => {
               trackingNumber: params.trackingNumber,
               deliveryType: order.deliveryType
             };
-            notificationTargets = [order._openid];
+            // 获取管理员openids
+            const adminOpenidsShip = await getAdminOpenids();
+            notificationTargets = Array.from(new Set([order._openid, ...adminOpenidsShip]));
             
             await cloud.callFunction({
               name: 'sendNotification',
@@ -814,7 +816,7 @@ exports.main = async (event, context) => {
           orderNumber: order.orderNumber,
           deliveryType: order.deliveryType
         };
-        notificationTargets = [order._openid];
+        notificationTargets = Array.from(new Set([order._openid, ...adminOpenids]));
         break;
 
       case 'confirm':
@@ -1826,7 +1828,14 @@ async function getAdminOpenids() {
   try {
     const settingsRes = await db.collection('settings').limit(1).get();
     const settings = (settingsRes.data && settingsRes.data[0]) || {};
+    
+    // 兼容两种字段名：adminOpenId（小程序端使用）和 adminOpenids（旧版）
+    if (Array.isArray(settings.adminOpenId)) {
+      console.log('使用 adminOpenId 字段');
+      return settings.adminOpenId.filter(Boolean);
+    }
     if (Array.isArray(settings.adminOpenids)) {
+      console.log('使用 adminOpenids 字段');
       return settings.adminOpenids.filter(Boolean);
     }
   } catch (error) {

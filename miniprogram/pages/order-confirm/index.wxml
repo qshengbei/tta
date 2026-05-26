@@ -15,7 +15,7 @@
       <view class="delivery-section__header">
         <text class="delivery-section__title">配送方式</text>
         <view class="delivery-section__selected">
-          <text class="delivery-section__selected-text">{{deliveryType === 'express' ? '快递运输' : deliveryType === 'self' ? '上门自提' : '同城配送'}}</text>
+          <text class="delivery-section__selected-text">{{deliveryType === 'express' ? '快递运输' : deliveryType === 'pickup' ? '上门自提' : '同城配送'}}</text>
           <view class="delivery-section__arrow">></view>
         </view>
       </view>
@@ -107,7 +107,7 @@
     </view>
 
     <!-- 自提信息 -->
-    <view wx:if="{{deliveryType === 'self'}}" class="self-pickup-section">
+    <view wx:if="{{deliveryType === 'pickup'}}" class="self-pickup-section">
       <view class="self-pickup-section__header">
         <text class="self-pickup-section__title">自提信息</text>
       </view>
@@ -234,7 +234,7 @@
       <view class="bottom-bar__left">
         <text class="bottom-bar__price">¥{{totalPrice}}</text>
       </view>
-      <button class="bottom-bar__btn {{isOutOfRange || hasStockIssue ? 'bottom-bar__btn--disabled' : ''}}" bindtap="submitOrder" disabled="{{isOutOfRange || hasStockIssue}}">
+      <button class="bottom-bar__btn {{isOutOfRange || hasStockIssue ? 'bottom-bar__btn--disabled' : ''}}" bindtap="submitOrder">
         {{isOutOfRange ? '超出配送范围' : hasStockIssue ? '部分商品库存不足' : '提交订单'}}
       </button>
     </view>
@@ -256,7 +256,7 @@
                 <text class="delivery-selector-modal__option-desc">默认配送方式</text>
               </view>
             </view>
-            <view class="delivery-selector-modal__option {{tempDeliveryType === 'self' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="self">
+            <view class="delivery-selector-modal__option {{tempDeliveryType === 'pickup' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="pickup">
               <view class="delivery-selector-modal__option-radio"></view>
               <view class="delivery-selector-modal__option-content">
                 <text class="delivery-selector-modal__option-name">上门自提</text>

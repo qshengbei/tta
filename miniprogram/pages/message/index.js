@@ -1,3 +1,5 @@
+import watcherManager from '../../utils/watcherManager';
+
 const DEBUG_LOG = false;
 const debugLog = (...args) => {
   if (DEBUG_LOG) console.log(...args);
@@ -7,7 +9,7 @@ const NOTIFICATION_CATEGORY_CONFIGS = [
   { label: '商品补货', rawTypes: ['restock'], priority: 2 },
   { label: '活动通知', rawTypes: ['activity'], priority: 3 },
   { label: '系统通知', rawTypes: ['system'], priority: 4 },
-  { label: '欢迎通知', titleKeyword: '欢迎', priority: 5 }
+  { label: '欢迎通知', rawTypes: ['welcome'], priority: 5 }
 ];
 
 Page({
@@ -19,8 +21,11 @@ Page({
     openid: '',
     isCustomerService: false,
     pageVisible: false,
-    openNotificationActionKey: ''
+    openNotificationActionKey: '',
+    pendingRefresh: false,
+    pendingNotificationRefresh: false
   },
+  ignoreNotificationChanges: false, // 标记是否忽略通知变化回调
 
   onLoad() {
     this.notificationTouchStartX = 0;
@@ -106,84 +111,334 @@ Page({
         this.loadNotifications();
       }
     }, 300);
+    
+    // 启动通知消息监听
+    this.listenNotifications();
   },
 
   async reloadSessionsOnly() {
     const { isCustomerService } = this.data;
     if (isCustomerService) {
-      await this.loadAllSessions();
+      await this.loadAllSessions(true);
     } else {
-      await this.loadSessions();
+      await this.loadSessions(true);
     }
   },
 
   onShow() {
+    const wasHidden = !this.data.pageVisible;
     this.setData({ pageVisible: true });
+    console.log('[消息页面] 页面显示');
+    if (wasHidden) {
+      console.log('消息页面-实时监听恢复连接');
+      // 页面从隐藏返回，先显示缓存数据，后台异步静默比对刷新
+      console.log('[消息页面] 后台异步静默比对会话数据和用户信息');
+      this.reloadSessionsOnly();
+      // 静默刷新用户信息，后台比对数据库数据
+      this.listenUsers(true);
+      // 静默刷新通知消息
+      this.loadNotifications(true);
+    }
+    // 如果页面隐藏期间有数据变更，需要刷新
+    if (this.data.pendingRefresh) {
+      console.log('[消息页面] 页面隐藏期间有数据变更，执行刷新');
+      this.setData({ pendingRefresh: false });
+      this.reloadSessionsOnly();
+    }
+    // 如果页面隐藏期间有通知变更，需要刷新
+    if (this.data.pendingNotificationRefresh) {
+      console.log('[消息页面] 页面隐藏期间有通知变更，执行刷新');
+      this.setData({ pendingNotificationRefresh: false });
+      this.loadNotifications(true);
+    }
     // 页面可见后先恢复会话数据，再异步补通知统计。
     this.loadMessages();
-    // 重新初始化会话监听
-    if (this.sessionListener) {
-      this.sessionListener.close();
-      console.log('关闭旧的会话监听');
-    }
-    console.log('重新初始化会话监听');
-    this.listenSessions();
   },
 
   onHide() {
     this.setData({ pageVisible: false });
+    console.log('[消息页面] 页面隐藏，暂停监听处理');
+    console.log('消息页面-实时监听暂停连接');
     if (this._sessionReloadTimer) {
       clearTimeout(this._sessionReloadTimer);
       this._sessionReloadTimer = null;
     }
-    // 进入聊天页后暂停消息页监听，避免每条会话变更都触发通知统计。
-    if (this.sessionListener) {
-      this.sessionListener.close();
-      this.sessionListener = null;
-      console.log('消息页隐藏，暂停会话监听');
-    }
+    // 不销毁监听，保持监听运行，只暂停UI更新
   },
 
   // 监听会话变化
   listenSessions() {
+    console.log('消息页面-实时监听开启');
     const { isCustomerService } = this.data;
-    try {
-      const db = wx.cloud.database();
-      let query;
-      
-      if (isCustomerService) {
-        // 客服身份：监听所有会话
-        query = db.collection('sessions');
-        console.log('客服身份，监听所有会话');
-      } else {
-        // 普通用户身份：监听自己的会话
-        const cachedOpenId = wx.getStorageSync('openid');
-        if (cachedOpenId) {
-          query = db.collection('sessions').where({ userId: cachedOpenId });
-          console.log('普通用户身份，监听自己的会话，openid:', cachedOpenId);
+    
+    watcherManager.create('msg_sessions', () => {
+      try {
+        const db = wx.cloud.database();
+        let query;
+        
+        if (isCustomerService) {
+          // 客服身份：监听所有会话
+          query = db.collection('sessions');
+          console.log('客服身份，监听所有会话');
         } else {
-          console.error('没有openid，无法监听会话');
-          return;
+          // 普通用户身份：监听自己的会话
+          const cachedOpenId = wx.getStorageSync('openid');
+          if (cachedOpenId) {
+            query = db.collection('sessions').where({ userId: cachedOpenId });
+            console.log('普通用户身份，监听自己的会话，openid:', cachedOpenId);
+          } else {
+            console.error('没有openid，无法监听会话');
+            throw new Error('Missing openid for session listening');
+          }
+        }
+        
+        // 监听会话变化
+        return query.watch({
+          onChange: (snapshot) => {
+            if (!this.data.pageVisible) {
+              this.setData({ pendingRefresh: true });
+              return;
+            }
+            console.log('会话变化:', snapshot);
+            // 优先使用增量更新，只有在必要时才全量刷新
+            this.handleSessionIncrementalUpdate(snapshot);
+          },
+          onError: (error) => {
+            console.error('监听会话失败:', error);
+            // 自动重连
+            watcherManager.autoReconnect('msg_sessions', 'session watch error');
+          }
+        });
+      } catch (error) {
+        console.error('初始化会话监听失败:', error);
+        throw error;
+      }
+    });
+    
+    console.log('开始监听会话变化');
+    // 同时监听用户信息变化（按需监听）
+    this.listenUsers();
+  },
+  
+  // 按需监听用户信息变化（只监听会话中的用户）
+  listenUsers(silentRefresh = false) {
+    console.log('[消息页面] 开始按需监听用户信息变化');
+    
+    // 收集当前会话中的所有用户ID
+    const { sessions } = this.data;
+    const userIds = [...new Set(sessions.map(s => s.userId).filter(id => id))];
+    
+    if (userIds.length === 0) {
+      console.log('[消息页面] 没有会话用户，跳过用户监听');
+      return;
+    }
+    
+    console.log('[消息页面] 按需监听用户ID:', userIds);
+    
+    // 检查是否已有监听
+    const existingWatcher = watcherManager.get('msg_users');
+    if (existingWatcher) {
+      console.log('[消息页面] 复用已存在的用户信息监听');
+      // 如果是静默刷新，后台比对数据库数据
+      if (silentRefresh) {
+        this.compareAndUpdateUserInfo(userIds);
+      }
+      return;
+    }
+    
+    watcherManager.create('msg_users', () => {
+      try {
+        const db = wx.cloud.database();
+        const _ = db.command;
+        
+        // 只监听会话中存在的用户
+        return db.collection('users')
+          .where({ _openid: _.in(userIds) })
+          .watch({
+            onChange: (snapshot) => {
+              console.log('[消息页面] 用户信息变化:', snapshot);
+              
+              if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+                return;
+              }
+              
+              // 遍历所有变化，而不仅仅处理第一个
+              for (const change of snapshot.docChanges) {
+                if (change.dataType === 'init') {
+                  continue;
+                }
+                
+                const userData = change.doc;
+                if (!userData || !userData._openid) {
+                  continue;
+                }
+                
+                console.log('[消息页面] 处理用户变化 - openid:', userData._openid, 'nickName:', userData.nickName);
+                
+                // 构建用户信息对象
+                const userInfoData = {
+                  nickName: userData.nickName || '用户',
+                  avatarImage: userData.avatarImage || '/images/icons/默认头像.png'
+                };
+                
+                // 更新缓存（增量更新缓存）
+                wx.setStorageSync(`user_${userData._openid}`, userInfoData);
+                
+                // 只有页面可见时才更新UI
+                if (this.data.pageVisible) {
+                  // 更新会话列表中的用户信息
+                  this.updateSessionUserInfo(userData._openid, userInfoData);
+                }
+              }
+            },
+            onError: (error) => {
+              console.error('[消息页面] 监听用户信息失败:', error);
+              watcherManager.autoReconnect('msg_users', 'users watch error');
+            }
+          });
+      } catch (error) {
+        console.error('[消息页面] 初始化用户信息监听失败:', error);
+        throw error;
+      }
+    });
+  },
+  
+  // 当会话列表有变化时，更新用户监听
+  refreshUserListening() {
+    console.log('[消息页面] 会话列表变化，刷新用户监听');
+    // 销毁旧的用户监听
+    watcherManager.destroy('msg_users');
+    // 重新建立按需用户监听
+    setTimeout(() => {
+      this.listenUsers();
+    }, 100);
+  },
+  
+  // 监听通知消息变化
+  listenNotifications() {
+    console.log('[消息页面] 开始监听通知消息变化');
+    const openid = wx.getStorageSync('openid');
+    
+    if (!openid) {
+      console.log('[消息页面] 没有openid，跳过通知监听');
+      return;
+    }
+    
+    // 检查是否已有监听
+    const existingWatcher = watcherManager.get('msg_notifications');
+    if (existingWatcher) {
+      console.log('[消息页面] 复用已存在的通知监听');
+      return;
+    }
+    
+    watcherManager.create('msg_notifications', () => {
+      try {
+        const db = wx.cloud.database();
+        
+        // 监听当前用户的通知消息
+        return db.collection('notifications')
+          .where({ openid })
+          .watch({
+            onChange: (snapshot) => {
+              console.log('[消息页面] 通知消息变化:', snapshot);
+              
+              // 如果标记了忽略变化，直接返回
+              if (this.ignoreNotificationChanges) {
+                console.log('[消息页面] 忽略通知变化');
+                return;
+              }
+              
+              if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+                return;
+              }
+              
+              // 遍历所有变化
+              for (const change of snapshot.docChanges) {
+                if (change.dataType === 'init') {
+                  continue;
+                }
+                
+                // 通知有变化，更新缓存和UI
+                if (this.data.pageVisible) {
+                  this.loadNotifications(true);
+                } else {
+                  // 页面隐藏时标记需要刷新
+                  this.setData({ pendingNotificationRefresh: true });
+                }
+              }
+            },
+            onError: (error) => {
+              console.error('[消息页面] 监听通知消息失败:', error);
+              watcherManager.autoReconnect('msg_notifications', 'notifications watch error');
+            }
+          });
+      } catch (error) {
+        console.error('[消息页面] 初始化通知监听失败:', error);
+        throw error;
+      }
+    });
+  },
+  
+  // 后台静默比对用户信息
+  async compareAndUpdateUserInfo(userIds) {
+    console.log('[消息页面] 后台静默比对用户信息 - userIds:', userIds);
+    const db = wx.cloud.database();
+    const _ = db.command;
+    
+    try {
+      const userRes = await db.collection('users').where({ _openid: _.in(userIds) }).get();
+      
+      if (userRes.data.length > 0) {
+        let hasChanges = false;
+        
+        for (const dbUser of userRes.data) {
+          const cachedUser = wx.getStorageSync(`user_${dbUser._openid}`);
+          const dbUserInfo = {
+            nickName: dbUser.nickName || '用户',
+            avatarImage: dbUser.avatarImage || '/images/icons/默认头像.png'
+          };
+          
+          // 比对缓存和数据库数据是否有差异
+          const hasDifference = !cachedUser || 
+            cachedUser.nickName !== dbUserInfo.nickName || 
+            cachedUser.avatarImage !== dbUserInfo.avatarImage;
+          
+          if (hasDifference) {
+            console.log('[消息页面] 用户信息有差异，更新缓存和UI - openid:', dbUser._openid);
+            // 更新缓存
+            wx.setStorageSync(`user_${dbUser._openid}`, dbUserInfo);
+            // 更新UI
+            this.updateSessionUserInfo(dbUser._openid, dbUserInfo);
+            hasChanges = true;
+          }
+        }
+        
+        if (!hasChanges) {
+          console.log('[消息页面] 用户信息无差异，无需更新');
         }
       }
-      
-      // 监听会话变化
-      this.sessionListener = query.watch({
-        onChange: (snapshot) => {
-          if (!this.data.pageVisible) return;
-          console.log('会话变化:', snapshot);
-          // 会话与通知是两套系统：这里只做会话刷新，不做通知统计。
-          this.scheduleSessionReload();
-        },
-        onError: (error) => {
-          console.error('监听会话失败:', error);
-        }
-      });
-      
-      console.log('开始监听会话变化');
     } catch (error) {
-      console.error('初始化会话监听失败:', error);
+      console.error('[消息页面] 后台比对用户信息失败:', error);
     }
+  },
+  
+  // 更新会话列表中的用户信息
+  updateSessionUserInfo(openid, userInfo) {
+    const { sessions } = this.data;
+    const updatedSessions = sessions.map(session => {
+      if (session.userId === openid && session.userInfo) {
+        return {
+          ...session,
+          userInfo: {
+            ...session.userInfo,
+            ...userInfo
+          }
+        };
+      }
+      return session;
+    });
+    
+    this.setData({ sessions: updatedSessions });
   },
 
   scheduleSessionReload() {
@@ -195,21 +450,116 @@ Page({
     }, 200);
   },
 
+  async handleSessionIncrementalUpdate(snapshot) {
+    if (!snapshot || !snapshot.docChanges || snapshot.docChanges.length === 0) {
+      // 没有变更数据，使用全量刷新作为兜底
+      this.scheduleSessionReload();
+      return;
+    }
+
+    const { sessions } = this.data;
+    let needFullReload = false;
+    let userListingChanged = false;
+    const updatedSessions = [...sessions];
+    const updatedSessionIds = new Set();
+
+    for (const change of snapshot.docChanges) {
+      const { dataType, doc, id } = change;
+      console.log('增量更新 - 变更类型:', dataType, '会话ID:', id);
+
+      if (dataType === 'init') {
+        continue;
+      }
+
+      const sessionIndex = updatedSessions.findIndex(s => s._id === id);
+
+      if (dataType === 'update') {
+        if (sessionIndex !== -1) {
+          // 更新现有会话
+          const updatedSession = this._processSessionData(doc);
+          updatedSessions[sessionIndex] = updatedSession;
+          updatedSessionIds.add(id);
+        } else {
+          needFullReload = true;
+        }
+      } else if (dataType === 'add') {
+        // 添加新会话 - 用户监听需要刷新
+        const newSession = this._processSessionData(doc);
+        updatedSessions.unshift(newSession);
+        updatedSessionIds.add(id);
+        userListingChanged = true;
+      } else if (dataType === 'remove') {
+        // 删除会话 - 用户监听需要刷新
+        if (sessionIndex !== -1) {
+          updatedSessions.splice(sessionIndex, 1);
+        }
+        userListingChanged = true;
+      }
+    }
+
+    if (!needFullReload) {
+      // 增量更新成功，更新UI和缓存
+      await this.setData({ sessions: updatedSessions });
+      
+      // 只更新变更的会话缓存
+      const changedSessions = updatedSessions.filter(s => updatedSessionIds.has(s._id));
+      await this.preloadSessionBatch(changedSessions, true);
+      
+      console.log('会话增量更新完成，更新了', changedSessions.length, '个会话');
+      
+      // 如果会话列表有新增或删除，刷新用户监听
+      if (userListingChanged) {
+        this.refreshUserListening();
+      }
+    } else {
+      // 需要全量刷新
+      this.scheduleSessionReload();
+    }
+  },
+
+  _processSessionData(doc) {
+    const session = { ...doc };
+    
+    // 格式化时间
+    if (session.lastMessageTime) {
+      try {
+        session.lastMessageTime = this.formatTimeByRule(session.lastMessageTime);
+      } catch (error) {
+        session.lastMessageTime = this.formatTimeByRule(new Date());
+      }
+    } else {
+      session.lastMessageTime = this.formatTimeByRule(new Date());
+    }
+
+    // 根据身份获取正确的未读数量
+    const isCustomerService = this.data.isCustomerService;
+    if (isCustomerService) {
+      session.unreadCount = session.unreadCountCustomerService !== undefined 
+        ? session.unreadCountCustomerService 
+        : (session.unreadCount || 0);
+    } else {
+      session.unreadCount = session.unreadCountUser || 0;
+    }
+
+    // 生成消息预览
+    session.lastMessagePreview = this.getSessionPreviewText(session.lastMessage);
+
+    return session;
+  },
+
   onUnload() {
     this.setData({ pageVisible: false });
+    console.log('消息页面-实时监听关闭');
     if (this._sessionReloadTimer) {
       clearTimeout(this._sessionReloadTimer);
       this._sessionReloadTimer = null;
     }
-    // 页面卸载时取消监听
-    if (this.sessionListener) {
-      this.sessionListener.close();
-      this.sessionListener = null;
-      console.log('取消监听会话变化');
-    }
+    // 页面卸载时销毁监听
+    watcherManager.destroy('msg_sessions');
+    watcherManager.destroy('msg_users');
+    console.log('页面卸载，销毁会话和用户监听');
   },
 
-  // 加载所有用户的客服会话（客服身份）
   getSessionPreviewText(lastMessage = {}) {
     if (!lastMessage || typeof lastMessage !== 'object') return '[暂无消息]';
 
@@ -311,15 +661,22 @@ Page({
 
         session.lastMessagePreview = this.getSessionPreviewText(session.lastMessage);
         
-        // 获取用户信息
+        // 获取用户信息，优先从缓存读取，确保显示最新的头像和昵称
         if (session.userId) {
-          try {
-            const userRes = await db.collection('users').where({ _openid: session.userId }).get();
-            if (userRes.data.length > 0) {
-              session.userInfo = userRes.data[0];
+          // 先从缓存读取
+          const cachedUser = wx.getStorageSync(`user_${session.userId}`);
+          if (cachedUser && cachedUser.nickName) {
+            session.userInfo = cachedUser;
+          } else {
+            // 缓存中没有，从数据库获取
+            try {
+              const userRes = await db.collection('users').where({ _openid: session.userId }).get();
+              if (userRes.data.length > 0) {
+                session.userInfo = userRes.data[0];
+              }
+            } catch (error) {
+              console.error('获取用户信息失败', error);
             }
-          } catch (error) {
-            console.error('获取用户信息失败', error);
           }
         }
         
@@ -347,27 +704,52 @@ Page({
   },
 
   // 加载通知消息
-  async loadNotifications() {
-    this.setData({ loading: true });
+  async loadNotifications(silentRefresh = false) {
+    const openid = wx.getStorageSync('openid');
+
+    console.log('[消息页面] 加载通知消息, silentRefresh:', silentRefresh);
+
+    if (!openid) {
+      this.setData({ notifications: [] });
+      return;
+    }
+
+    // 尝试从缓存读取
+    const cachedNotifications = wx.getStorageSync(`notifications_${openid}`);
+    
+    // 非静默刷新时，先显示缓存数据
+    if (!silentRefresh && cachedNotifications) {
+      console.log('[消息页面] 从缓存读取通知数据');
+      this.setData({ notifications: cachedNotifications });
+    }
+
+    // 后台异步从数据库加载最新数据
     try {
-      const openid = wx.getStorageSync('openid');
-
-      console.log('当前用户OPENID:', openid);
-
-      if (!openid) {
-        this.setData({ notifications: [] });
-        return;
-      }
-
       const notificationSummaries = await this.loadNotificationSummaries(openid);
-      this.setData({ notifications: notificationSummaries });
-      console.log('通知数据已更新到本地');
-      console.log('通知数据长度:', notificationSummaries.length);
+      
+      // 比对缓存和数据库数据
+      const hasDifference = !cachedNotifications || 
+        JSON.stringify(cachedNotifications) !== JSON.stringify(notificationSummaries);
+
+      if (hasDifference) {
+        console.log('[消息页面] 通知数据有差异，更新缓存和UI');
+        // 更新缓存
+        wx.setStorageSync(`notifications_${openid}`, notificationSummaries);
+        // 更新UI
+        this.setData({ notifications: notificationSummaries });
+      } else {
+        console.log('[消息页面] 通知数据无差异，无需更新');
+        if (!cachedNotifications) {
+          // 如果没有缓存，也需要显示数据
+          this.setData({ notifications: notificationSummaries });
+        }
+      }
     } catch (error) {
-      console.error('加载通知消息失败', error);
-      wx.showToast({ title: '加载消息失败', icon: 'none' });
-    } finally {
-      this.setData({ loading: false });
+      console.error('[消息页面] 加载通知消息失败', error);
+      // 加载失败时，如果有缓存则保持显示缓存数据
+      if (!cachedNotifications) {
+        this.setData({ notifications: [] });
+      }
     }
   },
 
@@ -381,23 +763,18 @@ Page({
       .sort((a, b) => (a.priority || 999) - (b.priority || 999));
   },
 
-  buildNotificationQuery(openid, rawTypes, extraQuery = {}, titleKeyword = '') {
+  buildNotificationQuery(openid, rawTypes, extraQuery = {}) {
     const db = wx.cloud.database();
     const query = {
       openid,
-      isDelete: db.command.neq(true),
       ...extraQuery
     };
+    
+    // 只用 isDelete: false，性能更好，支持索引
+    query.isDelete = false;
 
     if (rawTypes && rawTypes.length > 0) {
       query.type = rawTypes.length === 1 ? rawTypes[0] : db.command.in(rawTypes);
-    }
-
-    if (titleKeyword) {
-      query.title = db.RegExp({
-        regexp: titleKeyword,
-        options: 'i'
-      });
     }
 
     return query;
@@ -405,8 +782,8 @@ Page({
 
   async fetchNotificationCategorySummary(openid, config) {
     const db = wx.cloud.database();
-    const baseQuery = this.buildNotificationQuery(openid, config.rawTypes, {}, config.titleKeyword || '');
-    const unreadQuery = this.buildNotificationQuery(openid, config.rawTypes, { status: 'unread' }, config.titleKeyword || '');
+    const baseQuery = this.buildNotificationQuery(openid, config.rawTypes, {});
+    const unreadQuery = this.buildNotificationQuery(openid, config.rawTypes, { status: 'unread' });
 
     const [latestRes, unreadCountRes, totalCountRes] = await Promise.all([
       db.collection('notifications')
@@ -423,6 +800,7 @@ Page({
     ]);
 
     const latestNotification = latestRes.data && latestRes.data[0];
+    
     if (!latestNotification) {
       return null;
     }
@@ -515,7 +893,7 @@ Page({
       return '活动通知';
     } else if (rawType === 'system' || title.includes('系统')) {
       return '系统通知';
-    } else if (rawType === 'general' || title.includes('欢迎')) {
+    } else if (rawType === 'welcome' || title.includes('欢迎')) {
       return '欢迎通知';
     } else {
       return '其他通知';
@@ -523,7 +901,7 @@ Page({
   },
 
   // 加载客服会话
-  async loadSessions() {
+  async loadSessions(forceRefresh = false) {
     try {
       const db = wx.cloud.database();
       // 从缓存中获取openid
@@ -624,6 +1002,14 @@ Page({
 
         session.lastMessagePreview = this.getSessionPreviewText(session.lastMessage);
         
+        // 从缓存读取用户信息，确保显示最新的头像和昵称
+        if (session.userId) {
+          const cachedUser = wx.getStorageSync(`user_${session.userId}`);
+          if (cachedUser && cachedUser.nickName) {
+            session.userInfo = cachedUser;
+          }
+        }
+        
         return session;
       });
       
@@ -641,15 +1027,16 @@ Page({
         }))
       ));
       this.setData({ sessions });
-      this.preloadSessionBatch(sessions);
+      // 强制刷新会话消息缓存
+      await this.preloadSessionBatch(sessions, forceRefresh);
     } catch (error) {
       console.error('加载会话失败', error);
     }
   },
-  async preloadSessionBatch(sessions = []) {
+  async preloadSessionBatch(sessions = [], forceRefresh = false) {
     if (!sessions.length) return;
     // 消息页加载后即预热会话，点击卡片时可秒开
-    const preloadTasks = sessions.map((session) => this.preloadSessionMessages(session._id));
+    const preloadTasks = sessions.map((session) => this.preloadSessionMessages(session._id, forceRefresh));
     try {
       await Promise.all(preloadTasks);
     } catch (error) {
@@ -796,8 +1183,8 @@ Page({
         app.globalData.chatPreloadMap = {};
       }
       const localCache = app.globalData.chatPreloadMap[sessionId] || wx.getStorageSync(`chat_preload_${sessionId}`);
-      // 30秒内缓存有效，避免重复请求
-      if (!force && localCache && (Date.now() - (localCache.preloadAt || 0) < 30 * 1000)) {
+      // 永久缓存，实时监听器会在数据变化时更新缓存
+      if (!force && localCache && localCache.messages && localCache.messages.length > 0) {
         return;
       }
       const db = wx.cloud.database();
@@ -893,28 +1280,42 @@ Page({
       
       console.log('开始标记所有通知为已读');
       
-      // 调用云函数更新所有通知状态
-      const res = await wx.cloud.callFunction({
-        name: 'updateNotificationStatus',
-        data: {
-          action: 'all',
-          openid: openid,
-          status: 'read'
+      // 标记忽略通知变化，避免频繁触发
+      this.ignoreNotificationChanges = true;
+      console.log('[消息页面] 开始忽略通知变化');
+      
+      try {
+        // 调用云函数更新所有通知状态
+        const res = await wx.cloud.callFunction({
+          name: 'updateNotificationStatus',
+          data: {
+            action: 'all',
+            openid: openid,
+            status: 'read'
+          }
+        });
+        
+        console.log('云函数返回结果:', res.result);
+        
+        if (res.result.success) {
+          console.log('已更新通知数量:', res.result.updatedCount);
+          // 幂等处理：updatedCount=0 可能是并发页面已完成更新，仍视为成功
+        } else {
+          console.error('标记所有通知失败:', res.result.error);
+          wx.showToast({ title: '操作失败', icon: 'none' });
+          return;
         }
-      });
-      
-      console.log('云函数返回结果:', res.result);
-      
-      if (res.result.success) {
-        console.log('已更新通知数量:', res.result.updatedCount);
-        // 幂等处理：updatedCount=0 可能是并发页面已完成更新，仍视为成功
-      } else {
-        console.error('标记所有通知失败:', res.result.error);
-        wx.showToast({ title: '操作失败', icon: 'none' });
-        return;
+        
+        // 短暂延迟，确保所有数据库操作完成
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } finally {
+        // 取消忽略通知变化
+        this.ignoreNotificationChanges = false;
+        console.log('[消息页面] 结束忽略通知变化');
       }
       
-      // 强制重新加载通知列表
+      // 强制重新加载通知列表（只加载一次）
       await this.loadNotifications();
       console.log('重新加载通知列表成功');
       

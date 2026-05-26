@@ -3,7 +3,8 @@ import QQMapWX from "../../utils/qqmap-wx-jssdk1.2/qqmap-wx-jssdk";
 import { calculateShippingFee, sortExpressRules, DEFAULT_EXPRESS_RULES } from "../../utils/shipping";
 import { scanQRCode } from "../../utils/customer-service";
 import { showShareOptions, hideShareOptions, shareToFriend, shareToTimeline, generatePoster, getShareAppMessageConfig, getShareTimelineConfig } from "../../utils/share";
-import { cacheProduct, getCachedProduct, cacheExpressRules, getCachedExpressRules, cacheAddress, getCachedAddress } from "../../utils/cache";
+import watcherManager from '../../utils/watcherManager';
+import { getCachedProduct, cacheExpressRules, getCachedExpressRules, cacheAddress, getCachedAddress } from "../../utils/cache";
 import { getProductDetail, isProductSoldOut, formatPrice, buildPreviewImages } from "../../utils/product";
 
 Page({
@@ -37,7 +38,9 @@ Page({
     coverImageUrl: "", // 商品封面图的临时URL
     showCartPreview: false, // 购物车预览弹出层显示状态
     buyTips: "", // 购买须知
-    customerServiceMethod: "official" // 客服方法：official=官方客服，custom=自定义客服
+    customerServiceMethod: "official", // 客服方法：official=官方客服，custom=自定义客服
+    pageVisible: false, // 页面可见性
+    pendingRefresh: false // 页面隐藏期间数据是否有变化
   },
 
   onLoad(options) {
@@ -68,9 +71,230 @@ Page({
   },
 
   onShow() {
-    // 页面显示时重新获取商品信息，确保库存信息是最新的
-    if (this.data.productId) {
-      this.fetchProduct(true);
+    const wasHidden = !this.data.pageVisible;
+    this.setData({ pageVisible: true });
+    
+    if (!this.data.productId) {
+      return;
+    }
+    
+    // 1. 先读取并同步最新数据（全局监听器可能已经更新了缓存）
+    const cached = getCachedProduct(this.data.productId);
+    if (cached) {
+      console.log('[商品详情页面] 使用缓存展示');
+      this.setData({ product: cached });
+      this.updateProductDisplay(cached);
+    }
+    
+    // 2. 然后启动页面监听器，监听未来的变化
+    if (wasHidden) {
+      console.log('[商品详情页面] 页面再次显示，重新创建监听器');
+      this.startProductWatch();
+    }
+    
+    // 后台从数据库同步最新数据（兜底）
+    this.fetchProduct(true);
+  },
+
+  onHide() {
+    this.setData({ pageVisible: false });
+    console.log('[商品详情页面] 页面隐藏，关闭监听器');
+    // 页面隐藏时关闭监听器，节省资源
+    const listenerKey = `product_detail_${this.data.productId}`;
+    watcherManager.destroy(listenerKey);
+  },
+
+  onUnload() {
+    console.log('[商品详情页面] 页面卸载，关闭实时监听');
+    const listenerKey = `product_detail_${this.data.productId}`;
+    watcherManager.destroy(listenerKey);
+  },
+
+  // 启动商品详情监听
+  startProductWatch() {
+    const { productId } = this.data;
+    if (!productId) {
+      console.warn('[商品详情页面] 没有商品ID，无法启动监听');
+      return;
+    }
+
+    const listenerKey = `product_detail_${productId}`;
+    
+    // 先销毁旧的监听（如果有的话）
+    Object.keys(watcherManager.watchers || {}).forEach(key => {
+      if (key.startsWith('product_detail_') && key !== listenerKey) {
+        console.log('[商品详情页面] 销毁旧监听:', key);
+        watcherManager.destroy(key);
+      }
+    });
+    
+    // 使用watcherManager创建监听
+    watcherManager.create(listenerKey, () => {
+      try {
+        const db = wx.cloud.database();
+        return db.collection('products').doc(productId).watch({
+          onChange: (snapshot) => {
+            if (!this.data.pageVisible) return;
+            console.log('[商品详情页面] 商品数据变化:', snapshot);
+            // 处理商品变化
+            this.handleProductChanges(snapshot);
+          },
+          onError: (error) => {
+            console.error('[商品详情页面] 商品监听失败:', error);
+            // 自动重连
+            watcherManager.autoReconnect(listenerKey, 'product detail watch error');
+          }
+        });
+      } catch (error) {
+        console.error('[商品详情页面] 初始化商品监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  // 处理商品数据变化
+  handleProductChanges(snapshot) {
+    console.log('[商品详情页面] handleProductChanges 被调用', snapshot);
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+      return;
+    }
+
+    const change = snapshot.docChanges[0];
+    if (change.dataType === 'init') {
+      return;
+    }
+
+    console.log('[商品详情页面] 处理商品变化:', change.dataType);
+
+    // 如果是删除，标记商品已下架
+    if (change.dataType === 'remove') {
+      if (this.data.pageVisible) {
+        this.setData({
+          product: {
+            ...this.data.product,
+            status: 'off'
+          },
+          error: true,
+          errorMessage: '商品已下架'
+        });
+      } else {
+        // 页面隐藏时，标记待更新
+        this.setData({ 
+          product: {
+            ...this.data.product,
+            status: 'off'
+          },
+          error: true,
+          errorMessage: '商品已下架',
+          pendingRefresh: true 
+        });
+      }
+      return;
+    }
+
+    // 如果是新增或更新，直接使用 snapshot 中的数据
+    const product = change.doc || snapshot.docs[0];
+    if (!product) {
+      console.warn('[商品详情页面] 没有获取到商品数据');
+      return;
+    }
+
+    // 注意：全局商品缓存由全局监听器更新，这里只负责UI更新
+    if (this.data.pageVisible) {
+      // 页面可见时，直接更新UI
+      this.updateProductData(product);
+    } else {
+      // 页面隐藏时，标记待更新
+      console.log('[商品详情页面] 页面隐藏，标记待更新');
+      this.setData({ 
+        product,
+        pendingRefresh: true 
+      });
+    }
+  },
+
+  // 更新商品数据（实时监听触发时调用）
+  updateProductData(product) {
+    const stock = typeof product.stock === 'number' ? product.stock : 99;
+    let displayPrice = formatPrice(product.price);
+    
+    // 确保 images 字段是一个数组
+    if (!product.images || !Array.isArray(product.images)) {
+      product.images = [];
+    }
+    
+    // 计算总图片数量
+    let totalImages = 1 + product.images.length;
+    
+    // 构建预览图片数组
+    let previewImageUrls = buildPreviewImages(product);
+    
+    // 更新页面数据（只更新变化的字段）
+    this.setData({
+      product,
+      maxQuantity: stock > 0 ? stock : 1,
+      displayPrice,
+      totalImages,
+      previewImageUrls,
+      loading: false
+    });
+    
+    // 重新计算运费
+    this.calculateShippingFee();
+
+    // 如果有同布料商品，也需要刷新一下
+    if (product.materialId) {
+      this.fetchSameMaterialProducts(product.materialId);
+    }
+  },
+
+  // 从缓存更新UI（页面返回时调用）
+  updateUIFromCache() {
+    const cached = getCachedProduct(this.data.productId);
+    if (cached) {
+      console.log('[商品详情页面] 从缓存更新UI');
+      this.updateProductData(cached);
+    } else {
+      console.log('[商品详情页面] 无缓存，重新获取数据');
+      this.fetchProduct();
+    }
+  },
+
+  // 更新商品显示信息（用于 onShow 读取缓存时）
+  updateProductDisplay(product) {
+    if (!product || !product._id) {
+      return;
+    }
+    
+    const stock = typeof product.stock === 'number' ? product.stock : 99;
+    let displayPrice = formatPrice(product.price);
+    
+    // 确保 images 字段是一个数组
+    if (!product.images || !Array.isArray(product.images)) {
+      product.images = [];
+    }
+    
+    // 计算总图片数量
+    let totalImages = 1 + product.images.length;
+    
+    // 构建预览图片数组
+    let previewImageUrls = buildPreviewImages(product);
+    
+    this.setData({
+      product,
+      maxQuantity: stock > 0 ? stock : 1,
+      displayPrice,
+      totalImages,
+      previewImageUrls,
+      loading: false
+    });
+    
+    // 重新计算运费
+    this.calculateShippingFee();
+
+    // 如果有同布料商品，也需要刷新一下
+    if (product.materialId) {
+      this.fetchSameMaterialProducts(product.materialId);
     }
   },
 
@@ -458,8 +682,7 @@ Page({
         // 构建预览图片数组
         let previewImageUrls = buildPreviewImages(product);
         
-        // 缓存商品详情
-        cacheProduct(this.data.productId, product);
+        // 不需要更新缓存！缓存由管理员负责更新
         
         // 获取同布料的商品
         if (product.materialId) {
@@ -621,6 +844,9 @@ Page({
           title: "已加入购物车",
           icon: "success"
         });
+        // 标记购物车数据变更，返回购物车时刷新
+        const app = getApp();
+        app.globalData.cartDirty = true;
         this.hideProductSelector();
       })
       .catch((err) => {

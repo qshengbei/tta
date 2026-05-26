@@ -1,4 +1,5 @@
 {
   "usingComponents": {},
-  "navigationBarTitleText": "客服聊天"
+  "navigationBarTitleText": "客服聊天",
+  "disableScroll": true
 }

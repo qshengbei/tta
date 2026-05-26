@@ -2,7 +2,14 @@
 
 <!-- 轮播图 -->
 <view class="swiper-container">
+  <!-- 轮播图骨架屏 -->
+  <view wx:if="{{bannerLoading}}" class="skeleton-banner-wrapper">
+    <view class="skeleton-banner"></view>
+  </view>
+  
+  <!-- 真实轮播图 -->
   <swiper 
+    wx:else
     indicator-dots="{{true}}" 
     autoplay="{{true}}" 
     interval="5000" 
@@ -40,6 +47,13 @@
           mode="aspectFill"
           lazy-load="true"
         />
+        <!-- 遮罩层 -->
+        <view wx:if="{{item.isOffline}}" class="new-product-mask new-product-mask--offline">
+          <text class="new-product-mask-text">已下架</text>
+        </view>
+        <view wx:elif="{{item.isOutOfStock}}" class="new-product-mask new-product-mask--outofstock">
+          <text class="new-product-mask-text">补货中</text>
+        </view>
       </view>
     </block>
   </view>
@@ -96,7 +110,7 @@
       </view>
       
       <view class="series-main-image">
-        <image src="{{item.mainImage}}" mode="widthFix" lazy-load="true" />
+        <image src="{{item.mainImage}}" mode="widthFix" />
         <view class="series-explore">
           <text class="series-explore-text">探索全部</text>
           <view class="series-explore-bar"></view>
@@ -106,9 +120,15 @@
       <view class="series-products">
         <block wx:for="{{item.products}}" wx:key="{{product._id}}" wx:for-item="product">
           <view class="series-product-item" bindtap="goToProductDetail" data-id="{{product._id}}">
-            <image class="series-product-image" src="{{product.coverImage}}" mode="aspectFill" lazy-load="true" />
+            <image class="series-product-image" src="{{product.coverImage}}" mode="aspectFill" />
             <text class="series-product-name">{{product.name}}</text>
             <text class="series-product-price">￥{{product.price || 0}}</text>
+            <view wx:if="{{product.isOffline}}" class="product-mask product-mask--offline">
+              <text class="product-mask-text">已下架</text>
+            </view>
+            <view wx:elif="{{product.isOutOfStock}}" class="product-mask product-mask--outofstock">
+              <text class="product-mask-text">补货中</text>
+            </view>
           </view>
         </block>
       </view>

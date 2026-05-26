@@ -16,7 +16,7 @@
     scroll-into-view="{{scrollIntoView}}"
     bindtap="handleOutsideTap"
     scroll-top="{{scrollTop}}"
-    style="opacity: {{messageListReady ? 1 : 0}};transition: opacity 80ms linear;overscroll-behavior: none;padding-bottom: calc({{listBottomSpaceRpx}}rpx + env(safe-area-inset-bottom));"
+    style="opacity: {{messageListReady ? 1 : 0}};transition: opacity 80ms linear;overscroll-behavior: none;padding-bottom: {{keyboardHeight > 0 ? listBottomSpaceRpx + 'rpx' : 'calc(' + listBottomSpaceRpx + 'rpx + env(safe-area-inset-bottom))'}};"
   >
     <view id="message-content">
       <!-- 消息列表（微信风格：间隔>=5分钟才显示时间条） -->
@@ -47,7 +47,7 @@
         >
           <view class="message-avatar">
             <image 
-              src="{{item.role === 'customer_service' ? csInfo.avatarUrl || '/images/icons/客服.png' : userInfo.avatarUrl || '/images/icons/默认头像.png'}}" 
+              src="{{item.role === 'customer_service' ? (csInfo.avatarImage || '/images/icons/客服.png') : userInfo.avatarImage || '/images/icons/默认头像.png'}}" 
               mode="aspectFit"
             ></image>
           </view>
@@ -85,6 +85,10 @@
             <block wx:elif="{{item.type === 'text' || !item.type}}">
               <text class="message-text">{{item.content}}</text>
             </block>
+            <!-- 发送失败重发按钮 -->
+            <view wx:if="{{item.status === 'failed'}}" class="retry-btn" bindtap="retrySendMessage" data-message="{{item}}">
+              <image class="retry-icon" src="/images/icons/重发.png" mode="aspectFit"></image>
+            </view>
             <block wx:elif="{{item.type === 'image' && item.content}}">
               <image class="message-image" src="{{(item.mediaMeta && (item.mediaMeta.thumbnail || item.mediaMeta.thumb)) || item.content}}" mode="widthFix" show-menu-by-longpress="{{false}}" bindtap="handleImagePreview" catchlongpress="handleMessageLongPress" data-message="{{item}}" data-src="{{item.content}}" bindload="handleMediaLoad"></image>
             </block>
@@ -122,7 +126,7 @@
   </scroll-view>
 
   <!-- 新消息提示条 -->
-  <view wx:if="{{newMessageCount > 0 && !isScrolledToBottom}}" class="new-message-tip" bindtap="onNewMessageTip" style="bottom: calc({{listBottomSpaceRpx}}rpx + env(safe-area-inset-bottom) + 10rpx);">
+  <view wx:if="{{newMessageCount > 0 && !isScrolledToBottom}}" class="new-message-tip" bindtap="onNewMessageTip" style="bottom: calc({{listBottomSpaceRpx}}rpx + 10rpx);">
     <text class="new-message-text">{{newMessageCount}} 条新消息</text>
     <image class="new-message-arrow" src="/images/icons/chevron-down-white.svg" mode="aspectFit" />
   </view>
@@ -142,11 +146,11 @@
   </view>
   
   <!-- 输入和表情区域容器 -->
-  <view class="input-emoji-container" catchtap="stopPreviewPropagation">
+  <view class="input-emoji-container" style="bottom: {{keyboardHeight}}px; padding-bottom: {{keyboardHeight > 0 ? 0 : 'env(safe-area-inset-bottom)'}};" catchtap="stopPreviewPropagation">
     <!-- 输入区域 -->
     <view class="input-area">
       <view class="input-container">
-        <input 
+        <input
           class="input"
           value="{{inputValue}}"
           bindinput="onInputChange"
@@ -155,6 +159,8 @@
           placeholder="请输入消息..."
           cursor-spacing="10"
           focus="{{inputFocus}}"
+          adjust-position="{{false}}"
+          bindkeyboardheightchange="onKeyboardHeightChange"
           bindfocus="onInputFocus"
           bindblur="onInputBlur"
           bindtap="onInputTap"

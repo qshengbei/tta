@@ -48,8 +48,11 @@
 
 /* 宝贝标签内容 */
 .products-content {
-  padding-bottom: 20rpx;
-  min-height: calc(100vh - 248rpx);
+  /* 高度不再固定，通过 scroll-view 自身滚动来处理 */
+}
+
+.products-scroll {
+  height: calc(100vh - 254rpx);
 }
 
 /* 排序选项 */
@@ -94,6 +97,8 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 20rpx;
   padding: 20rpx;
+  padding-top: 0;
+  padding-bottom: 40rpx;
   background-color: #f5f5f5;
 }
 
@@ -155,6 +160,14 @@
   color: #fff;
   transform: rotate(-30deg);
   text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+.product-sold-out--offline {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.product-sold-out--outofstock {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 .product-info {

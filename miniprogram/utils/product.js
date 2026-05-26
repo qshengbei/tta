@@ -34,21 +34,27 @@ export async function getProductDetail(productId) {
 /**
  * 批量获取商品详情
  * @param {Array<string>} productIds - 商品ID数组
+ * @param {boolean} forceRefresh - 是否强制从数据库获取（跳过缓存）
  * @returns {Promise<Map>} 商品详情Map，key为商品ID，value为商品详情
  */
-export async function getProductsDetail(productIds) {
+export async function getProductsDetail(productIds, forceRefresh = false) {
   const productMap = new Map();
   const uncachedIds = [];
   
-  // 先从缓存获取
-  productIds.forEach(productId => {
-    const cachedProduct = getCachedProduct(productId);
-    if (cachedProduct) {
-      productMap.set(productId, cachedProduct);
-    } else {
-      uncachedIds.push(productId);
-    }
-  });
+  // 非强制刷新时才从缓存获取
+  if (!forceRefresh) {
+    productIds.forEach(productId => {
+      const cachedProduct = getCachedProduct(productId);
+      if (cachedProduct) {
+        productMap.set(productId, cachedProduct);
+      } else {
+        uncachedIds.push(productId);
+      }
+    });
+  } else {
+    // 强制刷新时，所有商品都从数据库获取
+    uncachedIds.push(...productIds);
+  }
   
   // 从数据库获取未缓存的商品
   if (uncachedIds.length > 0) {

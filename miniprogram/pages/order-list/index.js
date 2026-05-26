@@ -1,4 +1,7 @@
 import { getCollection } from "../../utils/cloud";
+import { OrderListener } from '../../utils/orderListener';
+import { getOrderListCache } from '../../utils/cacheInstances';
+
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -16,6 +19,7 @@ Page({
     processingExpired: false, // 是否正在处理过期订单
     fromDetail: false, // 是否从详情页返回
     isSwitchingStatus: false, // 是否正在切换标签
+    pageVisible: false, // 页面是否可见
     
     // 搜索和筛选相关
     searchKeyword: '',
@@ -30,10 +34,8 @@ Page({
     logisticsMapCenter: { latitude: 39.908823, longitude: 116.397470 },
     logisticsMapScale: 10,
     logisticsTrackPoints: [],
-    logisticsStateMap: null,
     isMapFullScreen: false,
     mapHeight: 300,
-
   },
 
   onLoad(options) {
@@ -44,6 +46,8 @@ Page({
     if (options && options.deliveryType) {
       this.setData({ deliveryType: options.deliveryType });
     }
+    // 初始化OrderListener
+    this.initOrderListener();
     // 首次加载时获取数据
     if (this.data.isFirstLoad) {
       this.fetchOrders();
@@ -51,6 +55,29 @@ Page({
     }
 
     this.initLogisticsStateData();
+  },
+
+  // 初始化订单监听器
+  initOrderListener() {
+    this.orderListener = new OrderListener(this);
+  },
+
+  // 启动监听
+  startOrderWatch() {
+    console.log('订单列表页面-实时监听开启');
+    const openid = wx.getStorageSync('openid');
+    if (!openid) {
+      console.warn('[OrderList] 没有openid，无法启动监听');
+      return;
+    }
+
+    console.log('[订单列表页面] 启动订单监听');
+    
+    const options = {
+      status: this.data.selectedStatus === 'all' ? null : this.data.selectedStatus
+    };
+    
+    this.orderListener.start(options);
   },
 
   async initLogisticsStateData() {
@@ -89,11 +116,12 @@ Page({
    * 生命周期函数--监听页面显示
    */
   onShow() {
-    console.log('=== onShow 被调用 ===');
-    console.log('fromDetail:', this.data.fromDetail);
-    console.log('selectedStatus:', this.data.selectedStatus);
-    console.log('deliveryType:', this.data.deliveryType);
-    console.log('savedScrollTop:', this.data.savedScrollTop);
+    console.log('[OrderList] onShow');
+    const wasHidden = !this.data.pageVisible;
+    this.setData({ pageVisible: true });
+    if (wasHidden) {
+      console.log('订单列表页面-实时监听恢复连接');
+    }
     
     // 检查全局变量，恢复可能丢失的状态
     const globalData = getApp().globalData;
@@ -141,7 +169,6 @@ Page({
           });
         }
       }
-      return;
     }
     // 检查是否正在切换标签，如果是则不重复调用fetchOrders()
     if (this.data.isSwitchingStatus) {
@@ -164,6 +191,26 @@ Page({
 
     // 检查并后台刷新过期物流状态
     this.checkAndRefreshExpiredLogistics();
+    
+    // 确保监听正在运行
+    const listenerStatus = this.orderListener.getStatus();
+    if (!listenerStatus.isActive && !listenerStatus.isCreatingWatch) {
+      console.log('[订单列表页面] 开始实时监听');
+      this.startOrderWatch();
+    } else if (listenerStatus.isActive) {
+      console.log('[订单列表页面] 监听已在运行中');
+    } else {
+      console.log('[订单列表页面] 监听正在创建中');
+    }
+  },
+
+  /**
+   * 生命周期函数--监听页面隐藏
+   */
+  onHide() {
+    console.log('[OrderList] onHide');
+    this.setData({ pageVisible: false });
+    this.orderListener.setPageVisible(false);
   },
 
   /**
@@ -294,6 +341,16 @@ Page({
   },
 
   fetchOrders() {
+    // 先检查缓存
+    const cache = getOrderListCache(this.data.selectedStatus);
+    const cachedData = cache.get();
+    
+    // 先从缓存加载数据（优化首屏显示）
+    if (cachedData) {
+      console.log('[OrderList] 从缓存加载订单数据');
+      this.processOrders(cachedData);
+    }
+    
     // 只重置搜索关键词，保留筛选条件
     this.setData({ 
       loading: true, 
@@ -338,6 +395,8 @@ Page({
       orders.where(baseQuery).orderBy('updatedAt', 'desc').get()
         .then((res) => {
           console.log('云数据库查询返回的订单数据:', res.data);
+          // 存入缓存
+          cache.set(res.data);
           this.processOrders(res.data);
         })
         .catch((err) => {
@@ -354,6 +413,8 @@ Page({
       orders.where(paidQuery).orderBy('updatedAt', 'desc').get()
         .then((res) => {
           console.log('云数据库查询返回的订单数据 (paid):', res.data);
+          // 存入缓存
+          cache.set(res.data);
           this.processOrders(res.data);
         })
         .catch((err) => {
@@ -374,6 +435,8 @@ Page({
       orders.where(shippingQuery).orderBy('updatedAt', 'desc').get()
         .then((res) => {
           console.log('云数据库查询返回的订单数据 (shipping):', res.data);
+          // 存入缓存
+          cache.set(res.data);
           this.processOrders(res.data);
         })
         .catch((err) => {
@@ -391,6 +454,8 @@ Page({
         console.log('云数据库查询返回的订单数据 (refund):', allOrders);
         // 按更新时间排序
         allOrders.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        // 存入缓存
+        cache.set(allOrders);
         this.processOrders(allOrders);
       }).catch((err) => {
         console.error("获取订单列表失败", err);
@@ -406,6 +471,8 @@ Page({
         console.log('云数据库查询返回的订单数据 (completed):', allOrders);
         // 按更新时间排序
         allOrders.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        // 存入缓存
+        cache.set(allOrders);
         this.processOrders(allOrders);
       }).catch((err) => {
         console.error("获取订单列表失败", err);
@@ -417,6 +484,8 @@ Page({
       orders.where(query).orderBy('updatedAt', 'desc').get()
         .then((res) => {
           console.log('云数据库查询返回的订单数据 (other):', res.data);
+          // 存入缓存
+          cache.set(res.data);
           this.processOrders(res.data);
         })
         .catch((err) => {
@@ -453,7 +522,7 @@ Page({
           break;
         case "shipping":
           if (deliveryType === 'express') {
-            // 待收货卡片主状态优先展示 logisticsState.stateName，避免与“已发货”重复显示
+            // 待收货卡片主状态优先展示 logisticsState.stateName，避免与"已发货"重复显示
             statusText = order.logisticsState?.stateName || "已发货";
           } else if (deliveryType === 'pickup') {
             statusText = "待自提";
@@ -1063,8 +1132,8 @@ Page({
               title: '确认收货成功',
               icon: 'success'
             });
-            // 重新加载订单列表
-            this.fetchOrders();
+            // 重新加载订单列表 - 现在监听会自动更新
+            // this.fetchOrders();
           } catch (err) {
             console.error("确认收货失败", err);
             wx.showToast({
@@ -1084,15 +1153,19 @@ Page({
       content: '确定要取消这个订单吗？',
       success: (res) => {
         if (res.confirm) {
+          wx.showLoading({ title: '正在取消...' });
           this.callUpdateOrderStatus(orderId, 'cancel', {
             cancelReason: '用户主动取消'
           }).then(() => {
+            wx.hideLoading();
             wx.showToast({
               title: '订单取消成功',
               icon: 'success'
             });
+            // 手动刷新订单列表，确保取消的订单从列表中移除
             this.fetchOrders();
           }).catch((err) => {
+            wx.hideLoading();
             console.error("取消订单失败", err);
             wx.showToast({
               title: '取消订单失败',
@@ -1153,7 +1226,8 @@ Page({
                 title: '删除成功',
                 icon: 'success'
               });
-              this.fetchOrders();
+              // 监听会自动更新
+              // this.fetchOrders();
             })
             .catch((err) => {
               console.error("删除订单失败", err);
@@ -1406,12 +1480,19 @@ Page({
 
   // 页面隐藏时清除倒计时
   onHide() {
+    console.log('[OrderList] onHide');
+    console.log('订单列表页面-实时监听暂停连接');
+    this.setData({ pageVisible: false });
+    
     this.clearCountdown();
     console.log('订单列表页面隐藏，清除倒计时');
+    
+    // 不销毁监听，保持运行
   },
 
-  // 页面卸载时清除倒计时
   onUnload() {
+    console.log('[OrderList] onUnload');
+    console.log('订单列表页面-实时监听关闭');
     this.clearCountdown();
   }
 });

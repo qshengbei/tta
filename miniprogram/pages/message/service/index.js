@@ -1,3 +1,5 @@
+import watcherManager from '../../../utils/watcherManager';
+
 const db = wx.cloud.database();
 const _ = db.command;
 const DEBUG_LOG = false;
@@ -27,6 +29,7 @@ Page({
     showMorePanel: false,
     inputFocus: false,
     listBottomSpaceRpx: 100,
+    keyboardHeight: 0,
     selectedFile: null,
     selectedFileType: null,
     previewVisible: false,
@@ -75,7 +78,52 @@ Page({
     messageActionMenuMessage: null,
     messageScrollEnabled: true,
     pendingEntryProductCard: null,
-    pendingEntryProductCardVisible: false
+    pendingEntryProductCardVisible: false,
+    
+    // 测试模式配置
+    testMode: false,           // 是否开启测试模式
+    testFailRate: 100          // 模拟失败率（0-100）
+  },
+  // 发送消息（支持测试模式）
+  async callSendMessage(data) {
+    const { testMode, testFailRate } = this.data;
+    
+    // 测试模式：模拟云函数返回失败
+    if (testMode) {
+      console.log('[测试模式] 模拟发送消息:', data);
+      
+      return new Promise((resolve) => {
+        // 模拟网络延迟
+        setTimeout(() => {
+          // 根据失败率决定是否失败
+          const shouldFail = Math.random() * 100 < testFailRate;
+          
+          if (shouldFail) {
+            console.log('[测试模式] 模拟发送失败');
+            resolve({
+              result: {
+                success: false,
+                error: '模拟发送失败（测试模式）'
+              }
+            });
+          } else {
+            console.log('[测试模式] 模拟发送成功');
+            resolve({
+              result: {
+                success: true,
+                messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+              }
+            });
+          }
+        }, 500 + Math.random() * 500); // 模拟 500-1000ms 延迟
+      });
+    }
+    
+    // 正常模式：调用真实云函数
+    return wx.cloud.callFunction({
+      name: 'sendMessage',
+      data
+    });
   },
   getMessageContentHeight() {
     return new Promise((resolve) => {
@@ -103,6 +151,7 @@ Page({
     const hasPopover = this.data.messageActionMenuVisible;
     if (!this.data.showEmojiPanel && !this.data.showMorePanel && !hasPopover) return;
     this._inputRefocusDeadline = 0;
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({
       showEmojiPanel: false,
       showMorePanel: false,
@@ -111,7 +160,7 @@ Page({
       messageActionMenuArrowDirection: 'down',
       messageActionMenuMessage: null,
       messageActionMenuActions: [],
-      listBottomSpaceRpx: 100,
+      listBottomSpaceRpx: 100 + hRpx,
       scrollTop: 999999
     });
   },
@@ -143,7 +192,7 @@ Page({
       messageActionMenuArrowDirection: 'down',
       messageActionMenuMessage: null,
       messageActionMenuActions: [],
-      listBottomSpaceRpx: 100,
+      listBottomSpaceRpx: 100 + hRpx,
       scrollTop: 999999
     });
 
@@ -404,6 +453,102 @@ Page({
       this.setData({ scrollIntoView: '' });
     }, 20);
   },
+  replaceMessage(tempId, newMessage) {
+    const messages = this.data.messages || [];
+    const index = messages.findIndex(msg => msg._id === tempId);
+    if (index === -1) return;
+    
+    const normalized = this.normalizeMessage(newMessage);
+    const updated = [...messages];
+    updated[index] = normalized;
+    
+    this.setData({
+      messages: updated,
+      groupedMessages: this.groupMessages(updated)
+    });
+  },
+  retrySendMessage(e) {
+    const message = e.currentTarget.dataset.message;
+    if (!message || message.status !== 'failed') return;
+    
+    console.log('[聊天页面] 重试发送消息:', message._id);
+    
+    // 删除原失败消息
+    this.deleteMessage(message._id);
+    
+    // 生成新的临时消息ID
+    const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 创建新的发送中消息
+    const pendingMessage = {
+      _id: tempMessageId,
+      sessionId: message.sessionId,
+      openid: this.data.openid,
+      role: this.data.isCustomerService ? 'customer_service' : 'user',
+      content: message.content,
+      type: message.type,
+      mediaMeta: message.mediaMeta,
+      createTime: new Date(),
+      status: 'sending',
+      _isTempMessage: true
+    };
+    
+    // 添加新消息到列表
+    this.appendMessageToList(pendingMessage, true);
+    
+    // 发送消息
+    wx.cloud.callFunction({
+      name: 'sendMessage',
+      data: {
+        sessionId: message.sessionId,
+        content: message.content,
+        type: message.type,
+        extra: message.mediaMeta
+      }
+    }).then(res => {
+      if (res.result.success) {
+        console.log('[聊天页面] 重试发送成功:', res.result.messageId);
+        const sentMessage = {
+          ...pendingMessage,
+          _id: res.result.messageId,
+          status: 'sent',
+          _isTempMessage: false
+        };
+        this.replaceMessage(tempMessageId, sentMessage);
+      } else {
+        console.error('[聊天页面] 重试发送失败:', res.result.error);
+        this.updateMessageStatus(tempMessageId, 'failed');
+      }
+    }).catch(err => {
+      console.error('[聊天页面] 重试发送异常:', err);
+      this.updateMessageStatus(tempMessageId, 'failed');
+    });
+  },
+  deleteMessage(messageId) {
+    const messages = this.data.messages || [];
+    const index = messages.findIndex(msg => msg._id === messageId);
+    if (index === -1) return;
+    
+    const updated = messages.filter(msg => msg._id !== messageId);
+    
+    this.setData({
+      messages: updated,
+      groupedMessages: this.groupMessages(updated)
+    });
+  },
+  updateMessageStatus(messageId, status) {
+    const messages = this.data.messages || [];
+    const index = messages.findIndex(msg => msg._id === messageId);
+    if (index === -1) return;
+    
+    const updated = [...messages];
+    updated[index] = { ...updated[index], status };
+    
+    this.setData({
+      messages: updated,
+      groupedMessages: this.groupMessages(updated)
+    });
+  },
   isSameMessageList(prevList = [], nextList = []) {
     if (prevList.length !== nextList.length) return false;
     if (!prevList.length && !nextList.length) return true;
@@ -448,23 +593,42 @@ Page({
       pendingEntryProductCard,
       pendingEntryProductCardVisible: !!pendingEntryProductCard
     });
-    this.loadCSInfo();
-    await this.getOpenId();
+    
+    // 并行执行初始化操作，提升加载速度
+    await Promise.all([
+      this.getOpenId(),
+      this.loadCSInfo()
+    ]);
+    
+    // 获取openid和客服信息后，加载用户信息
     await this.loadUserInfo();
+    
+    // 启动用户信息实时监听（只创建监听器，不重复加载数据）
+    this.listenUserInfo();
+    
     const usedPreload = this.applyPreloadedMessages(sessionId);
     this.setData({ usingPreloadedOnEnter: usedPreload });
     // 设置页面标题
     this.setPageTitle();
     this.initMessages({ silent: true });
-    this.listenMessages();
-    if (typeof this.initBottomAnchorObserver === 'function') {
-      this.initBottomAnchorObserver();
-    } else if (typeof this._initBottomAnchorObserver === 'function') {
-      this._initBottomAnchorObserver();
-    }
     // 清除未读计数
     this.clearUnreadCount(sessionId);
   },
+
+  onShow() {
+    console.log('[聊天页面] 恢复实时监听');
+    // 设置页面可见
+    this.setData({ pageVisible: true });
+    // 用户信息已在onLoad时加载并持续监听，只需要恢复消息监听
+    this.listenMessages();
+  },
+
+  onHide() {
+    console.log('[聊天页面] 暂停实时监听');
+    // 不销毁监听，只是暂停UI更新
+    this.setData({ pageVisible: false });
+  },
+
   getHistoryOldestDate() {
     const { oldestCreateTime, messages } = this.data;
     let oldestDate = this.normalizeDateInput(oldestCreateTime);
@@ -620,34 +784,159 @@ Page({
     }
   },
   // 加载用户信息
-  async loadUserInfo() {
+  async loadUserInfo(silentRefresh = false) {
+    // 确保使用模块级别的 db，避免局部变量覆盖导致 undefined
+    const database = db || wx.cloud.database();
     try {
       const { isCustomerService, sessionId } = this.data;
-      
+      let targetOpenid = null;
+
       if (isCustomerService) {
         // 客服身份：获取会话对应的用户信息
-        const sessionRes = await db.collection('sessions').doc(sessionId).get();
+        const sessionRes = await database.collection('sessions').doc(sessionId).get();
         if (sessionRes.data && sessionRes.data.userId) {
-          this.setData({ targetUserOpenid: sessionRes.data.userId });
-          const userRes = await db.collection('users').where({ _openid: sessionRes.data.userId }).get();
-          if (userRes.data.length > 0) {
-            // 使用用户的真实信息
-            this.setData({ userInfo: {
-              nickName: userRes.data[0].nickName || '用户',
-              avatarUrl: userRes.data[0].avatarImage || '/images/icons/默认头像.png'
-            } });
-            return;
+          targetOpenid = sessionRes.data.userId;
+          this.setData({ targetUserOpenid: targetOpenid });
+        }
+      } else {
+        // 普通用户身份：使用自己的openid
+        targetOpenid = this.data.openid;
+        this.setData({ targetUserOpenid: targetOpenid });
+      }
+
+      if (!targetOpenid) {
+        this.setData({ userInfo: { nickName: isCustomerService ? '用户' : '我', avatarImage: '/images/icons/默认头像.png' } });
+        return;
+      }
+
+      // 先读取缓存
+      const cachedUser = wx.getStorageSync(`user_${targetOpenid}`);
+      
+      // 无论是否静默刷新，都需要显示用户信息（优先使用缓存）
+      if (cachedUser) {
+        console.log('[loadUserInfo] 显示缓存数据 - nickName:', cachedUser.nickName);
+        this.setData({ userInfo: { 
+          nickName: cachedUser.nickName || (isCustomerService ? '用户' : '我'),
+          avatarImage: cachedUser.avatarImage || '/images/icons/默认头像.png'
+        } });
+      }
+
+      // 后台异步从数据库拉取最新数据进行比对
+      console.log('[loadUserInfo] 后台异步比对用户信息 - openid:', targetOpenid);
+      const userRes = await database.collection('users').where({ _openid: targetOpenid }).get();
+      
+      if (userRes.data.length > 0) {
+        const dbUser = userRes.data[0];
+        const dbUserInfo = {
+          nickName: dbUser.nickName || (isCustomerService ? '用户' : '我'),
+          avatarImage: dbUser.avatarImage || '/images/icons/默认头像.png'
+        };
+
+        // 比对缓存和数据库数据是否有差异
+        const hasDifference = !cachedUser || 
+          cachedUser.nickName !== dbUserInfo.nickName || 
+          cachedUser.avatarImage !== dbUserInfo.avatarImage;
+
+        if (hasDifference) {
+          console.log('[loadUserInfo] 用户信息有差异，更新缓存和UI');
+          // 更新缓存
+          wx.setStorageSync(`user_${targetOpenid}`, dbUserInfo);
+          // 更新UI
+          this.setData({ userInfo: dbUserInfo });
+          // 更新页面标题
+          this.setPageTitle();
+        } else {
+          console.log('[loadUserInfo] 用户信息无差异，无需更新');
+          if (!cachedUser) {
+            // 如果没有缓存，显示数据库数据
+            this.setData({ userInfo: dbUserInfo });
           }
         }
+      } else if (!cachedUser) {
+        // 数据库和缓存都没有数据，使用默认值
+        this.setData({ userInfo: { nickName: isCustomerService ? '用户' : '我', avatarImage: '/images/icons/默认头像.png' } });
       }
-      
-      // 普通用户身份或获取失败时：使用默认值
-      this.setData({ userInfo: { nickName: '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: this.data.openid });
     } catch (error) {
       console.error('获取用户信息失败', error);
-      // 如果获取失败，使用默认值
-      this.setData({ userInfo: { nickName: '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: this.data.openid });
+      if (!wx.getStorageSync(`user_${this.data.openid}`)) {
+        this.setData({ userInfo: { nickName: this.data.isCustomerService ? '用户' : '我', avatarImage: '/images/icons/默认头像.png' } });
+      }
     }
+  },
+  
+  // 监听用户信息变化（只创建监听器，用户信息已在loadUserInfo中加载）
+  async listenUserInfo() {
+    console.log('[聊天页面] 开始监听用户信息变化');
+    const { isCustomerService, targetUserOpenid } = this.data;
+
+    // 确定要监听的用户openid
+    const watchOpenid = isCustomerService ? targetUserOpenid : this.data.openid;
+
+    if (!watchOpenid) {
+      console.warn('[聊天页面] 没有需要监听的用户openid');
+      return;
+    }
+
+    // 不销毁旧监听，复用已存在的监听
+    const existingWatcher = watcherManager.get(`chat_user_${this.data.sessionId}`);
+    if (existingWatcher) {
+      console.log('[聊天页面] 复用已存在的用户信息监听');
+      return;
+    }
+    
+    watcherManager.create(`chat_user_${this.data.sessionId}`, () => {
+      try {
+        const db = wx.cloud.database();
+        return db.collection('users').where({ _openid: watchOpenid }).watch({
+          onChange: (snapshot) => {
+            console.log('[聊天页面] 用户信息变化:', snapshot);
+
+            if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+              return;
+            }
+
+            // 遍历所有变化（虽然 where 筛选后通常只有一个，但要保证逻辑正确）
+            for (const change of snapshot.docChanges) {
+              if (change.dataType === 'init') {
+                continue;
+              }
+
+              const userData = change.doc;
+              if (!userData) {
+                continue;
+              }
+
+              console.log('[聊天页面] 处理用户变化 - openid:', userData._openid, 'nickName:', userData.nickName);
+
+              // 构建用户信息对象
+              const userInfoData = {
+                nickName: userData.nickName || (isCustomerService ? '用户' : '我'),
+                avatarImage: userData.avatarImage || '/images/icons/默认头像.png'
+              };
+
+              // 更新缓存（增量更新缓存）
+              wx.setStorageSync(`user_${watchOpenid}`, userInfoData);
+
+              // 只有页面可见时才更新UI
+              if (this.data.pageVisible) {
+                // 更新页面数据
+                this.setData({ userInfo: userInfoData });
+
+                // 更新页面标题
+                this.setPageTitle();
+              }
+            }
+          },
+          onError: (error) => {
+            console.error('[聊天页面] 监听用户信息失败:', error);
+            watcherManager.autoReconnect(`chat_user_${this.data.sessionId}`, 'user info watch error');
+          }
+        });
+      } catch (error) {
+        console.error('[聊天页面] 初始化用户信息监听失败:', error);
+        throw error;
+      }
+    });
   },
   
   // 设置页面标题
@@ -664,28 +953,43 @@ Page({
       const sessionRes = await db.collection('sessions').doc(this.data.sessionId).get();
       if (sessionRes.data) {
         const { customerServiceId, customerServiceName, customerServiceAvatar } = sessionRes.data;
-        // 获取客服状态信息
+        
+        // 尝试从缓存读取客服信息
+        const cachedCSInfo = wx.getStorageSync(`csInfo_${customerServiceId}`);
+        if (cachedCSInfo) {
+          console.log('[loadCSInfo] 从缓存读取客服信息:', cachedCSInfo);
+          this.setData({ csInfo: cachedCSInfo });
+          this.setPageTitle();
+          return;
+        }
+        
+        // 缓存未命中，查询数据库
         const csRes = await db.collection('customer_service_status')
           .where({ customerServiceId })
           .get();
+        let csInfo;
         if (csRes.data.length > 0) {
           // 如果客服状态信息中有头像，使用客服状态中的头像，否则使用会话中的头像
-          const avatarUrl = csRes.data[0].avatarUrl || customerServiceAvatar || '/images/icons/客服.png';
-          this.setData({ csInfo: { ...csRes.data[0], avatarUrl } });
+          const avatarImage = csRes.data[0].avatarImage || customerServiceAvatar || '/images/icons/客服.png';
+          csInfo = { ...csRes.data[0], avatarImage };
         } else {
           // 如果没有客服状态信息，使用会话中的客服名称和头像
-          this.setData({ csInfo: { 
+          csInfo = { 
             name: customerServiceName, 
-            avatarUrl: customerServiceAvatar || '/images/icons/客服.png' 
-          } });
+            avatarImage: customerServiceAvatar || '/images/icons/客服.png' 
+          };
         }
+        
+        // 缓存客服信息
+        wx.setStorageSync(`csInfo_${customerServiceId}`, csInfo);
+        this.setData({ csInfo });
       }
       // 设置页面标题
       this.setPageTitle();
     } catch (error) {
       console.error('获取客服信息失败', error);
       // 如果获取失败，使用默认值
-      this.setData({ csInfo: { name: '客服', avatarUrl: '/images/icons/客服.png' } });
+      this.setData({ csInfo: { name: '客服', avatarImage: '/images/icons/客服.png' } });
       // 设置页面标题
       this.setPageTitle();
     }
@@ -869,58 +1173,61 @@ Page({
   // 监听消息变化
   listenMessages() {
     const { sessionId } = this.data;
-    const db = wx.cloud.database();
     
     debugLog('开始监听消息变化，会话ID:', sessionId);
     
-    // 监听消息集合变化
-    this.messageWatch = db.collection('messages')
-      .where({ sessionId })
-      .watch({
-        onChange: (snapshot) => {
-          debugLog('收到消息变化:', snapshot);
-          if (snapshot.docChanges.length > 0) {
-            debugLog('消息变化数量:', snapshot.docChanges.length);
-            const ownAddedOnly = snapshot.docChanges.every((change) => {
-              const msg = change.doc || {};
-              return change.dataType === 'add' && this.isOwnMessage(msg);
-            });
+    watcherManager.create('msg_chat_' + sessionId, () => {
+      // 监听消息集合变化
+      return db.collection('messages')
+        .where({ sessionId })
+        .watch({
+          onChange: (snapshot) => {
+            debugLog('收到消息变化:', snapshot);
+            if (snapshot.docChanges.length > 0) {
+              debugLog('消息变化数量:', snapshot.docChanges.length);
+              const ownAddedOnly = snapshot.docChanges.every((change) => {
+                const msg = change.doc || {};
+                return change.dataType === 'add' && this.isOwnMessage(msg);
+              });
 
-            const hasOtherMessage = snapshot.docChanges.some(change => {
-              const msg = change.doc || {};
-              if (this.data.isCustomerService) return msg.role === 'user';
-              return msg.role === 'customer_service';
-            });
-            if (hasOtherMessage) {
-              this.clearUnreadCount(this.data.sessionId);
+              const hasOtherMessage = snapshot.docChanges.some(change => {
+                const msg = change.doc || {};
+                if (this.data.isCustomerService) return msg.role === 'user';
+                return msg.role === 'customer_service';
+              });
+              if (hasOtherMessage) {
+                this.clearUnreadCount(this.data.sessionId);
+              }
+              // 本人新发消息已在本地即时追加，跳过全量刷新，避免可见滚动抖动。
+              if (ownAddedOnly) {
+                return;
+              }
+              if (!this.data.firstScreenVisible) {
+                this.setData({ pendingMessageRefresh: true });
+                return;
+              }
+              
+              // 对端新消息：增量追加而不是全量刷新
+              const addedMessages = snapshot.docChanges
+                .filter(change => change.dataType === 'add')
+                .map(change => this.normalizeMessage(change.doc || {}));
+              
+              if (addedMessages.length > 0) {
+                addedMessages.forEach(msg => this.appendMessageToList(msg));
+              }
             }
-            // 本人新发消息已在本地即时追加，跳过全量刷新，避免可见滚动抖动。
-            if (ownAddedOnly) {
-              return;
-            }
-            if (!this.data.firstScreenVisible) {
-              this.setData({ pendingMessageRefresh: true });
-              return;
-            }
-            
-            // 对端新消息：增量追加而不是全量刷新
-            const addedMessages = snapshot.docChanges
-              .filter(change => change.dataType === 'add')
-              .map(change => this.normalizeMessage(change.doc || {}));
-            
-            if (addedMessages.length > 0) {
-              addedMessages.forEach(msg => this.appendMessageToList(msg));
-            }
+          },
+          onError: (error) => {
+            console.error('监听消息失败', error);
+            // 自动重连
+            watcherManager.autoReconnect('msg_chat_' + this.data.sessionId, 'message watch error');
           }
-        },
-        onError: (error) => {
-          console.error('监听消息失败', error);
-        }
-      });
+        });
+    });
   },
   // 发送消息
   async sendMessage(content, type = 'text', extra = null) {
-    const { sessionId, inputValue } = this.data;
+    const { sessionId, inputValue, showEmojiPanel } = this.data;
     
     // 如果是文本消息，使用inputValue
     const messageContent = type === 'text' ? inputValue.trim() : content;
@@ -932,33 +1239,59 @@ Page({
     
     // 清空输入框（仅文本消息）
     if (type === 'text') {
-      this.setData({ inputValue: '' });
+      if (showEmojiPanel) {
+        // 表情面板打开时，只清空输入框，保持表情面板不关闭
+        this.setData({ inputValue: '' });
+      } else {
+        // 表情面板关闭时，执行键盘回显逻辑
+        this.setData({ inputValue: '', inputFocus: true });
+      }
     }
+    
+    // 生成临时消息ID，立即显示消息
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    let localContent = messageContent;
+    let localMediaMeta = extra && typeof extra === 'object' ? { ...extra } : null;
+    if (type === 'image' && extra && extra._tempUrl) {
+      localContent = extra._tempUrl;
+      if (localMediaMeta) localMediaMeta.thumbnail = extra._tempThumbnail || localMediaMeta.thumbnail;
+    }
+    
+    const tempMessage = {
+      _id: tempId,
+      sessionId,
+      openid: this.data.openid,
+      role: this.data.isCustomerService ? 'customer_service' : 'user',
+      content: localContent,
+      type,
+      mediaMeta: localMediaMeta,
+      createTime: new Date(),
+      status: 'sending'
+    };
+    this.appendMessageToList(tempMessage, true);
     
     this.setData({ loading: true });
     
     try {
-      const res = await wx.cloud.callFunction({
-        name: 'sendMessage',
-        data: {
-          sessionId,
-          content: messageContent,
-          type,
-          extra
-        }
+      // 测试模式：模拟云函数返回失败
+      const res = await this.callSendMessage({
+        sessionId,
+        content: messageContent,
+        type,
+        extra
       });
       
       if (!res.result.success) {
-        wx.showToast({ title: res.result.error || '发送失败', icon: 'none' });
+        // 测试模式：提示更友好
+        const errorMsg = this.data.testMode 
+          ? '发送失败，请重试' 
+          : (res.result.error || '发送失败');
+        wx.showToast({ title: errorMsg, icon: 'none' });
+        const failMessage = { ...tempMessage, status: 'failed' };
+        this.replaceMessage(tempId, failMessage);
       } else {
-        // 图片/视频消息：优先用已转换的临时URL做本地显示，避免 ensureMediaUrlsAsync 二次转换延迟
-        let localContent = messageContent;
-        let localMediaMeta = extra && typeof extra === 'object' ? { ...extra } : null;
-        if (type === 'image' && extra && extra._tempUrl) {
-          localContent = extra._tempUrl;
-          if (localMediaMeta) localMediaMeta.thumbnail = extra._tempThumbnail || localMediaMeta.thumbnail;
-        }
-        const localMessage = {
+        const sentMessage = {
           _id: res.result.messageId,
           sessionId,
           openid: this.data.openid,
@@ -969,14 +1302,20 @@ Page({
           createTime: new Date(),
           status: 'sent'
         };
-        // selfSent=true：自己的消息始终滚到底部（面板开着时 listBottomSpaceRpx 已留出空间，消息会显示在面板上方）
-        this.appendMessageToList(localMessage, true);
+        this.replaceMessage(tempId, sentMessage);
       }
     } catch (error) {
       console.error('发送消息失败', error);
       wx.showToast({ title: '发送失败', icon: 'none' });
+      const failMessage = { ...tempMessage, status: 'failed' };
+      this.replaceMessage(tempId, failMessage);
     } finally {
       this.setData({ loading: false });
+      // 只有当表情面板关闭时才恢复键盘焦点
+      if (!showEmojiPanel) {
+        this.setData({ inputFocus: true });
+        this._preventBlur = false;
+      }
     }
   },
   // 输入框内容变化
@@ -992,24 +1331,36 @@ Page({
   toggleEmojiPanel() {
     const next = !this.data.showEmojiPanel;
     this._inputRefocusDeadline = 0;
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({ 
       showEmojiPanel: next,
       showMorePanel: false,
       messageActionMenuVisible: false,
-      listBottomSpaceRpx: 100 + (next ? 540 : 0),
+      inputFocus: next ? false : this.data.inputFocus,
+      listBottomSpaceRpx: 100 + hRpx + (next ? 540 : 0),
       scrollTop: 999999
     });
+    if (!next) {
+      // 关闭表情面板时恢复输入焦点
+      setTimeout(() => { this.setData({ inputFocus: true }); }, 100);
+    }
   },
   toggleMorePanel() {
     const next = !this.data.showMorePanel;
     this._inputRefocusDeadline = 0;
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({
       showMorePanel: next,
       showEmojiPanel: false,
       messageActionMenuVisible: false,
-      listBottomSpaceRpx: 100 + (next ? 175 : 0),
+      inputFocus: next ? false : this.data.inputFocus,
+      listBottomSpaceRpx: 100 + hRpx + (next ? 175 : 0),
       scrollTop: 999999
     });
+    if (!next) {
+      // 关闭更多面板时恢复输入焦点
+      setTimeout(() => { this.setData({ inputFocus: true }); }, 100);
+    }
   },
   
   // 选择表情
@@ -1041,10 +1392,11 @@ Page({
   
   // 选择图片和视频
   chooseImage() {
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({
       showMorePanel: false,
       showEmojiPanel: false,
-      listBottomSpaceRpx: 100,
+      listBottomSpaceRpx: 100 + hRpx,
       scrollTop: 999999
     });
     const platform = (wx.getDeviceInfo && wx.getDeviceInfo().platform) || ((wx.getSystemInfoSync && wx.getSystemInfoSync().platform) || '');
@@ -1181,15 +1533,32 @@ Page({
     }
   },
   
+  // 键盘高度变化（adjust-position=false 后手动处理）
+  onKeyboardHeightChange(e) {
+    const h = e.detail.height || 0;
+    if (!this._sysInfo) {
+      this._sysInfo = wx.getSystemInfoSync();
+    }
+    // px → rpx: rpx = px * 750 / windowWidth
+    const hRpx = h > 0 ? Math.round(h * 750 / (this._sysInfo.windowWidth || 375)) : 0;
+    const panelH = this.data.showEmojiPanel ? 540 : (this.data.showMorePanel ? 175 : 0);
+    this.setData({
+      keyboardHeight: h,
+      listBottomSpaceRpx: 100 + hRpx + panelH,
+      scrollTop: 999999
+    });
+  },
+
   // 输入框聚焦
   onInputFocus(e) {
     const openedPanel = this.data.showEmojiPanel || this.data.showMorePanel;
     this._inputRefocusDeadline = openedPanel ? (Date.now() + 1000) : 0;
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({
       showEmojiPanel: false,
       showMorePanel: false,
       inputFocus: true,
-      listBottomSpaceRpx: 100,
+      listBottomSpaceRpx: 100 + hRpx,
       scrollTop: 999999
     });
     // 确保输入框保持焦点
@@ -1200,10 +1569,14 @@ Page({
   
   // 输入框失焦
   onInputBlur() {
+    if (this._preventBlur) {
+      return;
+    }
     if (this._inputRefocusDeadline && Date.now() <= this._inputRefocusDeadline) {
+      const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
       this.setData({
         inputFocus: true,
-        listBottomSpaceRpx: 100,
+        listBottomSpaceRpx: 100 + hRpx,
         scrollTop: 999999
       });
       return;
@@ -1216,11 +1589,12 @@ Page({
   onInputTap() {
     const openedPanel = this.data.showEmojiPanel || this.data.showMorePanel;
     this._inputRefocusDeadline = openedPanel ? (Date.now() + 1000) : 0;
+    const hRpx = this.data.keyboardHeight > 0 ? Math.round(this.data.keyboardHeight * 750 / ((this._sysInfo && this._sysInfo.windowWidth) || 375)) : 0;
     this.setData({ 
       showEmojiPanel: false,
       showMorePanel: false,
       inputFocus: true,
-      listBottomSpaceRpx: 100,
+      listBottomSpaceRpx: 100 + hRpx,
       scrollTop: 999999
     });
     // 确保输入框获得焦点
@@ -1463,9 +1837,10 @@ Page({
   
   // 页面卸载时取消监听
   onUnload() {
-    if (this.messageWatch) {
-      this.messageWatch.close();
-    }
+    watcherManager.destroy('msg_chat_' + this.data.sessionId);
+    watcherManager.destroy(`chat_user_${this.data.sessionId}`);
+    console.log('页面卸载，销毁消息监听');
+    
     this._historyPrefetchBuffer = [];
     this._historyPrefetching = false;
     this._historyPrefetchHasMore = true;

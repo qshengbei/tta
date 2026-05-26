@@ -1,0 +1,19 @@
+{
+  "name": "initAdminTemplates",
+  "version": "1.0.0",
+  "description": "Initialize admin notification templates",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "notification",
+    "template",
+    "admin"
+  ],
+  "author": "",
+  "license": "ISC"
+}

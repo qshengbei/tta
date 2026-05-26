@@ -10,7 +10,8 @@ Page({
     orderId: '',
     createTime: '',
     orderData: null,
-    checkStatusTimer: null // 用于定时检查订单状态的定时器
+    checkStatusTimer: null, // 用于定时检查订单状态的定时器
+    isPaying: false // 是否正在支付，防止重复点击
   },
 
   onLoad(options) {
@@ -174,6 +175,14 @@ Page({
   // 处理支付按钮点击
   async handlePayment() {
     console.log('点击了立即支付按钮');
+    
+    // 防止重复点击
+    if (this.data.isPaying) {
+      console.log('正在支付中，忽略重复点击');
+      return;
+    }
+    this.setData({ isPaying: true });
+    
     // 模拟微信支付
     wx.showLoading({
       title: '正在支付...'
@@ -187,6 +196,7 @@ Page({
         title: '订单数据错误',
         icon: 'none'
       });
+      this.setData({ isPaying: false });
       return;
     }
 
@@ -213,6 +223,7 @@ Page({
             title: '订单不存在',
             icon: 'none'
           });
+          this.setData({ isPaying: false });
           return;
         }
         
@@ -272,6 +283,10 @@ Page({
                 console.error('订单ID为空，无法更新订单状态');
               }
               
+              // 标记购物车需要刷新
+              const app = getApp();
+              app.globalData.cartDirty = true;
+
               // 跳转到支付成功页面
               setTimeout(() => {
                 wx.redirectTo({
@@ -286,7 +301,11 @@ Page({
                 content: '确定要放弃支付吗？订单将变为待支付状态。',
                 success: (res) => {
                   console.log('放弃支付确认:', res);
+                  
                   if (res.confirm) {
+                    // 更新按钮状态为生成中，避免用户误以为还在支付
+                    this.setData({ isPaying: 'generating' });
+                    
                     // 检查订单状态，只有当订单状态为已支付时才更新为待支付
                     console.log('放弃支付时的订单ID:', orderId);
                     if (orderId) {
@@ -321,6 +340,9 @@ Page({
                         url: `/pages/order-list/index?status=pending&deliveryType=${order.deliveryType}`
                       });
                     }
+                  } else {
+                    // 用户取消放弃支付，返回支付页面，重置按钮状态
+                    this.setData({ isPaying: false });
                   }
                 }
               });
@@ -377,7 +399,11 @@ Page({
                   content: '确定要放弃支付吗？订单将变为待支付状态。',
                   success: (res) => {
                     console.log('放弃支付确认:', res);
+                    
                     if (res.confirm) {
+                      // 更新按钮状态为生成中，避免用户误以为还在支付
+                      this.setData({ isPaying: 'generating' });
+                      
                       // 显示加载提示
                       wx.showLoading({
                         title: '订单生成中...',
@@ -385,6 +411,9 @@ Page({
                       });
                       // 放弃支付时创建订单
                       this.createOrder('pending');
+                    } else {
+                      // 用户取消放弃支付，返回支付页面，重置按钮状态
+                      this.setData({ isPaying: false });
                     }
                   }
                 });
@@ -629,13 +658,19 @@ Page({
         orderId: dbOrderId,
         orderNumber: orderData.orderNumber,
         deliveryType: orderData.deliveryType,
-        cancelReason: status === 'pending' ? '' : undefined
+        cancelReason: status === 'pending' ? '' : undefined,
+        amount: orderData.totalPrice,  // 添加金额字段，用于管理员通知
+        countDown: countDownMinutes  // 添加倒计时字段，用于用户通知
       });
       
       // 如果是已支付状态，删除购物车中对应的商品（软删除）
       if (status === 'paid') {
         this.deleteCartItems();
-        
+
+        // 标记购物车需要刷新
+        const app = getApp();
+        app.globalData.cartDirty = true;
+
         // 跳转到支付成功页面
         setTimeout(() => {
           wx.redirectTo({
@@ -724,10 +759,10 @@ Page({
       });
   },
 
-  sendOrderStatusNotification({ status, orderId, orderNumber, deliveryType, cancelReason = '' }) {
+  sendOrderStatusNotification({ status, orderId, orderNumber, deliveryType, cancelReason = '', amount, countDown }) {
     const openid = wx.getStorageSync('openid');
     if (!openid || !status || !orderId) return;
-     console.log('调用sendOrderStatusNotification，状态:', status, '订单ID:', orderId);
+    console.log('调用sendOrderStatusNotification，状态:', status, '订单ID:', orderId);
     wx.cloud.callFunction({
       name: 'sendNotification',
       data: {
@@ -737,7 +772,9 @@ Page({
           status,
           orderNumber,
           deliveryType,
-          cancelReason
+          cancelReason,
+          amount,  // 添加金额字段
+          countDown  // 添加倒计时字段
         },
         extras: {
           orderId

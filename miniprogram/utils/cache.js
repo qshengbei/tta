@@ -3,9 +3,12 @@
 // 缓存键名前缀
 const CACHE_PREFIX = 'tta_';
 
+// 内存缓存（用于热启动性能优化）
+const productMemoryCache = new Map();
+
 // 缓存过期时间（毫秒）
 const CACHE_EXPIRY = {
-  product: 5 * 60 * 1000, // 5分钟
+  product: 0, // 商品信息永久缓存（0表示永久）
   expressRules: 30 * 60 * 1000, // 30分钟
   address: 24 * 60 * 60 * 1000, // 24小时
 };
@@ -14,13 +17,13 @@ const CACHE_EXPIRY = {
  * 设置缓存
  * @param {string} key - 缓存键名
  * @param {any} data - 缓存数据
- * @param {number} expiry - 过期时间（毫秒）
+ * @param {number} expiry - 过期时间（毫秒），0表示永久
  */
 export function setCache(key, data, expiry = 5 * 60 * 1000) {
   const cacheKey = `${CACHE_PREFIX}${key}`;
   const cacheData = {
     data,
-    expiry: Date.now() + expiry
+    expiry: expiry === 0 ? 0 : Date.now() + expiry // 0表示永久
   };
   try {
     wx.setStorageSync(cacheKey, cacheData);
@@ -40,7 +43,7 @@ export function getCache(key) {
   try {
     const cacheData = wx.getStorageSync(cacheKey);
     if (cacheData) {
-      if (Date.now() < cacheData.expiry) {
+      if (cacheData.expiry === 0 || Date.now() < cacheData.expiry) {
         console.log(`缓存获取成功: ${key}`);
         return cacheData.data;
       } else {
@@ -94,6 +97,9 @@ export function clearAllCache() {
  * @param {Object} product - 商品信息
  */
 export function cacheProduct(productId, product) {
+  // 先存内存缓存
+  productMemoryCache.set(productId, product);
+  // 再存本地存储
   setCache(`product_${productId}`, product, CACHE_EXPIRY.product);
 }
 
@@ -103,7 +109,55 @@ export function cacheProduct(productId, product) {
  * @returns {Object} 商品信息
  */
 export function getCachedProduct(productId) {
-  return getCache(`product_${productId}`);
+  // 先查内存缓存
+  if (productMemoryCache.has(productId)) {
+    console.log(`内存缓存命中: product_${productId}`);
+    return productMemoryCache.get(productId);
+  }
+  
+  // 再查本地存储
+  const product = getCache(`product_${productId}`);
+  if (product) {
+    // 缓存进内存
+    productMemoryCache.set(productId, product);
+  }
+  return product;
+}
+
+/**
+ * 批量获取缓存的商品详情
+ * @param {Array<string>} productIds - 商品ID数组
+ * @returns {Map<string, Object>} 商品信息Map
+ */
+export function getCachedProducts(productIds) {
+  const result = new Map();
+  
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return result;
+  }
+  
+  // 优先从内存批量获取
+  const missingIds = [];
+  productIds.forEach(id => {
+    if (productMemoryCache.has(id)) {
+      result.set(id, productMemoryCache.get(id));
+    } else {
+      missingIds.push(id);
+    }
+  });
+  
+  // 只读取缺失的
+  missingIds.forEach(id => {
+    const product = getCache(`product_${id}`);
+    if (product) {
+      result.set(id, product);
+      // 缓存进内存
+      productMemoryCache.set(id, product);
+    }
+  });
+  
+  console.log(`批量获取商品缓存: 命中${result.size}/${productIds.length}`);
+  return result;
 }
 
 /**

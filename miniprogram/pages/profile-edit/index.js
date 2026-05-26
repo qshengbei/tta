@@ -10,7 +10,8 @@ Page({
   onLoad(options) {
     const that = this;
     const openid = wx.getStorageSync('openid');
-    const userInfo = wx.getStorageSync('userInfo') || {};
+    // 使用统一缓存键
+    const userInfo = openid ? wx.getStorageSync(`user_${openid}`) || {} : {};
     
     this.setData({
       openid,
@@ -38,11 +39,11 @@ Page({
   // 头像选择回调
   onChooseAvatar(e) {
     console.log('选择头像:', e);
-    const avatarUrl = e.detail.avatarUrl;
+    const avatarImage = e.detail.avatarUrl;
     this.setData({
       userInfo: {
         ...this.data.userInfo,
-        avatarUrl: avatarUrl
+        avatarImage: avatarImage
       }
     });
   },
@@ -62,7 +63,7 @@ Page({
   // 保存用户信息
   saveUserInfo() {
     const { userInfo, openid } = this.data;
-    const { nickName, avatarUrl } = userInfo;
+    const { nickName, avatarImage } = userInfo;
 
     if (!nickName || nickName.trim() === '') {
       wx.showToast({
@@ -74,13 +75,13 @@ Page({
 
     wx.showLoading({ title: '保存中...' });
 
-    const saveUserInfo = (finalAvatarUrl) => {
-      // 更新本地存储
+    const saveUserInfo = (finalAvatarImage) => {
+      // 更新本地存储（使用统一缓存键和字段名）
       const finalUserInfo = {
-        ...userInfo,
-        avatarUrl: finalAvatarUrl
+        nickName,
+        avatarImage: finalAvatarImage
       };
-      wx.setStorageSync('userInfo', finalUserInfo);
+      wx.setStorageSync(`user_${openid}`, finalUserInfo);
 
       // 更新数据库
       db.collection('users').where({ _openid: openid }).get({
@@ -89,7 +90,7 @@ Page({
             db.collection('users').doc(res.data[0]._id).update({
               data: {
                 nickName,
-                avatarImage: finalAvatarUrl,
+                avatarImage: finalAvatarImage,
                 updatedAt: new Date()
               },
               success: () => {
@@ -116,7 +117,7 @@ Page({
               data: {
                 _openid: openid,
                 nickName,
-                avatarImage: finalAvatarUrl,
+                avatarImage: finalAvatarImage,
                 createdAt: new Date(),
                 updatedAt: new Date()
               },
@@ -153,10 +154,10 @@ Page({
     };
 
     // 如果有新头像且不是云存储路径，先上传
-    if (avatarUrl && !avatarUrl.startsWith('cloud://')) {
+    if (avatarImage && !avatarImage.startsWith('cloud://')) {
       wx.cloud.uploadFile({
         cloudPath: `avatars/${openid}_${Date.now()}.jpg`,
-        filePath: avatarUrl,
+        filePath: avatarImage,
         success: (res) => {
           saveUserInfo(res.fileID);
         },
@@ -170,7 +171,7 @@ Page({
         }
       });
     } else {
-      saveUserInfo(avatarUrl);
+      saveUserInfo(avatarImage);
     }
   }
 });

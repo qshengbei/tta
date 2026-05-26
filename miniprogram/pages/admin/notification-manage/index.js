@@ -115,6 +115,45 @@ Page({
     });
   },
 
+  // 初始化管理员通知模板
+  initAdminTemplates() {
+    wx.showModal({
+      title: '确认初始化',
+      content: '确定要初始化管理员通知模板吗？已存在的模板将被更新。',
+      success: (res) => {
+        if (res.confirm) {
+          this.setData({ loading: true });
+
+          wx.cloud.callFunction({
+            name: 'sendNotification',
+            data: {
+              notificationType: 'initAdminTemplates'
+            },
+            success: (res) => {
+              console.log('初始化管理员模板成功:', res);
+              const { successCount, failCount } = res.result;
+              wx.showToast({
+                title: `初始化完成：成功${successCount}个，失败${failCount}个`,
+                icon: failCount === 0 ? 'success' : 'none',
+                duration: 2000
+              });
+            },
+            fail: (err) => {
+              console.error('初始化管理员模板失败:', err);
+              wx.showToast({
+                title: '初始化失败，请稍后重试',
+                icon: 'none'
+              });
+            },
+            complete: () => {
+              this.setData({ loading: false });
+            }
+          });
+        }
+      }
+    });
+  },
+
   // 发送活动通知
   sendActivityNotification() {
     const { title, description, userType } = this.data.activityForm;

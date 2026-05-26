@@ -1,0 +1,291 @@
+日志内容 Request ID: b989b17d-e377-4d38-a2a6-a7c2b9bc4931
+执行时间: 435ms内存使用: 23.66 MB
+返回结果
+{"success":true,"message":"订单通知处理完成","results":[{"openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","success":true}]}
+
+日志
+START RequestId: b989b17d-e377-4d38-a2a6-a7c2b9bc4931
+
+Event RequestId: b989b17d-e377-4d38-a2a6-a7c2b9bc4931
+
+ 
+
+2026-05-26T06:16:31.990Z  === 开始发送通知 ===
+
+ 
+
+2026-05-26T06:16:31.991Z  通知类型: orderStatusChange
+
+ 
+
+2026-05-26T06:16:31.991Z  目标用户: [ 'o1R-w7XrgR7OHEk_SXuzYAoGIQHo' ]
+
+ 
+
+2026-05-26T06:16:31.993Z  通知数据: {
+
+  cancelReason: '',
+
+  deliveryType: 'express',
+
+  orderNumber: '202605261416235295',
+
+  status: 'paid'
+
+}
+
+ 
+
+2026-05-26T06:16:31.993Z  额外参数: { orderId: 'c40002b26a153abf00b6c1833974c51f' }
+
+ 
+
+2026-05-26T06:16:31.994Z  === 订单状态变更通知处理 ===
+
+ 
+
+2026-05-26T06:16:31.994Z  场景: paid
+
+ 
+
+2026-05-26T06:16:31.994Z  给用户 o1R-w7XrgR7OHEk_SXuzYAoGIQHo 发送通知
+
+ 
+
+2026-05-26T06:16:31.994Z  给用户 o1R-w7XrgR7OHEk_SXuzYAoGIQHo 发送订单通知
+
+ 
+
+2026-05-26T06:16:31.994Z  处理订单状态变化通知，用户: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, 订单: c40002b26a153abf00b6c1833974c51f
+
+ 
+
+2026-05-26T06:16:31.994Z  指定目标角色: user
+
+ 
+
+2026-05-26T06:16:32.032Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.085Z  === getAdminOpenids() 开始 ===
+
+ 
+
+2026-05-26T06:16:32.086Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.130Z  settings查询结果: {"data":[{"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}],"errMsg":"collection.get:ok"}
+
+ 
+
+2026-05-26T06:16:32.130Z  settings数据: {"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}
+
+ 
+
+2026-05-26T06:16:32.130Z  使用 adminOpenId 字段，值为: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.131Z  过滤后的管理员openid列表: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.134Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.181Z  通知记录保存成功: {
+
+  _id: '21dd03466a153ac000b5fd62496b8013',
+
+  errMsg: 'collection.add:ok'
+
+}
+
+ 
+
+2026-05-26T06:16:32.181Z  发送小程序通知给 o1R-w7XrgR7OHEk_SXuzYAoGIQHo:
+
+ 
+
+2026-05-26T06:16:32.181Z  标题: 支付成功
+
+ 
+
+2026-05-26T06:16:32.182Z  内容: 您的订单 #202605261416235295 支付成功，我们正在处理
+
+ 
+
+2026-05-26T06:16:32.182Z  发送微信模板消息给 o1R-w7XrgR7OHEk_SXuzYAoGIQHo:
+
+ 
+
+2026-05-26T06:16:32.182Z  模板ID: OPENTM405472175
+
+ 
+
+2026-05-26T06:16:32.182Z  模板数据: { orderNumber: { value: '202605261416235295' } }
+
+ 
+
+2026-05-26T06:16:32.182Z  跳转页面: /pages/order-detail/index?id=c40002b26a153abf00b6c1833974c51f
+
+ 
+
+2026-05-26T06:16:32.182Z  判断是否需要通知管理员...
+
+ 
+
+2026-05-26T06:16:32.182Z  场景 paid 是否需要通知管理员: true
+
+ 
+
+2026-05-26T06:16:32.182Z  场景 paid 需要通知管理员，调用 sendOrderNotificationToAdmins()
+
+ 
+
+2026-05-26T06:16:32.182Z  === sendOrderNotificationToAdmins() 开始 ===
+
+ 
+
+2026-05-26T06:16:32.182Z  通知数据: {"cancelReason":"","deliveryType":"express","orderNumber":"202605261416235295","status":"paid"}
+
+ 
+
+2026-05-26T06:16:32.182Z  额外参数: {"orderId":"c40002b26a153abf00b6c1833974c51f"}
+
+ 
+
+2026-05-26T06:16:32.183Z  === getAdminOpenids() 开始 ===
+
+ 
+
+2026-05-26T06:16:32.184Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.223Z  settings查询结果: {"data":[{"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}],"errMsg":"collection.get:ok"}
+
+ 
+
+2026-05-26T06:16:32.224Z  settings数据: {"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}
+
+ 
+
+2026-05-26T06:16:32.224Z  使用 adminOpenId 字段，值为: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.224Z  过滤后的管理员openid列表: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.224Z  获取到的管理员openid列表: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.224Z  准备给 1 个管理员发送订单通知
+
+ 
+
+2026-05-26T06:16:32.224Z  正在给管理员 o1R-w7S-1p19alqjb6dVUyYdunSs 发送通知
+
+ 
+
+2026-05-26T06:16:32.224Z  处理订单状态变化通知，用户: o1R-w7S-1p19alqjb6dVUyYdunSs, 订单: c40002b26a153abf00b6c1833974c51f
+
+ 
+
+2026-05-26T06:16:32.224Z  指定目标角色: admin
+
+ 
+
+2026-05-26T06:16:32.226Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.271Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.316Z  === getAdminOpenids() 开始 ===
+
+ 
+
+2026-05-26T06:16:32.318Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.369Z  settings查询结果: {"data":[{"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}],"errMsg":"collection.get:ok"}
+
+ 
+
+2026-05-26T06:16:32.369Z  settings数据: {"_id":"f1f0697b69b2bd47004d223a4836b459","beginTime":"9","endTime":"20","pickupLocation":"福建省厦门市集美区园博一号小区（南门）","latitude":"24.574953","longitude":"118.064664","tencentMapKey":"YRKBZ-BRMYQ-AON5U-23RRN-O3TZ2-GYBVB","secretKey":"DnzYNsWxAEW7huT7caeuK5i5qcSFnoOa","deliveryRules":[{"fee":0,"maxDistance":2},{"fee":"5","maxDistance":"5"},{"fee":"10","maxDistance":"10"}],"expressRules":[{"fee":4,"freeShipping":40,"provinces":["福建省"],"region":"福建省内","sort":1},{"fee":6,"freeShipping":40,"provinces":["江苏省","浙江省","上海市","江西省","安徽省"],"region":"华东","sort":2},{"fee":6,"freeShipping":40,"provinces":["广东省","广西壮族自治区","海南省"],"region":"华南","sort":3},{"fee":6,"freeShipping":40,"provinces":["湖北省","湖南省"],"region":"华中","sort":4},{"fee":6,"freeShipping":40,"provinces":["北京市","天津市","河北省","山西省","山东省","河南省"],"region":"华北","sort":5},{"fee":8,"freeShipping":40,"provinces":["四川省","重庆市","云南省","贵州省"],"region":"西南","sort":6},{"fee":8,"freeShipping":40,"provinces":["辽宁省","吉林省","黑龙江省"],"region":"东北","sort":7},{"fee":10,"freeShipping":60,"provinces":["陕西省","宁夏回族自治区"],"region":"西北","sort":8},{"fee":12,"freeShipping":60,"provinces":["内蒙古自治区","甘肃省","青海省"],"region":"华北、西北偏远","sort":9},{"fee":15,"freeShipping":80,"provinces":["西藏自治区","新疆维吾尔自治区"],"region":"西南、西北偏远","sort":10},{"fee":20,"freeShipping":80,"provinces":["香港特别行政区","澳门特别行政区","台湾省"],"region":"港澳台","sort":11}],"wechatPicture":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/wechat/wechatpicture.png","myBackgroundImage":"","wechatId":"TouchTheAura","countDown":0.5,"adminOpenId":["o1R-w7S-1p19alqjb6dVUyYdunSs"],"buyTips":"亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解 若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心 每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象 如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答","updatedAt":"2026-04-29T16:48:14.256Z","customerServiceMethod":"custom","express100Parameters":{"key":"OIQEZNAu8636","customer":"2C783E98550CD27DE4C3252D26343BB6"},"express100Api":[{"api":"smartCheck","apiName":"智能判断接口","isEnable":false},{"api":"realTimeQuery","apiName":"快递信息实时查询接口","isEnable":true},{"api":"subscribe","apiName":"快递信息订阅接口","isEnable":false},{"api":"mapTrack","apiName":"快递查询地图轨迹接口","isEnable":false},{"api":"mapTrackPush","apiName":"地图轨迹推送接口","isEnable":false}],"deliveryAddress":["福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","福建省厦门市集美区园博一号小区（南门）"],"afterSalesTimeConfig":{"autoConfirmReceiptDays":3,"normalAfterSalesDays":7,"qualityAfterSalesDays":15}}
+
+ 
+
+2026-05-26T06:16:32.369Z  使用 adminOpenId 字段，值为: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.369Z  过滤后的管理员openid列表: [ 'o1R-w7S-1p19alqjb6dVUyYdunSs' ]
+
+ 
+
+2026-05-26T06:16:32.371Z  当前未指定env，将默认使用第一个创建的环境！
+
+ 
+
+2026-05-26T06:16:32.421Z  通知记录保存成功: {
+
+  _id: 'e8a9f9876a153ac000b651ae3f4f203e',
+
+  errMsg: 'collection.add:ok'
+
+}
+
+ 
+
+2026-05-26T06:16:32.422Z  发送小程序通知给 o1R-w7S-1p19alqjb6dVUyYdunSs:
+
+ 
+
+2026-05-26T06:16:32.422Z  标题: 支付成功
+
+ 
+
+2026-05-26T06:16:32.422Z  内容: 您的订单 #202605261416235295 支付成功，我们正在处理
+
+ 
+
+2026-05-26T06:16:32.422Z  发送微信模板消息给 o1R-w7S-1p19alqjb6dVUyYdunSs:
+
+ 
+
+2026-05-26T06:16:32.422Z  模板ID: OPENTM405472175
+
+ 
+
+2026-05-26T06:16:32.422Z  模板数据: { orderNumber: { value: '202605261416235295' } }
+
+ 
+
+2026-05-26T06:16:32.422Z  跳转页面: /pages/order-detail/index?id=c40002b26a153abf00b6c1833974c51f
+
+ 
+
+2026-05-26T06:16:32.422Z  给管理员 o1R-w7S-1p19alqjb6dVUyYdunSs 发送通知成功
+
+ 
+
+2026-05-26T06:16:32.422Z  === sendOrderNotificationToAdmins() 结束 ===
+
+Response RequestId: b989b17d-e377-4d38-a2a6-a7c2b9bc4931 RetMsg: {"success":true,"message":"订单通知处理完成","results":[{"openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","success":true}]}
+
+ 
+
+END RequestId: b989b17d-e377-4d38-a2a6-a7c2b9bc4931
+
+Report RequestId: b989b17d-e377-4d38-a2a6-a7c2b9bc4931 Duration: 435ms Memory: 256MB MemUsage: 23.664063MB

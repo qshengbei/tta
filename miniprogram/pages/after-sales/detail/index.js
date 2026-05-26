@@ -1,5 +1,6 @@
 // pages/after-sales/detail/index.js
 import { getCollection } from "../../../utils/cloud";
+import watcherManager from '../../../utils/watcherManager';
 
 const TYPE_TEXT_MAP = {
   refund: '退款',
@@ -135,7 +136,8 @@ Page({
     remainingTime: 0,
     isExpired: false,
     processingExpired: false,
-    autoProcessCountdown: ''
+    autoProcessCountdown: '',
+    pageVisible: false
   },
 
   onLoad(options) {
@@ -148,9 +150,12 @@ Page({
   },
 
   onShow() {
+    this.setData({ pageVisible: true });
     // 页面显示时刷新数据，确保显示最新的售后状态和退款信息
     if (this.caseId) {
       this.fetchAfterSalesDetail(this.caseId);
+      console.log('[售后详情页面] 开始实时监听');
+      this.startAfterSalesWatch();
     }
   },
 
@@ -169,6 +174,10 @@ Page({
 
   onUnload() {
     this.clearCountdown();
+    if (this.caseId) {
+      console.log('[售后详情页面] 关闭实时监听');
+      watcherManager.destroy(`after_sales_detail_${this.caseId}`);
+    }
   },
 
   fetchAfterSalesDetail(id) {
@@ -202,6 +211,55 @@ Page({
           });
       })
       .catch(() => this.fetchLegacyAfterSalesDetail(id));
+  },
+
+  // 启动售后单监听
+  startAfterSalesWatch() {
+    const { caseId } = this;
+    if (!caseId) {
+      console.warn('[售后详情页面] 没有售后单ID，无法启动监听');
+      return;
+    }
+
+    const listenerKey = `after_sales_detail_${caseId}`;
+    
+    // 使用watcherManager创建监听
+    watcherManager.create(listenerKey, () => {
+      try {
+        const db = wx.cloud.database();
+        return db.collection('after_sales_cases').doc(caseId).watch({
+          onChange: (snapshot) => {
+            if (!this.data.pageVisible) return;
+            console.log('[售后详情页面] 售后单数据变化:', snapshot);
+            // 处理售后单变化
+            this.handleAfterSalesChanges(snapshot);
+          },
+          onError: (error) => {
+            console.error('[售后详情页面] 售后单监听失败:', error);
+            // 自动重连
+            watcherManager.autoReconnect(listenerKey, 'after sales watch error');
+          }
+        });
+      } catch (error) {
+        console.error('[售后详情页面] 初始化售后单监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  // 处理售后单数据变化
+  handleAfterSalesChanges(snapshot) {
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+      return;
+    }
+    
+    // 遍历变化，更新售后单数据
+    snapshot.docChanges.forEach(change => {
+      if (change.dataType === 'update' || change.dataType === 'add') {
+        // 售后单更新或新增，重新获取详情
+        this.fetchAfterSalesDetail(this.caseId);
+      }
+    });
   },
 
   fetchLegacyAfterSalesDetail(id) {

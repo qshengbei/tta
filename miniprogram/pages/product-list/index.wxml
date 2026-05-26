@@ -1,4 +1,4 @@
-<view class="products-list-page" style="padding-top: {{isTopBarVisible ? '166rpx' : '94rpx'}};">
+<view class="products-list-page" style="padding-top: 166rpx;">
   <!-- 顶部搜索和筛选组件 -->
   <search-filter-panel pageType="products" searchKeyword="{{keyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10002;"/>
 
@@ -35,7 +35,7 @@
   <view wx:if="{{!showSkeleton}}" class="products-list">
     <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
       <view class="product-image-container">
-        <image class="product-image" src="{{item.coverImage}}" mode="aspectFill" lazy-load/>
+        <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
         <view wx:if="{{item.stock === 0}}" class="product-sold-out">
           <text class="product-sold-out-text">补货中</text>
         </view>

@@ -1,5 +1,7 @@
 import { getCollection } from "../../utils/cloud";
 import { generateMarkers, generateCircles, getAddressLocation } from "../../utils/map-utils";
+import watcherManager from "../../utils/watcherManager";
+
 const db = wx.cloud.database();
 const _ = db.command;
 const EXPIRED_CHECK_COOLDOWN_MS = 15000;
@@ -10,6 +12,7 @@ Page({
     loading: true,
     error: false,
     errorMessage: "",
+    pageVisible: false,
     markers: [], // 地图标记
     circles: [], // 地图圆形覆盖物
     mapHeight: 300, // 地图高度，默认300rpx
@@ -180,6 +183,55 @@ Page({
         errorMessage: "订单ID不存在"
       });
     }
+  },
+
+  // 启动订单监听
+  startOrderWatch() {
+    const { orderId } = this.data;
+    if (!orderId) {
+      console.warn('[OrderDetail] 没有订单ID，无法启动监听');
+      return;
+    }
+
+    console.log('[订单详情页面] 启动订单监听');
+    
+    // 使用watcherManager创建监听
+    watcherManager.create(`order_detail_${orderId}`, () => {
+      try {
+        const db = wx.cloud.database();
+        return db.collection('orders').doc(orderId).watch({
+          onChange: (snapshot) => {
+            if (!this.data.pageVisible) return;
+            console.log('[OrderDetail] 订单数据变化:', snapshot);
+            // 处理订单变化
+            this.handleOrderChanges(snapshot);
+          },
+          onError: (error) => {
+            console.error('[OrderDetail] 订单监听失败:', error);
+            // 自动重连
+            watcherManager.autoReconnect(`order_detail_${orderId}`, 'order watch error');
+          }
+        });
+      } catch (error) {
+        console.error('[OrderDetail] 初始化订单监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  // 处理订单变化
+  handleOrderChanges(snapshot) {
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+      return;
+    }
+    
+    // 遍历变化，更新订单数据
+    snapshot.docChanges.forEach(change => {
+      if (change.dataType === 'update' || change.dataType === 'add') {
+        // 订单更新或新增，重新获取详情
+        this.fetchOrderDetail(this.data.orderId);
+      }
+    });
   },
 
   // 初始化物流状态数据
@@ -888,21 +940,24 @@ Page({
     const { orderId, order } = this.data;
     const globalData = getApp().globalData;
     
+    this.setData({ pageVisible: true });
+    
     // 检查是否需要刷新订单详情（如取消售后后）
     if (globalData.needRefreshOrderDetail && orderId) {
       console.log('收到刷新通知，重新拉取订单详情');
       globalData.needRefreshOrderDetail = false;
       this.fetchOrderDetail(orderId);
-      return;
-    }
-    
-    if (orderId && order && order.status === 'pending') {
+    } else if (orderId && order && order.status === 'pending') {
       // 只对待支付订单重新拉取，因为只有待支付订单有倒计时，需要检查状态
       console.log('待支付订单，重新拉取订单详情');
       this.fetchOrderDetail(orderId);
     } else {
       console.log('非待支付订单或订单数据不存在，不刷新页面');
     }
+    
+    // 启动订单监听
+    console.log('[订单详情页面] 开始实时监听');
+    this.startOrderWatch();
   },
 
   confirmReceipt(e) {
@@ -918,8 +973,7 @@ Page({
               title: '确认收货成功',
               icon: 'success'
             });
-            // 重新加载订单详情
-            this.fetchOrderDetail(orderId);
+            // 监听会自动更新，不手动刷新
           } catch (err) {
             console.error("确认收货失败", err);
             wx.showToast({
@@ -947,7 +1001,7 @@ Page({
               title: '订单取消成功',
               icon: 'success'
             });
-            this.fetchOrderDetail(orderId);
+            // 监听会自动更新，不手动刷新
           } catch (err) {
             console.error("取消订单失败", err);
             wx.showToast({
@@ -1214,8 +1268,16 @@ Page({
 
   // 页面隐藏时清除倒计时
   onHide() {
+    this.setData({ pageVisible: false });
     this.clearCountdown();
     console.log('订单详情页面隐藏，清除倒计时');
+    
+    // 销毁监听
+    const { orderId } = this.data;
+    if (orderId) {
+      watcherManager.destroy(`order_detail_${orderId}`);
+      console.log('[订单详情页面] 关闭实时监听');
+    }
   },
 
   // 页面卸载时清除倒计时
@@ -1224,6 +1286,14 @@ Page({
     if (this.expiredCheckCooldown) {
       this.expiredCheckCooldown.clear();
     }
+    
+    // 销毁监听
+    const { orderId } = this.data;
+    if (orderId) {
+      watcherManager.destroy(`order_detail_${orderId}`);
+      console.log('[订单详情页面] 关闭实时监听');
+    }
+    
     // 通知订单列表页需要刷新数据
     getApp().globalData.needRefreshOrderList = true;
   },
@@ -2476,9 +2546,8 @@ Page({
           title: '提交成功',
           icon: 'success'
         });
-        // 关闭弹窗并刷新订单详情
+        // 关闭弹窗，监听会自动更新订单数据
         this.closeAfterSalesTypeModal();
-        this.fetchOrderDetail(pendingOrderId);
       } else {
         wx.showToast({
           title: result.result?.error || '提交失败',

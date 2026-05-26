@@ -1,5 +1,6 @@
 // pages/after-sales/list/index.js
 import { getCollection } from "../../../utils/cloud";
+import watcherManager from '../../../utils/watcherManager';
 
 const db = wx.cloud.database();
 
@@ -79,7 +80,8 @@ Page({
     afterSalesList: [],
     currentOrderId: '',
     currentProductIndex: null,
-    loading: true
+    loading: true,
+    pageVisible: false
   },
 
   onLoad(options) {
@@ -95,6 +97,78 @@ Page({
   },
 
   onShow() {
+    const wasHidden = !this.data.pageVisible;
+    this.setData({ pageVisible: true });
+    console.log('[售后列表页面] 页面显示');
+    if (wasHidden) {
+      console.log('售后列表页面-实时监听恢复连接');
+    }
+    this.fetchAfterSalesList();
+    // 确保监听正在运行
+    if (!watcherManager.get('after_sales_list')) {
+      console.log('[售后列表页面] 开始实时监听');
+      this.startAfterSalesWatch();
+    }
+  },
+
+  onHide() {
+    this.setData({ pageVisible: false });
+    console.log('[售后列表页面] 页面隐藏');
+    console.log('售后列表页面-实时监听暂停连接');
+    // 不销毁监听，保持运行
+  },
+
+  onUnload() {
+    console.log('[售后列表页面] 页面卸载');
+    console.log('售后列表页面-实时监听关闭');
+    watcherManager.destroy('after_sales_list');
+  },
+
+  // 启动售后列表监听
+  startAfterSalesWatch() {
+    console.log('售后列表页面-实时监听开启');
+    const app = getApp();
+    const openid = app.globalData.openid;
+    
+    if (!openid) {
+      console.warn('[售后列表页面] 没有openid，无法启动监听');
+      return;
+    }
+
+    // 使用watcherManager创建监听
+    watcherManager.create('after_sales_list', () => {
+      try {
+        const db = wx.cloud.database();
+        return db.collection('after_sales_cases')
+          .where({ _openid: openid })
+          .orderBy('createdAt', 'desc')
+          .watch({
+            onChange: (snapshot) => {
+              if (!this.data.pageVisible) return;
+              console.log('[售后列表页面] 售后列表数据变化:', snapshot);
+              // 处理售后列表变化
+              this.handleAfterSalesChanges(snapshot);
+            },
+            onError: (error) => {
+              console.error('[售后列表页面] 售后列表监听失败:', error);
+              // 自动重连
+              watcherManager.autoReconnect('after_sales_list', 'after sales list watch error');
+            }
+          });
+      } catch (error) {
+        console.error('[售后列表页面] 初始化售后列表监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  // 处理售后列表数据变化
+  handleAfterSalesChanges(snapshot) {
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+      return;
+    }
+    
+    // 重新获取售后列表
     this.fetchAfterSalesList();
   },
 

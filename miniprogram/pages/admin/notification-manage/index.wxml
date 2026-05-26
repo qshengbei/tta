@@ -73,6 +73,16 @@
       >
         发送通知
       </button>
+      
+      <!-- 初始化管理员模板按钮 -->
+      <button 
+        class="init-btn"
+        bindtap="initAdminTemplates"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >
+        初始化管理员通知模板
+      </button>
     </view>
   </view>
 

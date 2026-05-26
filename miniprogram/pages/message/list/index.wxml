@@ -44,7 +44,7 @@
               <text class="notification-time">{{item.formattedTime}}</text>
             </view>
             <text class="notification-text">{{item.content}}</text>
-            <view wx:if="{{item.isAdmin}}" class="notification-role-tag">管理员通知</view>
+            <view wx:if="{{item.isAdminNotification}}" class="notification-role-tag">管理员通知</view>
           </view>
         </view>
       </view>

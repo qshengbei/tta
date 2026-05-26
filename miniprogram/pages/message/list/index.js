@@ -148,7 +148,7 @@ Page({
       return '活动通知';
     } else if (rawType === 'system' || title.includes('系统')) {
       return '系统通知';
-    } else if (rawType === 'general' || title.includes('欢迎')) {
+    } else if (rawType === 'welcome' || title.includes('欢迎')) {
       return '欢迎通知';
     } else {
       return '其他通知';

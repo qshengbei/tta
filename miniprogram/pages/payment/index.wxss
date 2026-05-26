@@ -182,6 +182,15 @@
   box-shadow: 0 4rpx 16rpx rgba(0, 102, 204, 0.4);
 }
 
+/* 按钮禁用状态 */
+.payment__footer-pay[disabled] {
+  background-color: #cccccc;
+  color: #ffffff;
+  box-shadow: none;
+  transform: none;
+  opacity: 0.8;
+}
+
 .payment__footer-pay::before {
   content: '';
   position: absolute;

@@ -31,6 +31,6 @@
       <text class="payment__footer-amount-label">实付金额：</text>
       <text class="payment__footer-amount-value">¥{{totalPrice}}</text>
     </view>
-    <button class="payment__footer-pay" bindtap="handlePayment">立即支付</button>
+    <button class="payment__footer-pay" bindtap="handlePayment" disabled="{{isPaying}}">{{isPaying === 'generating' ? '生成中...' : (isPaying ? '支付中...' : '立即支付')}}</button>
   </view>
 </view>

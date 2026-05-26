@@ -1,4 +1,6 @@
 // pages/product-list/index.js
+import watcherManager from '../../utils/watcherManager';
+
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -20,13 +22,16 @@ Page({
     categories: [],
     inStock: null,
     // 滚动相关
-    lastScrollTop: 0,
     isTopBarVisible: true,
     scrollDirection: 'up',
     // 标记是否需要刷新
     needsRefresh: false,
     // 标记是否离开过页面（去商品详情等）
-    hasNavigatedAway: false
+    hasNavigatedAway: false,
+    // 页面可见性
+    pageVisible: false,
+    // 是否有待刷新
+    pendingRefresh: false
   },
 
   // 生成缓存key
@@ -35,17 +40,13 @@ Page({
     return `products_${pageType}_${keyword || ''}_${categoryId || ''}_${typeId || ''}_${(categories || []).join('_')}_${inStock}`;
   },
 
-  // 从缓存获取数据
+  // 从缓存获取数据（永久缓存，由实时监听更新）
   getCachedProducts() {
     try {
       const cacheKey = this.getCacheKey();
       const cached = wx.getStorageSync(cacheKey);
-      if (cached && cached.data && cached.timestamp) {
-        // 检查缓存是否过期（5分钟）
-        const now = Date.now();
-        if (now - cached.timestamp < 5 * 60 * 1000) {
-          return cached.data;
-        }
+      if (cached && cached.data) {
+        return cached.data;
       }
     } catch (e) {
       console.log('读取缓存失败', e);
@@ -99,45 +100,130 @@ Page({
     
     // 异步加载最新数据
     this.loadProducts();
+    
+    // 启动商品列表监听
+    console.log('[商品列表页面] 在onLoad中启动监听');
+    this.startProductWatch();
   },
 
   onShow() {
-    const { products, lastScrollTop, needsRefresh, hasNavigatedAway } = this.data;
+    const wasHidden = !this.data.pageVisible;
+    this.setData({ pageVisible: true });
+    console.log('[商品列表页面] 页面显示');
+    
+    if (wasHidden) {
+      console.log('商品列表页面-实时监听恢复连接');
+    }
     
     // 如果只是从商品详情页返回（hasNavigatedAway 为 true），不刷新数据，保持滚动位置
     // 这个检查放在最前面，确保优先保持滚动位置
-    if (hasNavigatedAway) {
+    if (this.data.hasNavigatedAway) {
       console.log('从商品详情页返回，保持滚动位置');
       this.setData({ hasNavigatedAway: false });
-      return;
+    }
+    
+    // 检查页面隐藏期间是否有数据变更
+    if (this.data.pendingRefresh) {
+      console.log('[商品列表页面] 页面隐藏期间有数据变更，执行刷新');
+      this.setData({ pendingRefresh: false });
+      this.loadProducts();
     }
     
     // 检查是否需要强制刷新（例如从后台管理页面返回）
-    if (needsRefresh || (getApp().globalData.productsNeedRefresh === true)) {
+    if (this.data.needsRefresh || (getApp().globalData.productsNeedRefresh === true)) {
       console.log('检测到商品数据变更，强制刷新');
       this.setData({ needsRefresh: false });
       getApp().globalData.productsNeedRefresh = false;
       // 显示骨架屏并重新加载
-      if (products.length > 0) {
+      if (this.data.products.length > 0) {
         // 已有数据，静默更新不显示骨架屏
         this.loadProducts();
       } else {
         this.setData({ showSkeleton: true });
         this.loadProducts();
       }
-      return;
     }
     
     // 正常页面显示，保持滚动位置
-    if (products.length === 0) {
+    if (this.data.products.length === 0) {
       wx.pageScrollTo({ scrollTop: 0, duration: 0 });
-      this.setData({ lastScrollTop: 0, isTopBarVisible: true });
+      this.setData({ isTopBarVisible: true });
     }
   },
-  
+
   onHide() {
     // 标记页面已离开（去商品详情等页面）
-    this.setData({ hasNavigatedAway: true });
+    this.setData({ 
+      hasNavigatedAway: true,
+      pageVisible: false 
+    });
+    console.log('[商品列表页面] 页面隐藏，暂停监听处理');
+    console.log('商品列表页面-实时监听暂停连接');
+    // 不销毁监听，保持监听运行，只暂停UI更新
+  },
+
+  onUnload() {
+    console.log('[商品列表页面] 关闭实时监听');
+    console.log('商品列表页面-实时监听关闭');
+    watcherManager.destroy('product_list');
+  },
+
+  // 启动商品列表监听
+  startProductWatch() {
+    console.log('商品列表页面-实时监听开启');
+    console.log('[商品列表页面] 开始创建商品监听器');
+    // 使用watcherManager创建监听
+    watcherManager.create('product_list', () => {
+      try {
+        const db = wx.cloud.database();
+        console.log('[商品列表页面] 正在创建products collection监听');
+        const watcher = db.collection('products')
+          .where({ isDeleted: false })
+          .orderBy('createdAt', 'desc')
+          .watch({
+            onChange: (snapshot) => {
+              console.log('[商品列表页面] ==== products collection onChange回调触发! ====');
+              console.log('[商品列表页面] snapshot:', snapshot);
+              console.log('[商品列表页面] pageVisible:', this.data.pageVisible);
+              
+              if (!this.data.pageVisible) {
+                console.log('[商品列表页面] 页面隐藏，设置pendingRefresh=true');
+                this.setData({ pendingRefresh: true });
+                return;
+              }
+              
+              console.log('[商品列表页面] 开始处理商品变化');
+              // 处理商品变化
+              this.handleProductChanges(snapshot);
+            },
+            onError: (error) => {
+              console.error('[商品列表页面] ==== 商品监听失败 ====', error);
+              // 自动重连
+              watcherManager.autoReconnect('product_list', 'product list watch error');
+            }
+          });
+        console.log('[商品列表页面] products collection监听创建成功:', watcher);
+        return watcher;
+      } catch (error) {
+        console.error('[商品列表页面] 初始化商品监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  // 处理商品数据变化
+  handleProductChanges(snapshot) {
+    console.log('[商品列表页面] handleProductChanges被调用');
+    
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+      console.log('[商品列表页面] docChanges为空或不存在');
+      return;
+    }
+    
+    console.log('[商品列表页面] docChanges:', snapshot.docChanges);
+    
+    // 重新获取商品列表
+    this.loadProducts();
   },
 
   // 获取系列名称
@@ -523,7 +609,7 @@ Page({
    */
   onPageScroll(e) {
     const currentScrollTop = e.scrollTop;
-    const lastScrollTop = this.data.lastScrollTop;
+    const lastScrollTop = this._lastScrollTop || 0;
     const scrollDirection = currentScrollTop > lastScrollTop ? 'up' : 'down';
     
     // 滚动到顶部时，强制显示顶部栏
@@ -534,7 +620,7 @@ Page({
           scrollDirection: 'down'
         });
       }
-      this.setData({ lastScrollTop: currentScrollTop });
+      this._lastScrollTop = currentScrollTop;
       return;
     }
     
@@ -555,7 +641,7 @@ Page({
       }
     }
     
-    // 更新上次滚动位置
-    this.setData({ lastScrollTop: currentScrollTop });
+    // 更新上次滚动位置（使用实例变量，避免频繁setData）
+    this._lastScrollTop = currentScrollTop;
   }
 });

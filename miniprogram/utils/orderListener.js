@@ -18,6 +18,13 @@ class OrderListener {
     this.page = page;
     this.listenerKey = LISTENER_KEY;
     this.isActive = false;
+    this.isCreatingWatch = false;
+    this.reconnectTimer = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 3;
+    this.reconnectDelay = 2000;
+    this.pageVisible = false;
+    this.listenOptions = null;
   }
 
   /**
@@ -30,12 +37,18 @@ class OrderListener {
       return;
     }
 
+    if (this.isCreatingWatch) {
+      console.warn('[OrderListener] 正在创建监听器，跳过');
+      return;
+    }
+
     const openid = wx.getStorageSync('openid');
     if (!openid) {
       console.error('[OrderListener] 获取 openid 失败');
       return;
     }
 
+    this.listenOptions = options;
     const whereQuery = this.buildWhereQuery(openid, options);
     
     const callback = (changes, meta) => {
@@ -43,15 +56,21 @@ class OrderListener {
     };
 
     try {
-      watch(this.listenerKey, whereQuery, callback, {
+      this.isCreatingWatch = true;
+
+      const listenerState = watch(this.listenerKey, whereQuery, callback, {
         collectionName: 'orders',
         dedupeKey: '_id',
-        maxReconnectAttempts: 5
+        maxReconnectAttempts: this.maxReconnectAttempts,
+        reconnectDelay: this.reconnectDelay
       });
 
       this.isActive = true;
+      this.isCreatingWatch = false;
+      this.reconnectAttempts = 0;
       console.log('[OrderListener] 订单监听已启动');
     } catch (error) {
+      this.isCreatingWatch = false;
       console.error('[OrderListener] 启动失败:', error);
     }
   }
@@ -62,7 +81,6 @@ class OrderListener {
   buildWhereQuery(openid, options = {}) {
     const query = { openid };
 
-    // 按状态筛选
     if (options.status && options.status !== 'all') {
       query.status = options.status;
     }
@@ -74,19 +92,21 @@ class OrderListener {
    * 处理订单变化
    */
   handleOrderChanges(changes, meta) {
+    if (!this.pageVisible) {
+      console.log('[OrderListener] 页面已隐藏，跳过更新');
+      return;
+    }
+
     const { added, modified, removed } = changes;
 
-    // 获取当前页面数据
     let { orders, originalOrders } = this.page.data;
     orders = orders || [];
     originalOrders = originalOrders || [];
 
     let hasChanges = false;
 
-    // 处理新增订单
     if (added && added.length > 0) {
       added.forEach((order) => {
-        // 检查是否已存在
         const existIndex = originalOrders.findIndex(o => o._id === order._id);
         if (existIndex === -1) {
           originalOrders.unshift(order);
@@ -96,23 +116,19 @@ class OrderListener {
       });
     }
 
-    // 处理修改订单
     if (modified && modified.length > 0) {
       modified.forEach((order) => {
         const existIndex = originalOrders.findIndex(o => o._id === order._id);
         if (existIndex !== -1) {
           const oldOrder = originalOrders[existIndex];
           
-          // 检查状态是否变化
           if (oldOrder.status !== order.status) {
             console.log(`[OrderListener] 订单状态变更: ${order.orderNumber} ${oldOrder.status} -> ${order.status}`);
           }
 
-          // 合并数据（保留本地字段优先级）
           originalOrders[existIndex] = {
             ...oldOrder,
             ...order,
-            // 保留本地字段
             localFlag: oldOrder.localFlag
           };
           hasChanges = true;
@@ -120,7 +136,6 @@ class OrderListener {
       });
     }
 
-    // 处理删除订单
     if (removed && removed.length > 0) {
       removed.forEach((order) => {
         const existIndex = originalOrders.findIndex(o => o._id === order._id);
@@ -132,7 +147,6 @@ class OrderListener {
       });
     }
 
-    // 如果有变化，更新页面数据
     if (hasChanges) {
       this.page.setData({
         originalOrders,
@@ -151,12 +165,10 @@ class OrderListener {
     
     let filtered = orders;
 
-    // 按状态筛选
     if (selectedStatus !== 'all') {
       filtered = orders.filter(o => o.status === selectedStatus);
     }
 
-    // 按时间排序（最新的在前）
     filtered.sort((a, b) => {
       const timeA = new Date(a.createdAt || a.createTime).getTime();
       const timeB = new Date(b.createdAt || b.createTime).getTime();
@@ -170,14 +182,61 @@ class OrderListener {
    * 停止监听
    */
   stop() {
-    if (!this.isActive) {
+    if (!this.isActive && !this.isCreatingWatch) {
       console.warn('[OrderListener] 订单监听未启动');
       return;
     }
 
+    if (this.reconnectTimer) {
+      console.log('[OrderListener] 取消待执行的重连任务');
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     unwatch(this.listenerKey);
     this.isActive = false;
+    this.isCreatingWatch = false;
     console.log('[OrderListener] 订单监听已停止');
+  }
+
+  /**
+   * 安排重连任务
+   */
+  scheduleReconnect(options = {}) {
+    if (!this.pageVisible) {
+      console.log('[OrderListener] 页面已隐藏，跳过重连');
+      return;
+    }
+
+    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+      console.log('[OrderListener] 已达到最大重连次数，不再重连');
+      return;
+    }
+
+    if (this.reconnectTimer) {
+      console.log('[OrderListener] 已有待执行的重连任务，跳过');
+      return;
+    }
+
+    const delay = this.reconnectDelay * (this.reconnectAttempts + 1);
+    console.log(`[OrderListener] ${delay}ms 后尝试第 ${this.reconnectAttempts + 1} 次重连`);
+
+    this.reconnectTimer = setTimeout(() => {
+      console.log(`[OrderListener] 执行第 ${this.reconnectAttempts + 1} 次重连`);
+      this.reconnectAttempts++;
+      this.reconnectTimer = null;
+      this.start(options || this.listenOptions);
+    }, delay);
+  }
+
+  /**
+   * 设置页面可见性
+   */
+  setPageVisible(visible) {
+    this.pageVisible = visible;
+    if (!visible) {
+      this.stop();
+    }
   }
 
   /**
@@ -186,7 +245,10 @@ class OrderListener {
   getStatus() {
     return {
       isActive: this.isActive,
-      listenerKey: this.listenerKey
+      isCreatingWatch: this.isCreatingWatch,
+      listenerKey: this.listenerKey,
+      reconnectAttempts: this.reconnectAttempts,
+      pageVisible: this.pageVisible
     };
   }
 }

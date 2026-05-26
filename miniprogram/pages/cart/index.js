@@ -1,5 +1,7 @@
 import { getCollection } from "../../utils/cloud";
 import { getProductsDetail, isProductSoldOut, calculateCartTotalPrice } from "../../utils/product";
+import { getCachedProducts } from "../../utils/cache";
+import watcherManager from '../../utils/watcherManager';
 
 Page({
   data: {
@@ -18,95 +20,364 @@ Page({
       inStock: null
     },
     searchKeyword: '',
-    expandedQuantityId: null // 当前展开数量选择器的商品ID
+    expandedQuantityId: null, // 当前展开数量选择器的商品ID
+    pageVisible: false, // 页面可见性
+    pendingRefresh: false // 页面隐藏期间数据是否有变化，用于返回时自动刷新
   },
   
   onLoad(options) {
-    this.fetchCartItems();
+    const hasCache = this.loadCachedCartItems();
+    this.startProductWatch();
+
+    if (!hasCache) {
+      this.fetchCartItems({ showLoading: true });
+    } else {
+      this.fetchCartItems({ showLoading: false });
+    }
   },
-  
+
   onShow() {
-    // 每次页面显示时重新获取购物车数据
-    this.fetchCartItems();
+    const app = getApp();
+    const wasHidden = !this.data.pageVisible;
+    this.setData({ pageVisible: true });
+    console.log('[购物车页面] 页面显示');
+    
+    // 1. 先读取并同步最新数据（全局监听器可能已经更新了缓存）
+    const isDirty = app.globalData.cartDirty;
+    if (isDirty) {
+      console.log('[购物车页面] 检测到购物车数据变更，刷新数据');
+      app.globalData.cartDirty = false;
+      this.fetchCartItems({ showLoading: false });
+    }
+    
+    // 2. 然后启动页面监听器，监听未来的变化
+    if (wasHidden) {
+      console.log('[购物车页面] 页面重新可见');
+      this.startProductWatch();
+    }
   },
 
   onHide() {
-    // 页面隐藏时重置数量选择器状态
-    this.setData({ expandedQuantityId: null });
-    // 清除定时器
+    this.setData({
+      pageVisible: false,
+      expandedQuantityId: null
+    });
+
     if (this.hideTimer) {
       clearTimeout(this.hideTimer);
+      this.hideTimer = null;
+    }
+
+    console.log('[购物车页面] 页面隐藏，关闭监听器');
+    // 页面隐藏时关闭监听器，节省资源
+    watcherManager.destroy('cart_products');
+  },
+
+  onUnload() {
+    console.log('[购物车页面] 页面卸载');
+    watcherManager.destroy('cart_products');
+  },
+
+  // 仅监听商品变化，不监听 cart 集合
+  startProductWatch() {
+    console.log('购物车页面-商品实时监听开启');
+
+    watcherManager.create('cart_products', () => {
+      try {
+        const db = wx.cloud.database();
+        return {
+          productWatcher: db.collection('products')
+            .where({ isDeleted: false })  // 与其他页面保持一致
+            .watch({
+              onChange: (snapshot) => {
+                if (!snapshot.docChanges || snapshot.docChanges.length === 0) return;
+                
+                // 过滤 init 类型的快照，只处理真正的数据变化
+                if (snapshot.type === 'init') {
+                  console.log('[购物车页面] 收到 init 快照，跳过');
+                  return;
+                }
+                
+                // 检查页面是否可见
+                if (!this.data.pageVisible) {
+                  console.log('[购物车页面] 页面隐藏，跳过更新');
+                  return;
+                }
+                
+                console.log('[购物车页面] 商品数据变化:', snapshot);
+                this.handleProductChanges(snapshot);
+              },
+              onError: (error) => {
+                console.error('[购物车页面] 商品监听失败:', error);
+                watcherManager.autoReconnect('cart_products', 'product watch error');
+              }
+            })
+        };
+      } catch (error) {
+        console.error('[购物车页面] 初始化商品监听失败:', error);
+        throw error;
+      }
+    });
+  },
+
+  handleProductChanges(snapshot) {
+    console.log('[购物车页面] 处理商品变化');
+    
+    const { cartItems, pageVisible } = this.data;
+    if (!cartItems || cartItems.length === 0) {
+      console.log('[购物车页面] 购物车为空，跳过增量更新');
+      return;
+    }
+    
+    let needUpdate = false;
+    const updatedItems = [...cartItems];
+    
+    for (const change of snapshot.docChanges) {
+      if (change.dataType === 'update' && change.doc) {
+        const updatedProduct = change.doc;
+        const index = updatedItems.findIndex(item => item.productId === updatedProduct._id);
+        
+        if (index !== -1) {
+          console.log('[购物车页面] 增量更新商品:', updatedProduct._id);
+          
+          // 注意：全局商品缓存由全局监听器更新，这里只负责UI更新
+          const item = updatedItems[index];
+          updatedItems[index] = {
+            ...item,
+            name: updatedProduct.name || item.name,
+            price: typeof updatedProduct.price === 'number' ? updatedProduct.price : item.price,
+            stock: typeof updatedProduct.stock === 'number' ? updatedProduct.stock : item.stock,
+            coverImage: updatedProduct.coverImage || item.coverImage,
+            category: updatedProduct.category || item.category,
+            typeId: updatedProduct.typeId || item.typeId,
+            isSoldOut: isProductSoldOut(updatedProduct)
+          };
+          
+          needUpdate = true;
+        }
+      }
+    }
+    
+    if (needUpdate) {
+      if (pageVisible) {
+        // 页面可见时，直接更新UI
+        console.log('[购物车页面] 执行增量更新');
+        this.setData({ 
+          cartItems: updatedItems,
+          filteredCartItems: updatedItems
+        });
+        this.calculateTotalPrice();
+      } else {
+        // 页面隐藏时，标记待更新并更新缓存
+        console.log('[购物车页面] 页面隐藏，标记待更新');
+        this.setData({ 
+          cartItems: updatedItems,
+          filteredCartItems: updatedItems,
+          pendingRefresh: true
+        });
+      }
+      // 更新购物车缓存
+      this.setCartCache(updatedItems);
     }
   },
   
+  // 页面重新显示时主动检查商品变化
+  async checkProductChangesOnShow() {
+    const { cartItems } = this.data;
+    if (!cartItems || cartItems.length === 0) {
+      return;
+    }
+    
+    try {
+      // 获取购物车中所有商品ID
+      const productIdSet = new Set(cartItems.map(item => item.productId));
+      const productIdArray = Array.from(productIdSet);
+      
+      // 强制从数据库获取最新商品信息
+      const productMap = await getProductsDetail(productIdArray, true);
+      
+      let needUpdate = false;
+      const updatedItems = [...cartItems];
+      
+      // 对比商品信息是否有变化
+      for (const item of updatedItems) {
+        const product = productMap.get(item.productId);
+        if (product) {
+          // 检查是否有变化
+          const hasChange = 
+            (product.name && product.name !== item.name) ||
+            (typeof product.price === 'number' && product.price !== item.price) ||
+            (typeof product.stock === 'number' && product.stock !== item.stock) ||
+            (product.coverImage && product.coverImage !== item.coverImage) ||
+            (product.category && product.category !== item.category);
+          
+          if (hasChange) {
+            console.log('[购物车页面] 检测到商品变化:', item.productId);
+            
+            // 更新商品信息
+            item.name = product.name || item.name;
+            item.price = typeof product.price === 'number' ? product.price : item.price;
+            item.stock = typeof product.stock === 'number' ? product.stock : item.stock;
+            item.coverImage = product.coverImage || item.coverImage;
+            item.category = product.category || item.category;
+            item.typeId = product.typeId || item.typeId;
+            item.isSoldOut = isProductSoldOut(product);
+            
+            // 不需要更新商品缓存！缓存由管理员负责更新
+            needUpdate = true;
+          }
+        }
+      }
+      
+      if (needUpdate) {
+        console.log('[购物车页面] 页面返回时检测到商品变化，更新UI');
+        this.setData({ 
+          cartItems: updatedItems,
+          filteredCartItems: updatedItems
+        });
+        this.calculateTotalPrice();
+        this.setCartCache(updatedItems);
+      } else {
+        console.log('[购物车页面] 页面返回时商品无变化');
+      }
+    } catch (error) {
+      console.error('[购物车页面] 检查商品变化失败:', error);
+    }
+  },
+
+  loadCachedCartItems() {
+    const openid = wx.getStorageSync('openid') || '';
+    const cachedCartItems = wx.getStorageSync(`cart_${openid}`) || [];
+
+    if (cachedCartItems && cachedCartItems.length > 0) {
+      console.log('[购物车页面] 从缓存加载购物车数据');
+      
+      // 获取购物车中所有商品ID
+      const productIds = cachedCartItems.map(item => item.productId);
+      
+      // 从全局商品缓存中获取商品信息
+      const productMap = getCachedProducts(productIds);
+      
+      // 合并购物车数据和商品信息
+      const cartItems = cachedCartItems.map(item => {
+        const product = productMap.get(item.productId);
+        if (product) {
+          return {
+            ...item,
+            name: product.name || item.name,
+            price: typeof product.price === 'number' ? product.price : item.price,
+            stock: typeof product.stock === 'number' ? product.stock : item.stock,
+            coverImage: product.coverImage || item.coverImage,
+            category: product.category || item.category,
+            typeId: product.typeId || item.typeId,
+            isSoldOut: isProductSoldOut(product)
+          };
+        }
+        return item;
+      });
+      
+      this.setData({
+        cartItems,
+        filteredCartItems: cartItems
+      });
+      this.updateSelectionStatus();
+      this.calculateTotalPrice();
+
+      const cachedFilterOptions = wx.getStorageSync('cartFilterOptions');
+      if (cachedFilterOptions) {
+        this.setData({ filterOptions: cachedFilterOptions });
+      }
+
+      return true;
+    }
+
+    this.setData({ cartItems: [], filteredCartItems: [] });
+    return false;
+  },
+
+  setCartCache(cartItems) {
+    const openid = wx.getStorageSync('openid') || '';
+    if (!openid) return;
+    
+    // 只保存购物车的业务数据，不保存商品详细信息（商品信息从全局缓存获取）
+    const cartDataToCache = cartItems.map(item => ({
+      _id: item._id,
+      productId: item.productId,
+      quantity: item.quantity,
+      selected: item.selected,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      isDelete: item.isDelete,
+      // 保存商品快照作为兜底
+      productSnapshot: item.productSnapshot
+    }));
+    
+    wx.setStorageSync(`cart_${openid}`, cartDataToCache);
+  },
+
   // 下拉刷新
   onPullDownRefresh() {
-    this.fetchCartItems().finally(() => {
+    // 强制从数据库获取最新数据，不使用缓存
+    this.fetchCartItems({ showLoading: false, forceRefresh: true }).finally(() => {
       wx.stopPullDownRefresh();
     });
   },
   
   // 从cart collection获取购物车数据
-  fetchCartItems() {
-    this.setData({ loading: true });
+  fetchCartItems({ showLoading = false, forceRefresh = false } = {}) {
     const cart = getCollection("cart");
-    const products = getCollection("products");
     const openid = wx.getStorageSync('openid') || '';
-    
-    console.log('当前用户openid:', openid);
-    
-    // 先尝试从本地缓存获取购物车数据
-    const cachedCartItems = wx.getStorageSync(`cart_${openid}`);
-    if (cachedCartItems) {
-      console.log('从缓存获取购物车数据');
+    const cachedCartItems = wx.getStorageSync(`cart_${openid}`) || [];
+    const currentCartItems = this.data.cartItems || [];
+
+    if (showLoading || cachedCartItems.length === 0) {
+      this.setData({ loading: true });
+    }
+
+    // 非强制刷新时才使用缓存展示
+    if (cachedCartItems.length > 0 && !forceRefresh) {
+      console.log('[购物车页面] 使用缓存展示购物车数据');
       this.setData({ cartItems: cachedCartItems });
+      this.setData({ filteredCartItems: cachedCartItems });
       this.updateSelectionStatus();
       this.calculateTotalPrice();
-      // 从本地存储中读取筛选状态
       const cachedFilterOptions = wx.getStorageSync('cartFilterOptions');
       if (cachedFilterOptions) {
         this.setData({ filterOptions: cachedFilterOptions });
       }
-      this.setData({ loading: false });
     }
-    
+
     const query = openid ? cart.where({ _openid: openid, isDelete: false }) : cart.where({ isDelete: false });
-    
+
     return query
       .orderBy('updatedAt', 'desc')
       .get()
       .then((res) => {
         let cartItems = res.data || [];
         console.log('获取到的购物车数据:', cartItems);
-        
-        // 过滤掉无效的商品（没有productSnapshot的）
+
         cartItems = cartItems.filter(item => item.productSnapshot);
-        
-        // 转换数据格式，使用productSnapshot中的数据
+
         const productIdSet = new Set(cartItems.map(item => item.productId));
         const productIdArray = Array.from(productIdSet);
-        
-        // 批量获取商品详情以检查库存
-        return getProductsDetail(productIdArray).then(productMap => {
-          
-          // 转换购物车数据
+
+        return getProductsDetail(productIdArray, forceRefresh).then(productMap => {
           cartItems = cartItems.map(item => {
             const product = productMap.get(item.productId);
-            let stock = 99; // 默认库存
+            let stock = 99;
             let name = item.productSnapshot.name || '';
             let price = item.productSnapshot.price || 0;
             let coverImage = item.productSnapshot.coverImage || '';
             let category = item.productSnapshot.category || '';
             let typeId = item.productSnapshot.typeId || '';
-            
+
             if (product) {
-              // 从商品集合获取最新数据
               name = product.name || name;
               price = typeof product.price === "number" ? product.price : price;
               coverImage = product.coverImage || coverImage;
               category = product.category || category;
               typeId = product.typeId || typeId;
-              
+
               if (typeof product.stock === "number") {
                 stock = product.stock;
                 console.log('商品库存:', item.productId, stock);
@@ -116,9 +387,22 @@ Page({
             } else {
               console.log('商品不存在，使用默认数据:', item.productId);
             }
-            
+
             const isSoldOut = isProductSoldOut(product);
             
+            // 保留之前的选择状态：先从当前数据查找，再从缓存查找
+            let isSelected = false;
+            const existingItem = currentCartItems.find(i => i._id === item._id);
+            if (existingItem !== undefined) {
+              isSelected = existingItem.selected;
+            } else {
+              // 从缓存中查找
+              const cachedItem = cachedCartItems.find(c => c._id === item._id);
+              if (cachedItem !== undefined) {
+                isSelected = cachedItem.selected || false;
+              }
+            }
+
             return {
               _id: item._id,
               productId: item.productId,
@@ -130,40 +414,48 @@ Page({
               coverImage: coverImage,
               category: category,
               typeId: typeId,
-              selected: false, // 初始未选中
-              translateX: 0 // 初始化滑动距离
+              selected: isSelected,
+              translateX: 0
             };
           });
-          
+
           return cartItems;
         });
       })
       .then((cartItems) => {
-        this.setData({ cartItems });
-        // 从本地存储中读取筛选状态
+        this.setData({ cartItems, filteredCartItems: cartItems });
         const cachedFilterOptions = wx.getStorageSync('cartFilterOptions');
         if (cachedFilterOptions) {
           this.setData({ filterOptions: cachedFilterOptions });
         }
         this.updateSelectionStatus();
         this.calculateTotalPrice();
-        
-        // 缓存购物车数据到本地，有效期1小时
+
+        // 增量更新缓存：只在数据真正变化时才更新
         if (openid) {
-          wx.setStorageSync(`cart_${openid}`, cartItems);
+          const oldCachedItems = wx.getStorageSync(`cart_${openid}`) || [];
+          const oldJson = JSON.stringify(oldCachedItems);
+          const newJson = JSON.stringify(cartItems);
+          if (oldJson !== newJson) {
+            this.setCartCache(cartItems);
+            console.log('[购物车页面] 购物车缓存已更新');
+          } else {
+            console.log('[购物车页面] 购物车数据未变化，跳过缓存更新');
+          }
         }
       })
       .catch((err) => {
         console.error("获取购物车数据失败", err);
-        // 如果缓存中有数据，就使用缓存数据，否则显示空购物车
-        if (!cachedCartItems) {
+        if (cachedCartItems.length === 0) {
           this.setData({ cartItems: [] });
         }
       })
       .finally(() => {
-        this.setData({ loading: false });
-        // 初始化筛选后的商品列表
-        this.setData({ filteredCartItems: this.data.cartItems });
+        // 无论什么情况都应该停止加载状态
+        this.setData({ 
+          loading: false,
+          filteredCartItems: this.data.cartItems 
+        });
       });
   },
 
@@ -1440,6 +1732,9 @@ Page({
     this.setData({ filteredCartItems });
     this.updateSelectionStatus();
     this.calculateTotalPrice();
+    
+    // 保存选择状态到缓存
+    this.setCartCache(cartItems);
   },
   
   // 批量删除选中商品

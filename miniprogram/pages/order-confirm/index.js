@@ -49,7 +49,9 @@ Page({
     userLocation: null, // 用户当前位置
     mapHeight: 300, // 地图高度，默认300rpx
     addressCache: {}, // 地址解析缓存，键为地址字符串，值为坐标对象
-    expressRules: [] // 快递运费规则
+    expressRules: [], // 快递运费规则
+    hasStockIssue: false,
+    pageVisible: false
   },
 
   onLoad(options) {
@@ -107,7 +109,88 @@ Page({
       });
     }
   },
+
+  // 订单确认页不做实时监听，在提交订单时做最终检查
   
+  // 提交订单前验证商品状态（库存、上下架）
+  async validateProductsBeforeSubmit() {
+    const { product, products, cartItems, quantity } = this.data;
+    const db = wx.cloud.database();
+    const _ = db.command;
+    
+    try {
+      // 获取商品ID列表
+      const productIds = [];
+      const itemQuantities = {};
+      
+      if (product._id) {
+        // 单个商品
+        productIds.push(product._id);
+        itemQuantities[product._id] = quantity;
+      } else if (products && products.length > 0) {
+        // 多个商品（重买）
+        products.forEach(p => {
+          productIds.push(p._id);
+          itemQuantities[p._id] = p.quantity;
+        });
+      }
+      
+      if (productIds.length === 0) {
+        return { valid: true, message: '' };
+      }
+      
+      // 查询最新商品信息
+      const result = await db.collection('products')
+        .where({ _id: _.in(productIds) })
+        .field({
+          _id: true,
+          name: true,
+          isActive: true,
+          isDeleted: true,
+          stock: true
+        })
+        .get();
+      
+      const latestProducts = result.data;
+      
+      // 检查是否有商品下架或库存不足
+      const issues = [];
+      
+      for (const prod of latestProducts) {
+        if (!prod.isActive || prod.isDeleted) {
+          issues.push(`${prod.name} 已下架`);
+        } else {
+          const requiredQty = itemQuantities[prod._id] || 1;
+          if ((prod.stock || 0) < requiredQty) {
+            issues.push(`${prod.name} 库存不足（当前库存: ${prod.stock}）`);
+          }
+        }
+      }
+      
+      // 检查是否有商品不存在（可能被删除）
+      for (const id of productIds) {
+        if (!latestProducts.find(p => p._id === id)) {
+          issues.push('部分商品已不存在');
+          break;
+        }
+      }
+      
+      if (issues.length > 0) {
+        return {
+          valid: false,
+          message: issues.join('\n')
+        };
+      }
+      
+      return { valid: true, message: '' };
+      
+    } catch (error) {
+      console.error('验证商品状态失败:', error);
+      // 验证失败时允许提交，由后端处理
+      return { valid: true, message: '' };
+    }
+  },
+
   // 获取购物车商品信息
   fetchCartProducts() {
     this.setData({ loading: true, error: false, errorMessage: "" });
@@ -133,34 +216,28 @@ Page({
           return;
         }
         
-        // 计算总价格并检查库存
+        // 计算总价格
         let totalPrice = 0;
-        let hasStockIssue = false;
         const cartProducts = cartItems.map(cartItem => {
           const product = productsData.find(p => p._id === cartItem.productId);
           if (product) {
             const itemTotal = product.price * cartItem.quantity;
             totalPrice += itemTotal;
-            // 检查库存
-            if ((product.stock || 0) < cartItem.quantity) {
-              hasStockIssue = true;
-            }
             return {
               ...product,
               quantity: cartItem.quantity,
               message: cartItem.message,
               supportNoReasonReturn: product.supportNoReasonReturn || false,
-              stock: product.stock || 0 // 添加库存字段
+              stock: product.stock || 0
             };
           }
           return null;
         }).filter(Boolean);
-        
+
         this.setData({
           products: cartProducts,
           totalPrice,
-          loading: false,
-          hasStockIssue
+          loading: false
         });
         
         // 计算运费
@@ -210,32 +287,25 @@ Page({
           }
         });
         
-        // 计算总价格并检查库存
+        // 计算总价格
         let totalPrice = 0;
-        let hasStockIssue = false;
         const productsData = reBuyProducts.map(product => {
           const currentStock = stockMap[product.productId] || (product.stock || 0);
           const quantity = product.quantity || 1;
           const itemTotal = product.price * quantity;
           totalPrice += itemTotal;
-          
-          // 检查库存
-          if (currentStock < quantity) {
-            hasStockIssue = true;
-          }
-          
+
           return {
             ...product,
             supportNoReasonReturn: product.supportNoReasonReturn || false,
             stock: currentStock
           };
         });
-        
+
         this.setData({
           products: productsData,
           totalPrice,
-          loading: false,
-          hasStockIssue
+          loading: false
         });
         
         // 计算运费
@@ -675,7 +745,7 @@ Page({
         
         // 计算总价格
         const totalPrice = productWithDefaults.price * this.data.quantity;
-        
+
         this.setData({
           product: productWithDefaults,
           totalPrice,
@@ -1108,7 +1178,7 @@ Page({
   // 提交订单
   async submitOrder() {
     // 检查配送方式
-    const { deliveryType, address, pickupCode, isOutOfRange, product, products } = this.data;
+    const { deliveryType, address, pickupCode, isOutOfRange, product, products, cartItems, reBuyProducts } = this.data;
     
     // 检查是否超出配送范围
     if (isOutOfRange) {
@@ -1151,73 +1221,55 @@ Page({
       await this.calculateDistance();
     }
     
-    // 模拟提交订单
-    wx.showLoading({
-      title: "提交订单中..."
+    // 跳转到支付页面
+    wx.showLoading({ title: "提交订单中..." });
+
+    // 准备订单数据
+    const orderData = {
+      totalPrice: this.data.totalPrice,
+      deliveryType: deliveryType,
+      address: this.data.address,
+      pickupCode: this.data.pickupCode,
+      pickupTime: this.data.pickupTime,
+      pickupDate: this.data.pickupDate,
+      message: this.data.message,
+      distance: this.data.distance,
+      pickupLatitude: this.data.pickupLatitude,
+      pickupLongitude: this.data.pickupLongitude,
+      userLatitude: this.data.userLocation?.latitude,
+      userLongitude: this.data.userLocation?.longitude
+    };
+
+    console.log('提交订单时的订单数据:', orderData);
+
+    // 添加商品信息
+    if (this.data.product._id) {
+      orderData.products = [{
+        productId: this.data.product._id,
+        name: this.data.product.name,
+        price: this.data.product.price,
+        quantity: this.data.quantity,
+        coverImage: this.data.product.coverImage,
+        typeId: this.data.product.typeId,
+        supportNoReasonReturn: this.data.product.supportNoReasonReturn || false
+      }];
+    } else if (this.data.products && this.data.products.length > 0) {
+      orderData.products = this.data.products.map(item => ({
+        productId: item.productId || item._id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        coverImage: item.coverImage,
+        typeId: item.typeId,
+        supportNoReasonReturn: item.supportNoReasonReturn || false
+      }));
+    }
+
+    wx.hideLoading();
+    const sourceProductIdParam = this.data.productId ? `&sourceProductId=${this.data.productId}` : '';
+    wx.redirectTo({
+      url: "/pages/payment/index?totalPrice=" + this.data.totalPrice + "&orderData=" + encodeURIComponent(JSON.stringify(orderData)) + sourceProductIdParam
     });
-    
-    // 直接跳转到支付页面，传递订单相关信息
-    setTimeout(() => {
-      wx.hideLoading();
-      wx.showToast({
-        title: "订单提交成功",
-        icon: "success"
-      });
-      
-      // 准备订单数据
-      const orderData = {
-        totalPrice: this.data.totalPrice,
-        deliveryType: deliveryType,
-        address: this.data.address,
-        pickupCode: this.data.pickupCode,
-        pickupTime: this.data.pickupTime,
-        pickupDate: this.data.pickupDate, // 传递自提日期
-        message: this.data.message, // 传递留言信息
-        distance: this.data.distance, // 传递配送距离
-        pickupLatitude: this.data.pickupLatitude, // 传递自提点纬度
-        pickupLongitude: this.data.pickupLongitude, // 传递自提点经度
-        userLatitude: this.data.userLocation?.latitude, // 传递用户地址纬度
-        userLongitude: this.data.userLocation?.longitude // 传递用户地址经度
-      };
-      
-      // 打印订单数据，检查distance字段
-      console.log('提交订单时的订单数据:', orderData);
-      
-      // 添加商品信息
-      if (this.data.product._id) {
-        // 单个商品
-        orderData.products = [{
-          productId: this.data.product._id,
-          name: this.data.product.name,
-          price: this.data.product.price,
-          quantity: this.data.quantity,
-          coverImage: this.data.product.coverImage,
-          typeId: this.data.product.typeId,
-          supportNoReasonReturn: this.data.product.supportNoReasonReturn || false // 是否支持七天无理由退换货
-        }];
-      } else if (this.data.products && this.data.products.length > 0) {
-        // 多个商品
-        orderData.products = this.data.products.map(item => ({
-          productId: item.productId || item._id, // 优先使用productId，兼容再次购买的情况
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          coverImage: item.coverImage,
-          typeId: item.typeId,
-          supportNoReasonReturn: item.supportNoReasonReturn || false // 是否支持七天无理由退换货
-        }));
-      }
-      
-      // 跳转到支付页面，传递订单数据
-      // 使用 redirectTo 跳转到支付页面，这样页面栈中就不会保留确认订单页面
-      // 当用户在订单列表页面点击返回时，会直接回到商品详情页
-      setTimeout(() => {
-        const sourceProductIdParam = this.data.productId ? `&sourceProductId=${this.data.productId}` : '';
-        wx.redirectTo({
-          url: "/pages/payment/index?totalPrice=" + this.data.totalPrice + "&orderData=" + encodeURIComponent(JSON.stringify(orderData)) + sourceProductIdParam
-        });
-      }, 1500);
-    }, 1500);
   },
 
   // 重置地图
