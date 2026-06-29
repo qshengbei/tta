@@ -1216,7 +1216,8 @@ async function handleCancelOperation(order, params) {
         await db.collection('products').doc(product.productId).update({
           data: {
             stock: newStock,
-            updatedAt: new Date()
+            updatedAt: new Date(),
+            updatedAtTs: Date.now()
           }
         });
       }

@@ -3,45 +3,64 @@ const { getCollection } = require("../../../utils/cloud");
 const { parseDbDate } = require("../../../utils/time-utils");
 
 const db = wx.cloud.database();
+const PAGE_SIZE = 20;
 
 Page({
   data: {
     series: [],
-    loading: false
+    loading: false,
+    loadingMore: false,
+    hasMore: true,
+    page: 1
   },
 
   onLoad: function (options) {
-    this.fetchSeries();
+    this.loadSeries(true);
   },
 
   onShow: function () {
-    this.fetchSeries();
+    this.loadSeries(true);
   },
 
-  // 获取系列列表
-  fetchSeries() {
-    this.setData({ loading: true });
-    const series = getCollection("category");
-    series.orderBy('createTime', 'desc').get()
+  // 获取系列列表（skip 分页）
+  loadSeries(reset = false) {
+    if (this.data.loading || this.data.loadingMore) return;
+
+    const { page, hasMore } = this.data;
+    if (!reset && !hasMore) return;
+
+    this.setData({ loading: reset, loadingMore: !reset });
+
+    const offset = reset ? 0 : (page - 1) * PAGE_SIZE;
+
+    getCollection("category")
+      .orderBy('createTime', 'desc')
+      .skip(offset)
+      .limit(PAGE_SIZE)
+      .get()
       .then((res) => {
-        // 格式化时间
-        const formattedSeries = res.data.map(series => ({
-          ...series,
-          createTime: parseDbDate(series.createTime)
+        const formatted = (res.data || []).map(item => ({
+          ...item,
+          createTime: parseDbDate(item.createTime)
         }));
+        const hasMoreData = res.data.length === PAGE_SIZE;
         this.setData({
-          series: formattedSeries,
-          loading: false
+          series: reset ? formatted : [...this.data.series, ...formatted],
+          loading: false,
+          loadingMore: false,
+          hasMore: hasMoreData,
+          page: reset ? 2 : page + 1
         });
       })
       .catch((err) => {
         console.error("获取系列列表失败", err);
-        this.setData({ loading: false });
-        wx.showToast({
-          title: '获取系列列表失败',
-          icon: 'none'
-        });
+        this.setData({ loading: false, loadingMore: false });
+        wx.showToast({ title: '获取系列列表失败', icon: 'none' });
       });
+  },
+
+  onReachBottom() {
+    this.loadSeries(false);
   },
 
   // 添加系列
@@ -86,7 +105,7 @@ Page({
                 title: '删除成功',
                 icon: 'success'
               });
-              this.fetchSeries();
+              this.loadSeries(true);
             })
             .catch((err) => {
               wx.hideLoading();
@@ -133,7 +152,7 @@ Page({
                 title: `${actionText}成功`,
                 icon: 'success'
               });
-              this.fetchSeries();
+              this.loadSeries(true);
             } else {
               wx.showToast({
                 title: `${actionText}失败`,

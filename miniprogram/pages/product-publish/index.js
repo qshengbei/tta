@@ -406,12 +406,14 @@ Page({
       });
       
       // 总是更新updatedAt字段
-      updatedData.updatedAt = new Date();
-      
+      const now = new Date();
+      updatedData.updatedAt = now;
+      updatedData.updatedAtTs = now.getTime();
+
       console.log('要更新的数据:', updatedData);
-      
-      // 如果没有字段变化，直接返回成功
-      if (Object.keys(updatedData).length === 1 && 'updatedAt' in updatedData) {
+
+      // 如果没有字段变化，直接返回成功（只有 updatedAt 和 updatedAtTs）
+      if (Object.keys(updatedData).every(k => k === 'updatedAt' || k === 'updatedAtTs')) {
         console.log('没有字段变化，直接返回成功');
         wx.showToast({ title: '保存成功' });
         wx.navigateBack();
@@ -496,12 +498,15 @@ Page({
       });
     } else {
       // 新增商品
+      const now = new Date();
       const productData = {
         ...product,
         price: Number(product.price),
         stock: Number(product.stock),
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: now,
+        updatedAt: now,
+        createdAtTs: now.getTime(),
+        updatedAtTs: now.getTime(),
         isDeleted: false
       };
       

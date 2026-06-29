@@ -33,6 +33,8 @@
     "pages/admin/user-manage/index",
     "pages/admin/update-settings/index",
     "pages/admin/notification-manage/index",
+    "pages/admin/banner-manage/index",
+    "pages/admin/banner-manage/edit/index",
     "pages/admin/ship-order/index",
     "pages/admin/after-sales/detail/index",
     "pages/after-sales/apply/index",

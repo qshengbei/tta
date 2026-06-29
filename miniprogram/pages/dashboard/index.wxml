@@ -1,4 +1,4 @@
-<wxs module="orderStatus" src="../../../utils/orderStatus.wxs"></wxs>
+<wxs module="orderStatus" src="../../utils/orderStatus.wxs"></wxs>
 <view class="admin-dashboard">
   <!-- 页面头部 -->
   <view class="admin-header">

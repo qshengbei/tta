@@ -41,8 +41,11 @@
         <view class="product-detail__indicator">
           <text class="product-detail__indicator-text">{{currentIndex + 1}} / {{totalImages}}</text>
         </view>
-        <!-- 售罄提示 -->
-        <view wx:if="{{!product.stock || product.stock <= 0}}" class="product-detail__sold-out">
+        <!-- 售罄/下架提示 -->
+        <view wx:if="{{product.status === 'off'}}" class="product-detail__sold-out">
+          已下架
+        </view>
+        <view wx:elif="{{!product.stock || product.stock <= 0}}" class="product-detail__sold-out">
           补货中
         </view>
       </view>
@@ -256,7 +259,12 @@
           </view>
         </view>
       </view>
-      <view wx:if="{{product.stock && product.stock > 0}}" class="pd-bottom-bar__right">
+      <view wx:if="{{product.status === 'off'}}" class="pd-bottom-bar__right">
+        <button class="btn btn-primary pd-btn-restock" bindtap="handleRestockReminder">
+          已下架
+        </button>
+      </view>
+      <view wx:elif="{{product.stock && product.stock > 0}}" class="pd-bottom-bar__right">
         <button class="btn btn-secondary pd-btn-cart" bindtap="handleAddToCart">
           加购物车
         </button>
@@ -296,9 +304,21 @@
     </view>
     
     <!-- 海报生成画布 -->
-    <canvas canvas-id="posterCanvas" style="width: 750rpx; height: 1334rpx; position: fixed; top: -9999rpx; left: -9999rpx;"></canvas>
+    <canvas canvas-id="posterCanvas" width="{{posterCanvasWidthPx || 375}}" height="{{posterCanvasHeightPx || 667}}" style="width: {{posterCanvasWidth || 750}}rpx; height: {{posterCanvasHeight || 1334}}rpx; position: fixed; top: -9999rpx; left: -9999rpx;"></canvas>
     
-
+    <!-- 海报预览弹窗 -->
+    <view wx:if="{{showPosterPreview}}" class="poster-preview-modal">
+      <view class="poster-preview-modal__overlay" bindtap="closePosterPreview"></view>
+      <view class="poster-preview-modal__content">
+        <view class="poster-preview-modal__image-container">
+          <image class="poster-preview-modal__image" src="{{posterImagePath}}" mode="widthFix"></image>
+        </view>
+        <view class="poster-preview-modal__actions">
+          <view class="poster-preview-modal__btn poster-preview-modal__btn--cancel" bindtap="closePosterPreview">取消</view>
+          <view class="poster-preview-modal__btn poster-preview-modal__btn--save" bindtap="savePosterToAlbum">保存到相册</view>
+        </view>
+      </view>
+    </view>
     
     <!-- 位置选择弹窗 -->
     <view wx:if="{{showLocationModal}}" class="location-modal">

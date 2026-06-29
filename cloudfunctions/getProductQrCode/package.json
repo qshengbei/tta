@@ -1,0 +1,9 @@
+{
+  "name": "getProductQrCode",
+  "version": "1.0.0",
+  "description": "获取商品小程序码",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

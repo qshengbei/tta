@@ -1,116 +1,56 @@
 // app.js
+import { getGlobalProductWatcher } from './utils/globalProductWatcher';
+import errorLogger from './utils/errorLogger';
+
 App({
   onLaunch() {
+    console.log('[APP] ====== onLaunch 开始 ======');
+    const startTime = Date.now();
+
+    errorLogger.registerGlobalErrorHandler();
+
     // 全局云开发环境配置骨架
     this.globalData = {
-      // env 参数说明：
-      // env 决定 wx.cloud.xxx 调用会请求到哪个云环境
-      // TODO: 将此处替换为实际云开发环境 ID，例如 "prod-xxxx"
       env: "cloud1-4gs2vu8c6544e586",
       openid: '',
-      // 商品数据是否需要刷新标记
       productsNeedRefresh: false,
-      // 轮播图数据是否需要刷新标记
       bannerNeedRefresh: false,
-      // 系列数据是否需要刷新标记
       categoryNeedRefresh: false,
-      // 分类数据是否需要刷新标记
       typesNeedRefresh: false,
-      // 购物车数据是否需要刷新标记
       cartDirty: false
     };
     this._loginCallbacks = [];
 
     if (!wx.cloud) {
-      console.error("请使用 2.2.3 或以上的基础库以使用云能力");
+      console.error("[APP] 请使用 2.2.3 或以上的基础库以使用云能力");
     } else {
-      wx.cloud.init({
-        env: this.globalData.env,
-        traceUser: true
-      });
+      console.log('[APP] 开始初始化 wx.cloud');
+      try {
+        wx.cloud.init({
+          env: this.globalData.env,
+          traceUser: true
+        });
+        console.log('[APP] wx.cloud.init 完成，耗时:', Date.now() - startTime, 'ms');
+      } catch (e) {
+        console.error('[APP] wx.cloud.init 异常:', e);
+      }
     }
 
     // 获取用户openid
+    console.log('[APP] 准备调用 getOpenid()');
     this.getOpenid();
-    
-    // 登录成功后启动全局商品监听器
-    this.onLoginReady(() => {
-      this.startGlobalProductWatcher();
-    });
-  },
-  
-  // 全局商品缓存监听器
-  _globalProductWatcher: null,
-  
-  // 启动全局商品监听器
-  startGlobalProductWatcher() {
-    if (this._globalProductWatcher) {
-      console.log('[全局监听器] 监听器已存在，不再重复创建');
-      return;
-    }
-    
-    const db = wx.cloud.database();
-    
-    console.log('[全局监听器] 启动商品监听器');
-    
-    this._globalProductWatcher = db.collection('products')
-      .where({ isDeleted: false })
-      .watch({
-        onChange: (snapshot) => {
-          console.log('[全局监听器] 商品数据变化:', snapshot.type);
-          
-          // 引入缓存工具
-          const cache = require('./utils/cache');
-          
-          if (snapshot.type === 'init') {
-            // 初始化快照，更新全部缓存
-            console.log('[全局监听器] 收到初始化快照，更新全部缓存');
-            if (snapshot.docs && snapshot.docs.length > 0) {
-              snapshot.docs.forEach(doc => {
-                cache.cacheProduct(doc._id, doc);
-              });
-              console.log('[全局监听器] 已更新', snapshot.docs.length, '个商品缓存');
-            }
-          } else {
-            // 数据变化，增量更新缓存
-            if (snapshot.docChanges && snapshot.docChanges.length > 0) {
-              snapshot.docChanges.forEach(change => {
-                if (change.dataType === 'update' || change.dataType === 'add') {
-                  if (change.doc) {
-                    cache.cacheProduct(change.doc._id, change.doc);
-                    console.log('[全局监听器] 更新商品缓存:', change.doc._id);
-                  }
-                } else if (change.dataType === 'remove') {
-                  // 商品删除，移除缓存
-                  console.log('[全局监听器] 移除商品缓存:', change.docId);
-                }
-              });
-            }
-          }
-        },
-        onError: (error) => {
-          console.error('[全局监听器] 监听出错:', error);
-          // 监听出错，清理引用
-          this._globalProductWatcher = null;
-          
-          // 延迟重连
-          setTimeout(() => {
-            console.log('[全局监听器] 尝试重新连接...');
-            this.startGlobalProductWatcher();
-          }, 3000);
-        }
-      });
-  },
-  
-  // 停止全局商品监听器
-  stopGlobalProductWatcher() {
-    if (this._globalProductWatcher) {
-      console.log('[全局监听器] 停止商品监听器');
-      this._globalProductWatcher.close();
-      this._globalProductWatcher = null;
-    }
-  },
 
+    // 登录成功后启动全局商品监听器
+    console.log('[APP] 准备注册登录成功回调');
+    this.onLoginReady(() => {
+      console.log('[APP] 登录成功回调被触发，启动全局商品监听器');
+      // 使用新的 GlobalProductWatcher 替代旧的独立 watcher
+      getGlobalProductWatcher().init();
+    });
+
+    console.log('[APP] ====== onLaunch 完成 ======，总耗时:', Date.now() - startTime, 'ms');
+  },
+  
   // 注册登录就绪回调（页面在 onLoad 中调用，避免轮询 openid）
   onLoginReady(callback) {
     if (this.globalData.openid) {
@@ -123,37 +63,48 @@ App({
 
   // 获取用户openid
   getOpenid() {
+    console.log('[APP:getOpenid] ====== getOpenid 开始 ======');
+    const startTime = Date.now();
     try {
+      console.log('[APP:getOpenid] 准备调用 wx.cloud.callFunction(name="login")');
+      const callFunctionStart = Date.now();
       wx.cloud.callFunction({
         name: 'login',
         data: {},
-        success: res => {
-          console.log('获取openid成功:', res.result.openid);
+        success: (res) => {
+          console.log('[APP:getOpenid] 云函数login返回成功，耗时:', Date.now() - callFunctionStart, 'ms，结果:', res);
           this.globalData.openid = res.result.openid;
           wx.setStorageSync('openid', res.result.openid);
+          console.log('[APP:getOpenid] 保存openid完成', res.result.openid);
 
           // 通知所有等待登录的页面
           if (this._loginCallbacks && this._loginCallbacks.length > 0) {
             const callbacks = this._loginCallbacks;
             this._loginCallbacks = [];
             callbacks.forEach(cb => {
-              try { cb(res.result.openid); } catch (e) { console.error('login callback error:', e); }
+              try {
+                console.log('[APP:getOpenid] 执行登录回调');
+                cb(res.result.openid);
+              } catch (e) {
+                console.error('[APP:getOpenid] 登录回调执行异常:', e);
+              }
             });
           }
-          
+
           // 检查是否有欢迎消息，如果没有则创建
+          console.log('[APP:getOpenid] 准备调用 checkWelcomeMessage');
           this.checkWelcomeMessage(res.result.openid);
+          
+          console.log('[APP:getOpenid] ====== getOpenid 成功完成 ======，总耗时:', Date.now() - startTime, 'ms');
         },
-        fail: err => {
-          console.error('获取openid失败:', err);
-          // 云函数调用失败，不设置默认值
+        fail: (err) => {
+          console.error('[APP:getOpenid] ====== 云函数login失败 ======，耗时:', Date.now() - callFunctionStart, 'ms，错误:', err);
           this.globalData.openid = '';
           wx.setStorageSync('openid', '');
         }
       });
     } catch (error) {
-      console.error('调用云函数时发生错误:', error);
-      // 发生错误时，不设置默认值
+      console.error('[APP:getOpenid] ====== getOpenid 异常 ======，耗时:', Date.now() - startTime, 'ms，错误:', error);
       this.globalData.openid = '';
       wx.setStorageSync('openid', '');
     }
@@ -161,19 +112,23 @@ App({
   
   // 检查是否有欢迎消息，如果没有则创建
   checkWelcomeMessage(openid) {
+    console.log('[APP:checkWelcomeMessage] ====== checkWelcomeMessage 开始 ======');
+    const startTime = Date.now();
     try {
       const db = wx.cloud.database();
+      console.log('[APP:checkWelcomeMessage] 准备查询 notifications，openid:', openid);
+      const queryStart = Date.now();
       db.collection('notifications')
         .where({
           openid: openid,
           type: 'welcome'
         })
         .get({
-          success: res => {
-            console.log('查询欢迎消息结果:', res.data);
+          success: (res) => {
+            console.log('[APP:checkWelcomeMessage] 查询通知完成，耗时:', Date.now() - queryStart, 'ms，结果:', res);
             if (res.data.length === 0) {
-              // 没有欢迎消息，创建一条
-              console.log('创建欢迎消息');
+              console.log('[APP:checkWelcomeMessage] 没有欢迎消息，准备创建');
+              const createStart = Date.now();
               const welcomeMessage = {
                 _id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
                 openid: openid,
@@ -185,23 +140,61 @@ App({
                 createdAt: new Date()
               };
               
+              console.log('[APP:checkWelcomeMessage] 准备 add 通知');
               db.collection('notifications').add({
                 data: welcomeMessage,
-                success: addRes => {
-                  console.log('创建欢迎消息成功:', addRes);
+                success: (addRes) => {
+                  console.log('[APP:checkWelcomeMessage] 创建欢迎消息成功，耗时:', Date.now() - createStart, 'ms，结果:', addRes);
                 },
-                fail: addErr => {
-                  console.error('创建欢迎消息失败:', addErr);
+                fail: (addErr) => {
+                  console.error('[APP:checkWelcomeMessage] ====== 创建欢迎消息失败 ======，耗时:', Date.now() - createStart, 'ms，错误:', addErr);
                 }
               });
+            } else {
+              console.log('[APP:checkWelcomeMessage] 已有欢迎消息');
             }
-          },
-          fail: err => {
-            console.error('查询欢迎消息失败:', err);
-          }
-        });
+            console.log('[APP:checkWelcomeMessage] ====== checkWelcomeMessage 完成 ======，总耗时:', Date.now() - startTime, 'ms');
+        },
+        fail: (err) => {
+          console.error('[APP:checkWelcomeMessage] ====== 查询通知失败 ======，耗时:', Date.now() - queryStart, 'ms，错误:', err);
+        }
+      });
     } catch (error) {
-      console.error('检查欢迎消息时发生错误:', error);
+      console.error('[APP:checkWelcomeMessage] ====== checkWelcomeMessage 异常 ======，耗时:', Date.now() - startTime, 'ms，错误:', error);
     }
-  }
+  },
+
+  /**
+   * 小程序显示（用户进入小程序）
+   */
+  onShow() {
+    console.log('[APP] ====== onShow ======');
+    
+    // 获取上次离开时间（用于日志记录）
+    const lastLeaveTime = wx.getStorageSync('lastLeaveTime');
+    
+    if (lastLeaveTime) {
+      const now = Date.now();
+      const timeDiff = now - lastLeaveTime;
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      console.log(`[APP] 用户离开 ${minutesDiff.toFixed(1)} 分钟`);
+    }
+    
+    // 清除离开时间记录（已处理完）
+    wx.removeStorageSync('lastLeaveTime');
+  },
+
+  /**
+   * 小程序隐藏（用户离开小程序）
+   */
+  onHide() {
+    console.log('[APP] ====== onHide ======');
+    
+    // 记录离开时间
+    wx.setStorageSync('lastLeaveTime', Date.now());
+    console.log('[APP] 已记录离开时间');
+  },
+
+
 });

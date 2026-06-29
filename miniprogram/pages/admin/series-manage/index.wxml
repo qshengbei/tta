@@ -14,9 +14,17 @@
         <button class="series-item__action-button delete-button" data-id="{{item._id}}" bindtap="deleteSeries">删除</button>
       </view>
     </view>
-    
+
+    <!-- 加载更多 -->
+    <view wx:if="{{loadingMore}}" class="loading-more">
+      <text class="loading-more__text">加载中...</text>
+    </view>
+    <view wx:elif="{{!hasMore && series.length > 0}}" class="loading-more">
+      <text class="loading-more__text">没有更多了</text>
+    </view>
+
     <!-- 空状态 -->
-    <view wx:if="{{series.length === 0 && !loading}}" class="empty-state">
+    <view wx:if="{{series.length === 0 && !loading && !loadingMore}}" class="empty-state">
       <text class="empty-state__text">暂无系列</text>
       <button class="empty-state__button" bindtap="addSeries">添加系列</button>
     </view>

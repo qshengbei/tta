@@ -48,7 +48,8 @@
   overflow-y: auto;
   width: 100%;
   box-sizing: border-box;
-  min-height: 100rpx;
+  height: calc(100vh - 120rpx);
+  position: relative;
 }
 
 .swipe-row {
@@ -215,4 +216,55 @@
   font-size: 24rpx;
   color: #9ca3af;
   margin-bottom: 48rpx;
+}
+
+/* 加载更多 */
+.loading-more {
+  padding: 32rpx 0;
+  text-align: center;
+  background-color: #f8f8f8;
+}
+
+.loading-text {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+/* 没有更多 */
+.no-more {
+  padding: 32rpx 0;
+  text-align: center;
+  background-color: #f8f8f8;
+}
+
+.no-more-text {
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+/* 加载更多按钮 */
+.load-more-btn-wrap {
+  padding: 24rpx 0;
+  text-align: center;
+  background-color: #f8f8f8;
+}
+
+.load-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 48rpx;
+  background-color: #ffffff;
+  border-radius: 40rpx;
+  border: 1rpx solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.load-more-btn:active {
+  background-color: #f3f4f6;
+}
+
+.load-more-text {
+  font-size: 24rpx;
+  color: #6b7280;
 }

@@ -1,0 +1,9 @@
+{
+  "name": "migrateProductTs",
+  "version": "1.0.0",
+  "description": "Migrate products to add createdAtTs/updatedAtTs fields",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

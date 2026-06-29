@@ -1,0 +1,33 @@
+[购物车] fetchCartItems 调用 - showLoading: false, forceRefresh: true
+index.js:467 [购物车] 当前状态 - cachedCartItems数量: 18, currentCartItems数量: 0
+index.js:530 [购物车] 查询条件: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false} , lastId: null , pageSize: 18
+index.js:536 [购物车] 分页获取数据 - isFirstPage: true, 本页数量: 18
+index.js:542 [购物车] 原始数据前2条: (2) [{…}, {…}]
+cache.js:114 内存缓存命中: product_669eebf36a170e1500ef4b0c2045b09a
+cache.js:114 内存缓存命中: product_a54a659b6a170d1c00ed001d358eb220
+cache.js:114 内存缓存命中: product_bff52e9f6a170bcf00eda9bc2f13da56
+cache.js:114 内存缓存命中: product_bff52e9f6a170e3a00ede1150d7a92e9
+cache.js:114 内存缓存命中: product_c40002b26a170b3700f02cd65ceae5a6
+cache.js:114 内存缓存命中: product_c5c2a88a6a170cfb00ef0b664587c2de
+cache.js:114 内存缓存命中: product_d6a300ae6a33640801ae35a4497fd236
+cache.js:114 内存缓存命中: product_d3a457a269d54823035917cd6dcfc745
+cache.js:114 内存缓存命中: product_d6a300ae6a33a00f01bec9905f3af8dc
+cache.js:114 内存缓存命中: product_d6a300ae6a41fdbe05b6680b062dbec2
+cache.js:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08025
+cache.js:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08112
+cache.js:114 内存缓存命中: product_f0df711e69d685fc037324a41c69c9fc
+cache.js:114 内存缓存命中: product_f2dd55436a203b53001962fc428944ce
+cache.js:114 内存缓存命中: product_f9d11e1d6a170b6600ed3a3677a29d79
+cache.js:114 内存缓存命中: product_f9d11e1d6a170c1800ed5880444fbc1a
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0111
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f01
+index.js:545 [购物车] 处理后数据数量: 18
+index.js:547 [购物车] 处理后第1条数据: {_id: "84a6d7fb6a4258180001d3d425b20949", productId: "669eebf36a170e1500ef4b0c2045b09a", name: "Aura｜琥珀花语发圈", price: 29, quantity: 1, …}
+index.js:553 [购物车] 去重后新数据数量: 18
+index.js:560 [购物车] 总数量: 18, hasMore: true, lastId: 84a6d7fb6a4257a60001cdd3121dc5f0, lastUpdatedAtTs: 1782732708346
+index.js:577 [购物车] 准备调用 setData 更新UI
+index.js:589 [购物车页面] 购物车缓存已更新
+index.js:610 [购物车] 开始加载更多购物车数据
+index.js:530 [购物车] 查询条件: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false} , lastId: 84a6d7fb6a4257a60001cdd3121dc5f0 , pageSize: 18
+index.js:536 [购物车] 分页获取数据 - isFirstPage: false, 本页数量: 0
+index.js:593 [购物车] 没有从数据库获取到数据

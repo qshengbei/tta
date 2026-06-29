@@ -1,6 +1,9 @@
 // pages/home/index.js
-import { getCollection } from '../../utils/cloud';
-import watcherManager from '../../utils/watcherManager';
+import { getCollection, getDB } from '../../utils/cloud';
+import { getGlobalProductWatcher } from '../../utils/globalProductWatcher';
+import errorLogger from '../../utils/errorLogger';
+
+const db = getDB();
 
 function isCloudUrl(src) {
   return src && typeof src === 'string' && src.startsWith('cloud://');
@@ -173,316 +176,527 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
-    this.loadProducts();
-    // 等待登录完成后启动监听
-    this.waitForLogin();
-  },
-
-  /**
-   * 等待登录完成后启动监听（使用 app 回调机制，避免轮询）
-   */
-  waitForLogin() {
-    const app = getApp();
-    if (app.onLoginReady) {
-      app.onLoginReady((openid) => {
-        console.log('[首页] 登录就绪，延迟启动监听');
-        // 延迟 500ms 确保 cloud WebSocket 认证就绪
-        clearTimeout(this._loginReadyTimer);
-        this._loginReadyTimer = setTimeout(() => {
-          this.startWatchers();
-        }, 500);
-      });
-    } else if (app.globalData.openid) {
-      // 降级方案：openid 已存在，直接延迟启动
-      this._loginReadyTimer = setTimeout(() => {
-        this.startWatchers();
-      }, 500);
-    } else {
-      // 降级方案：轮询等待
-      console.log('[首页] 等待登录完成');
-      this._loginPollTimer = setTimeout(() => {
-        this.waitForLogin();
-      }, 2000);
-    }
+    // 记录页面加载开始时间
+    this._pageLoadStartTime = Date.now();
+    this._isLoading = true;
+    // 标记是否首次进入（用于区分首次进入和从其他页面返回）
+    this._isFirstEntry = true;
+    console.log('[首页] ========== onLoad 开始 ==========');
+    console.log('[首页] 页面加载开始时间:', new Date(this._pageLoadStartTime).toLocaleTimeString());
+    
+    // 使用固定页面ID，避免重复订阅
+    this.__pageId = "home_page";
+    
+    // 初始化更新版本号
+    const homeData = wx.getStorageSync('homeData');
+    this._lastUpdateVersion = homeData?.updateVersion || 0;
+    
+    // 订阅全局商品监听
+    const watcher = getGlobalProductWatcher();
+    this._unsubscribe = watcher.subscribe(
+      this.__pageId, 'home_products',
+      (change) => this._onProductChanged(change)
+    );
+    
+    this.loadProducts().then(() => {
+      this._isLoading = false;
+    }).catch(() => {
+      this._isLoading = false;
+    });
   },
 
   /**
    * 生命周期函数--监听页面显示
    */
   onShow() {
+    this._isPageVisible = true;
     const wasHidden = !this.data.pageVisible;
     this.setData({ pageVisible: true });
-    console.log('[首页] 页面显示');
+    console.log('[首页] ========== onShow 开始 ==========');
     
-    // 1. 先读取并同步最新数据（全局监听器可能已经更新了缓存）
-    this.loadProducts();
-    
-    // 2. 检查是否需要刷新轮播图或系列数据
-    const app = getApp();
-    if (app.globalData.bannerNeedRefresh === true) {
-      console.log('[首页] 轮播图需要刷新');
-      app.globalData.bannerNeedRefresh = false;  // 重置标记
-      this.refreshBanner();
-    }
-    if (app.globalData.categoryNeedRefresh === true) {
-      console.log('[首页] 系列数据需要刷新');
-      app.globalData.categoryNeedRefresh = false;  // 重置标记
-      this.refreshCategory();
+    // 计算从 onLoad 到 onShow 的耗时
+    if (this._pageLoadStartTime) {
+      const onShowTime = Date.now();
+      const onLoadToOnShow = onShowTime - this._pageLoadStartTime;
+      console.log('[首页] ⏱️ onLoad → onShow 耗时:', onLoadToOnShow, 'ms');
     }
     
-    // 3. 然后启动页面监听器，监听未来的变化
-    if (wasHidden) {
-      console.log('首页-实时监听重新连接');
-      this.startWatchers();
+    // 设置页面可见性
+    const watcher = getGlobalProductWatcher();
+    watcher.setPageVisible(this.__pageId, true);
+    
+    // 立即设置 loading 为 false，确保页面不白屏
+    if (this.data.loading) {
+      this.setData({ loading: false });
     }
     
-    if (this.data.seriesList.length === 0) {
-      this.loadProducts();
+    // 如果正在加载，等待加载完成后再检查更新
+    if (this._isLoading) {
+      console.log('[首页] 正在加载中，等待完成后再检查更新');
+      this.startNewCarousel();
+      return;
     }
+    
+    // 判断是否是首次进入（onLoad后的第一次onShow）
+    const isFirstEntry = this._isFirstEntry;
+    // 首次进入后，后续的onShow都是从其他页面返回
+    if (this._isFirstEntry) {
+      this._isFirstEntry = false;
+    }
+    
+    console.log('[首页] 页面进入方式:', isFirstEntry ? '首次进入' : '从其他页面返回');
+    
+    // 如果页面已有数据，直接显示，不做任何操作
+    // 这样用户会立即看到离开前的页面
+    if (this.data.seriesList && this.data.seriesList.length > 0) {
+      console.log('[首页] --- 页面已有数据，直接显示 ---');
+      
+      // 计算页面显示总耗时
+      if (this._pageLoadStartTime) {
+        const displayTime = Date.now();
+        const totalTime = displayTime - this._pageLoadStartTime;
+        console.log('[首页] ⏱️ 页面显示总耗时:', totalTime, 'ms');
+        console.log('[首页] ========== 页面已显示 ==========');
+      }
+    } else {
+      // 如果页面没有数据，从缓存快速加载
+      this._quickShowFromCache();
+    }
+    
+    // 异步检测更新，不阻塞页面显示，有更新时静默更新UI
+    this._asyncCheckAndUpdate(isFirstEntry);
+    
     this.startNewCarousel();
+  },
+
+  /**
+   * 快速显示缓存数据（仅在页面无数据时调用）
+   */
+  _quickShowFromCache() {
+    const cacheStartTime = Date.now();
+    console.log('[首页] --- 快速显示缓存数据 ---');
+    
+    const homeData = wx.getStorageSync('homeData');
+    if (homeData && homeData.seriesList && homeData.seriesList.length > 0) {
+      console.log('[首页] 系列列表长度:', homeData.seriesList.length);
+      this.setData({
+        seriesList: homeData.seriesList,
+        newProducts: homeData.newProducts || [],
+        extendedNewProducts: homeData.extendedNewProducts || [],
+        bannerList: homeData.bannerList || [],
+        loading: false
+      });
+      
+      // 计算缓存加载耗时
+      const cacheEndTime = Date.now();
+      const cacheLoadTime = cacheEndTime - cacheStartTime;
+      console.log('[首页] ⏱️ 缓存加载耗时:', cacheLoadTime, 'ms');
+      
+      // 计算页面显示总耗时
+      if (this._pageLoadStartTime) {
+        const totalTime = cacheEndTime - this._pageLoadStartTime;
+        console.log('[首页] ⏱️ 页面显示总耗时:', totalTime, 'ms');
+        console.log('[首页] ========== 页面已显示（从缓存）==========');
+      }
+    } else if (homeData && homeData.seriesList) {
+      // 缓存存在但系列列表为空，设置空数据
+      this.setData({
+        seriesList: [],
+        loading: false
+      });
+      
+      console.log('[首页] ⏱️ 缓存加载耗时:', Date.now() - cacheStartTime, 'ms');
+    }
+  },
+
+  /**
+   * 异步检测并更新数据
+   * @param {boolean} isFirstEntry - 是否是首次进入（用于区分首次进入和从其他页面返回）
+   */
+  async _asyncCheckAndUpdate(isFirstEntry = false) {
+    console.log('[首页] --- 异步检测更新开始 ---');
+    console.log('[首页] 进入方式:', isFirstEntry ? '首次进入' : '从其他页面返回');
+    
+    const watcher = getGlobalProductWatcher();
+    const app = getApp();
+    
+    try {
+      // 1. 监听器健康检查
+      console.log('[首页] --- 步骤1: 监听器健康检查 ---');
+      const healthCheck = watcher.checkNeedsRefresh();
+      console.log('[首页] 监听器健康状态:', healthCheck);
+      
+      // 2. 检查更新标记
+      console.log('[首页] --- 步骤2: 检查更新标记 ---');
+      const updateMark = watcher.getAndClearUpdateMark('home_products');
+      console.log('[首页] 更新标记:', updateMark);
+      
+      if (updateMark || healthCheck.needsRefresh) {
+        console.log('[首页] 检测到缓存更新标记或监听器不健康');
+        console.log('[首页] 原因:', healthCheck.needsRefresh ? healthCheck.reason : '更新标记存在');
+        this.loadProducts();
+        console.log('[首页] --- 异步检测结束（重新加载）---');
+        return;
+      }
+      
+      // 3. 检查轮播图和系列刷新标记
+      console.log('[首页] --- 步骤3: 检查轮播图和系列刷新标记 ---');
+      if (app.globalData.bannerNeedRefresh === true) {
+        console.log('[首页] 轮播图需要刷新');
+        app.globalData.bannerNeedRefresh = false;
+        this.refreshBanner();
+      }
+      if (app.globalData.categoryNeedRefresh === true) {
+        console.log('[首页] 系列数据需要刷新');
+        app.globalData.categoryNeedRefresh = false;
+        this.refreshCategory();
+      }
+      
+      // 3.5. 后台异步刷新系列数据（不 await，不阻塞页面加载）
+      console.log('[首页] --- 步骤3.5: 后台异步刷新系列数据 ---');
+      this._asyncRefreshCategory();
+      
+      // 4. 检查缓存状态
+      console.log('[首页] --- 步骤4: 检查缓存状态 ---');
+      let homeData = wx.getStorageSync('homeData');
+      console.log('[首页] 缓存存在:', !!homeData);
+      console.log('[首页] 缓存状态:', homeData?.cacheStatus || '未设置');
+      
+      if (homeData.cacheStatus === 'corrupted') {
+        console.log('[首页] 缓存状态为 corrupted，执行重新加载');
+        this.loadProducts();
+        console.log('[首页] --- 异步检测结束（缓存损坏）---');
+        return;
+      }
+      
+      if (homeData.cacheStatus === 'warning') {
+        console.log('[首页] 缓存状态为 warning，执行版本对比');
+        await this.checkAndRefreshIfNeeded();
+        homeData = wx.getStorageSync('homeData'); // 重新读取缓存
+        if (homeData) {
+          homeData.cacheStatus = 'healthy';
+          wx.setStorageSync('homeData', homeData);
+          console.log('[首页] 缓存状态已恢复为 healthy');
+        }
+        console.log('[首页] --- 异步检测结束（警告处理）---');
+        return;
+      }
+      
+      // 5. 检查全局监听器是否更新了缓存（在其他页面时的更新）
+      console.log('[首页] --- 步骤5: 检查监听器更新标记 ---');
+      homeData = wx.getStorageSync('homeData'); // 重新读取最新缓存
+      const currentVersion = this._lastUpdateVersion || 0;
+      const cacheVersion = homeData?.updateVersion || 0;
+      console.log('[首页] updateVersion - 当前:', currentVersion, ', 缓存:', cacheVersion);
+      
+      if (cacheVersion > currentVersion) {
+        console.log('[首页] 检测到监听器更新的缓存');
+        this._lastUpdateVersion = cacheVersion;
+        
+        // 只有当页面数据为空或缓存数据有变化时才更新UI
+        // 避免不必要的 setData 导致 UI 闪烁
+        const needsUpdate = !this.data.seriesList || this.data.seriesList.length === 0;
+        
+        if (needsUpdate && homeData.seriesList && homeData.seriesList.length > 0) {
+          console.log('[首页] 页面数据为空，从缓存读取更新后的数据');
+          this.setData({
+            seriesList: homeData.seriesList,
+            newProducts: homeData.newProducts || [],
+            extendedNewProducts: homeData.extendedNewProducts || [],
+            bannerList: homeData.bannerList || []
+          });
+        } else if (!needsUpdate) {
+          console.log('[首页] 页面已有数据，跳过 UI 更新（后台静默更新）');
+        }
+        
+        console.log('[首页] 更新版本已更新:', currentVersion, '→', cacheVersion);
+        
+        if (this.data.seriesList.length === 0) {
+          console.log('[首页] 页面数据仍为空，执行重新加载');
+          this.loadProducts();
+        }
+        
+        console.log('[首页] --- 异步检测结束（缓存更新）---');
+        return;
+      }
+      
+      // 6. 智能刷新：对比服务器版本号，只有数据更新了才刷新
+      // 只有在以下情况才执行步骤6：
+      // - 首次进入：确保缓存是最新的（用户可能长时间未打开小程序）
+      // - 页面数据为空：需要从服务器获取数据
+      // 从其他页面返回时不需要执行，因为全局监听器已经处理了更新
+      if (isFirstEntry || this.data.seriesList.length === 0) {
+        console.log('[首页] --- 步骤6: 智能刷新（版本对比）---');
+        console.log('[首页] 触发原因:', isFirstEntry ? '首次进入' : '页面数据为空');
+        
+        // 注意：checkAndRefreshIfNeeded() 内部如果版本不同会调用 loadProducts()
+        // loadProducts() 会先显示缓存数据再后台刷新，不会导致白屏
+        await this.checkAndRefreshIfNeeded();
+        
+        // 如果页面数据仍然为空，执行重新加载
+        if (this.data.seriesList.length === 0) {
+          console.log('[首页] 页面数据为空，执行重新加载');
+          this.loadProducts();
+        }
+      } else {
+        console.log('[首页] --- 从其他页面返回，页面已有数据，跳过服务器版本对比 ---');
+      }
+      
+      console.log('[首页] --- 异步检测结束 ---');
+    } catch (error) {
+      console.error('[首页] 异步检测更新失败:', error);
+      errorLogger.logCatchError(error, {
+        pageName: 'home',
+        methodName: '_asyncCheckAndUpdate',
+        location: 'home/index.js:_asyncCheckAndUpdate'
+      });
+    }
+  },
+
+  /**
+   * 智能刷新：对比服务器版本号，只有数据更新了才刷新
+   */
+  async checkAndRefreshIfNeeded() {
+    console.log('[首页] ========== 开始智能刷新 ==========');
+    
+    try {
+      // 获取本地缓存的版本号
+      const cachedData = wx.getStorageSync('homeData');
+      const localVersion = cachedData?.version || '0';
+      
+      console.log('[首页] 本地缓存版本:', localVersion);
+      console.log('[首页] 当前云环境:', getApp().globalData.env);
+      
+      // 调用云函数获取服务器版本号
+      console.log('[首页] 准备调用云函数: getProductVersion');
+      
+      const startTime = Date.now();
+      const res = await wx.cloud.callFunction({
+        name: 'getProductVersion',
+        data: {}
+      });
+      const endTime = Date.now();
+      
+      console.log('[首页] 云函数调用耗时:', endTime - startTime, 'ms');
+      console.log('[首页] 云函数返回结果:', JSON.stringify(res, null, 2));
+      
+      if (res.result && res.result.success) {
+        const serverVersion = res.result.version;
+        
+        console.log(`[首页] 版本对比 - 本地: ${localVersion}, 服务器: ${serverVersion}`);
+        
+        // 如果服务器版本更新，执行刷新（传递服务器版本号，避免重复调用）
+        if (serverVersion !== localVersion && serverVersion !== '0') {
+          console.log('[首页] 服务器数据已更新，执行刷新');
+          this.loadProducts(serverVersion);
+        } else {
+          console.log('[首页] 数据未更新，使用缓存');
+        }
+      } else {
+        console.warn('[首页] 云函数返回格式异常:', res);
+      }
+    } catch (error) {
+      console.error('[首页] ========== 云函数调用错误详情 ==========');
+      console.error('[首页] 错误对象:', error);
+      console.error('[首页] 错误码:', error.errCode);
+      console.error('[首页] 错误信息:', error.errMsg);
+      
+      errorLogger.logCloudFunctionError({
+        pageName: 'home',
+        methodName: 'checkAndRefreshIfNeeded',
+        functionName: 'getProductVersion',
+        inputParams: {},
+        message: error.message || String(error),
+        stack: error.stack || '',
+        code: error.errCode || '',
+        location: 'home/index.js:checkAndRefreshIfNeeded'
+      });
+      
+      console.log('[首页] --- 执行降级处理 ---');
+      const fallbackVersion = Date.now().toString();
+      console.log('[首页] 降级版本号:', fallbackVersion);
+      
+      console.log('[首页] ========== 智能刷新结束（降级）==========');
+    }
   },
 
   /**
    * 生命周期函数--监听页面隐藏
    */
   onHide() {
+    this._isPageVisible = false;
     this.setData({ pageVisible: false });
-    console.log('[首页] 页面隐藏，关闭监听器');
-    console.log('首页-实时监听关闭');
+    console.log('[首页] 页面隐藏');
     this.stopNewCarousel();
-    // 页面隐藏时关闭监听器，节省资源
-    this.stopWatchers();
+    
+    // 设置页面不可见
+    getGlobalProductWatcher().setPageVisible(this.__pageId, false);
   },
 
   /**
    * 生命周期函数--监听页面卸载
    */
   onUnload() {
-    console.log('[首页] 页面卸载，销毁监听');
-    console.log('首页-实时监听关闭');
+    console.log('[首页] 页面卸载');
+    
+    // 设置卸载标记，防止异步操作继续执行
+    this._isUnloaded = true;
+    
     this.stopNewCarousel();
-    this.destroyWatchers();
+    
+    // 取消订阅
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+    
     // 清理所有定时器
-    clearTimeout(this._loginReadyTimer);
-    clearTimeout(this._loginPollTimer);
     clearTimeout(this._staggerTimer2);
     clearTimeout(this._staggerTimer3);
   },
 
   /**
-   * 启动实时监听（交错创建，避免同时发起多个 WebSocket 登录）
+   * 全局监听器回调处理
+   * @param {Object} change { type: 'add'|'modify'|'remove'|'update', product, docId, cacheKey }
    */
-  startWatchers() {
-    console.log('[首页] 开始创建监听器');
-    const db = wx.cloud.database();
-
-    // 监听商品数据变化（第一个立即创建）
-    const createProductsWatcher = () => {
-      console.log('[首页] 创建 products 监听');
-      return db.collection('products').watch({
-        onChange: (snapshot) => {
-          // 首次收到非 init 数据，报告监听器健康
-          const hasRealChange = snapshot.docChanges && snapshot.docChanges.some(c => c.dataType !== 'init');
-          if (hasRealChange) {
-            const w = watcherManager.get('home_products');
-            if (w) w.reportHealthy();
-          }
-
-          if (!this.data.pageVisible) {
-            this.setData({ pendingRefresh: true });
-            return;
-          }
-          this.handleProductIncrementalUpdate(snapshot);
-        },
-        onError: (error) => {
-          console.error('[首页] 商品监听失败:', error);
-          watcherManager.autoReconnect('home_products', 'products watch error');
-        }
-      });
-    };
-
-    // 只保留商品监听，轮播图和系列监听已去掉
-    watcherManager.create('home_products', createProductsWatcher);
-  },
-
-  /**
-   * 停止实时监听
-   */
-  stopWatchers() {
-    watcherManager.destroy('home_products');
-  },
-
-  /**
-   * 销毁实时监听
-   */
-  destroyWatchers() {
-    this.stopWatchers();
-  },
-
-  /**
-   * 处理数据变化（兜底全量刷新）
-   */
-  handleDataChange(type) {
-    console.log(`[首页] ${type}数据变化，全量刷新页面`);
-    this.refreshData();
-  },
-
-  /**
-   * 商品增量更新
-   */
-  async handleProductIncrementalUpdate(snapshot) {
-    console.log('[首页] handleProductIncrementalUpdate 被调用');
-    console.log('[首页] snapshot.docChanges:', snapshot.docChanges);
+  async _onProductChanged(change) {
+    console.log('[首页] _onProductChanged:', change);
     
-    if (!snapshot || !snapshot.docChanges || snapshot.docChanges.length === 0) {
-      console.log('[首页] docChanges为空或不存在，执行全量刷新');
-      this.handleDataChange('products');
+    // 检查页面是否已卸载
+    if (this._isUnloaded) {
+      console.log('[首页] 页面已卸载，跳过更新');
+      return;
+    }
+    
+    if (!this._isPageVisible) {
+      console.log('[首页] 页面不可见，跳过更新');
       return;
     }
 
-    // 转换变更文档中的 cloud:// URL
-    const changedDocs = snapshot.docChanges.map(c => c.doc).filter(Boolean);
-    await batchConvertCloudUrls(changedDocs, IMAGE_KEYS);
-
-    const { newProducts, seriesList } = this.data;
-    console.log('[首页] 当前newProducts数量:', newProducts.length);
-    console.log('[首页] 当前seriesList数量:', seriesList.length);
-
-    let needFullReload = false;
-    const updatedProducts = [...newProducts];
-    const updatedSeriesList = [...seriesList];
-
-    for (const change of snapshot.docChanges) {
-      const { dataType, doc } = change;
-      const docId = doc._id;
-      console.log('[首页] 处理变化 - dataType:', dataType, 'docId:', docId, 'doc:', doc);
-
-      if (dataType === 'init') {
-        console.log('[首页] 跳过init类型变化');
-        continue;
+    // 简化处理：直接从缓存读取最新数据更新UI
+    // 补位逻辑已由全局监听器统一处理
+    const homeData = wx.getStorageSync('homeData');
+    if (homeData && homeData.seriesList && homeData.seriesList.length > 0) {
+      console.log('[首页] 从缓存读取更新后的数据');
+      this.setData({
+        seriesList: homeData.seriesList,
+        newProducts: homeData.newProducts || [],
+        extendedNewProducts: homeData.extendedNewProducts || [],
+        bannerList: homeData.bannerList || []
+      });
+      
+      // 更新轮播图
+      const finalProducts = this.data.newProducts.slice(0, 20);
+      let extendedNewProducts = [];
+      if (finalProducts.length > 0) {
+        extendedNewProducts.push(finalProducts[finalProducts.length - 1]);
+        extendedNewProducts.push(...finalProducts);
+        extendedNewProducts.push(finalProducts[0]);
       }
-
-      const productIndex = updatedProducts.findIndex(p => p._id === docId);
-      console.log('[首页] 在newProducts中找到的位置:', productIndex);
-
-      if (dataType === 'update') {
-        // 更新商品
-        // 注意：全局商品缓存由全局监听器更新，这里只负责UI更新
-        if (productIndex !== -1) {
-          if (doc.isNew === true) {
-            updatedProducts[productIndex] = {
-              ...doc,
-              isOutOfStock: doc.stock <= 0 && doc.status === 'on',
-              isOffline: doc.status !== 'on'
-            };
-          } else if (updatedProducts[productIndex].isNew === true) {
-            // 原本是新品，现在不是了，需要移除
-            updatedProducts.splice(productIndex, 1);
-          } else {
-            // 非新品更新（如价格、库存变化），直接更新
-            updatedProducts[productIndex] = {
-              ...doc,
-              isOutOfStock: doc.stock <= 0 && doc.status === 'on',
-              isOffline: doc.status !== 'on'
-            };
-          }
-        } else {
-          // 新增的新品
-          if (doc.isNew === true) {
-            updatedProducts.unshift({
-              ...doc,
-              isOutOfStock: doc.stock <= 0 && doc.status === 'on',
-              isOffline: doc.status !== 'on'
-            });
-          }
-        }
-        
-        // 更新系列中的商品 - 无论商品是否在新品列表中，都要更新系列列表
-        let seriesUpdated = false;
-        updatedSeriesList.forEach((series, seriesIndex) => {
-          const idx = series.products.findIndex(p => p._id === docId);
-          console.log(`[首页] 检查系列 ${seriesIndex} (${series.title}): 找到位置 ${idx}`);
-          if (idx !== -1) {
-            console.log(`[首页] 更新前价格: ${series.products[idx].price}, 更新后价格: ${doc.price}`);
-            series.products[idx] = {
-              ...doc,
-              isOutOfStock: doc.stock <= 0 && doc.status === 'on',
-              isOffline: doc.status !== 'on'
-            };
-            console.log(`[首页] 更新后系列商品价格: ${series.products[idx].price}`);
-            seriesUpdated = true;
-          }
-        });
-        
-        if (seriesUpdated) {
-          console.log('[首页] 系列列表中的商品已更新');
-        } else {
-          console.log('[首页] 商品不在任何系列列表中，触发全量刷新');
-          this.handleDataChange('products');
-          return;
-        }
-      } else if (dataType === 'add') {
-        // 添加新品
-        if (doc.isNew === true) {
-          updatedProducts.unshift(doc);
-        }
-      } else if (dataType === 'remove') {
-        // 删除商品
-        if (productIndex !== -1) {
-          updatedProducts.splice(productIndex, 1);
-        }
-        updatedSeriesList.forEach(series => {
-          const idx = series.products.findIndex(p => p._id === docId);
-          if (idx !== -1) {
-            series.products.splice(idx, 1);
-          }
-        });
-      }
+      
+      const newCarouselIndex = 0;
+      const newCarouselList = this.computeNewCarouselList(finalProducts, newCarouselIndex);
+      
+      this.setData({
+        extendedNewProducts,
+        newCarouselList,
+        newCarouselIndex
+      });
+    } else {
+      console.warn('[首页] 缓存数据为空，执行重新加载');
+      this.loadProducts();
     }
-
-    // 限制新品数量
-    const finalProducts = updatedProducts.slice(0, 20);
     
-    // 扩展新品数据用于轮播
-    let extendedNewProducts = [];
-    if (finalProducts.length > 0) {
-      extendedNewProducts.push(finalProducts[finalProducts.length - 1]);
-      extendedNewProducts.push(...finalProducts);
-      extendedNewProducts.push(finalProducts[0]);
-    }
-
-    const newCarouselIndex = 0;
-    const newCarouselList = this.computeNewCarouselList(finalProducts, newCarouselIndex);
-
-    console.log('[首页] 准备setData更新UI');
-    console.log('[首页] finalProducts数量:', finalProducts.length);
-    console.log('[首页] updatedSeriesList数量:', updatedSeriesList.length);
-    
-    await this.setData({
-      newProducts: finalProducts,
-      extendedNewProducts,
-      newCarouselList,
-      newCarouselIndex,
-      seriesList: updatedSeriesList
-    });
-    
-    console.log('[首页] setData完成');
-
-    // 更新缓存
-    const cachedData = wx.getStorageSync('homeData') || {};
-    wx.setStorageSync('homeData', {
-      ...cachedData,
-      newProducts: finalProducts,
-      extendedNewProducts,
-      seriesList: updatedSeriesList,
-      timestamp: Date.now()
-    });
-
-    if (newCarouselList.length >= 3) {
-      this.startNewCarousel();
-    }
-
     console.log('[首页] 商品增量更新完成');
+  },
+
+  /**
+   * 补齐指定系列商品至3个
+   * @param {Array} seriesList - 系列列表
+   * @param {string} categoryId - 需要补齐的分类ID
+   */
+  async _fillSeriesProducts(seriesList, categoryId) {
+    const series = seriesList.find(s => s.id === categoryId);
+    if (!series || series.products.length >= 3) {
+      return;
+    }
+    
+    const productsCollection = getCollection('products');
+    const existingIds = series.products.map(p => p._id);
+    
+    const res = await productsCollection
+      .where({
+        categoryId: categoryId,
+        status: 'on',
+        _id: db.command.not(db.command.in(existingIds))
+      })
+      .orderBy('createTime', 'desc')
+      .limit(3 - series.products.length)
+      .get();
+    
+    const newProducts = res.data || [];
+    if (newProducts.length > 0) {
+      await batchConvertCloudUrls(newProducts, IMAGE_KEYS);
+      newProducts.forEach(product => {
+        series.products.push({
+          ...product,
+          isOutOfStock: product.stock <= 0 && product.status === 'on',
+          isOffline: product.status !== 'on'
+        });
+      });
+      console.log(`[首页] 系列 ${categoryId} 补齐了 ${newProducts.length} 个商品`);
+    }
+  },
+
+  /**
+   * 刷新指定系列的商品列表（从数据库获取最新的3个上架商品）
+   * @param {Array} seriesList - 系列列表
+   * @param {string} categoryId - 需要刷新的分类ID
+   */
+  async _refreshSingleSeries(seriesList, categoryId) {
+    const seriesIndex = seriesList.findIndex(s => s.id === categoryId);
+    if (seriesIndex === -1) {
+      return;
+    }
+    
+    const productsCollection = getCollection('products');
+    const res = await productsCollection
+      .where({
+        categoryId: categoryId,
+        status: 'on'
+      })
+      .orderBy('createTime', 'desc')
+      .limit(3)
+      .get();
+    
+    const newProducts = res.data || [];
+    if (newProducts.length > 0) {
+      await batchConvertCloudUrls(newProducts, IMAGE_KEYS);
+      seriesList[seriesIndex] = {
+        ...seriesList[seriesIndex],
+        products: newProducts.map(product => ({
+          ...product,
+          isOutOfStock: product.stock <= 0 && product.status === 'on',
+          isOffline: product.status !== 'on'
+        }))
+      };
+      console.log(`[首页] 系列 ${categoryId} 刷新完成，共 ${newProducts.length} 个商品`);
+    }
+  },
+
+  /**
+   * 修剪指定系列商品，保持最多3个
+   * @param {Array} seriesList - 系列列表
+   * @param {string} categoryId - 需要修剪的分类ID
+   */
+  _trimSeriesProducts(seriesList, categoryId) {
+    const series = seriesList.find(s => s.id === categoryId);
+    if (!series || series.products.length <= 3) {
+      return;
+    }
+    
+    series.products = series.products.slice(0, 3);
+    console.log(`[首页] 系列 ${categoryId} 修剪至3个商品`);
   },
 
   /**
@@ -526,12 +740,13 @@ Page({
       const products = productsRes.data;
 
       const seriesList = categories.slice(0, 3).map(category => {
-        const seriesProducts = products.filter(product => product.categoryId === category._id);
+        const seriesProducts = products.filter(product => product.categoryId === category._id && product.status === 'on');
         return {
           id: category._id,
           title: category.name,
           subtitle: category.subtitle,
           mainImage: category.image,
+          status: category.status,
           products: seriesProducts.slice(0, 3).map(product => ({
             ...product,
             isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -540,7 +755,6 @@ Page({
         };
       });
 
-      // 转换 cloud:// URL 为临时链接
       await batchConvertCloudUrls(seriesList, IMAGE_KEYS);
 
       await this.setData({ seriesList });
@@ -678,7 +892,10 @@ Page({
   /**
    * 加载商品数据
    */
-  async loadProducts(callback) {
+  async loadProducts(serverVersion, callback) {
+    const loadStartTime = Date.now();
+    console.log('[首页] ========== loadProducts 开始 ==========');
+    
     // 先尝试从本地缓存获取数据（永久缓存，由实时监听更新）
     const rawCachedData = wx.getStorageSync('homeData');
     
@@ -686,11 +903,10 @@ Page({
     let cachedData = rawCachedData ? JSON.parse(JSON.stringify(rawCachedData)) : {};
     
     if (cachedData && cachedData.seriesList && cachedData.seriesList.length > 0) {
-      // 从全局商品缓存获取最新数据，同步更新到本地缓存
-      const globalProductCache = this.getGlobalProductCache();
+      // 有缓存：先从缓存加载显示
+      console.log('[首页] 从缓存加载数据');
       
-      // 转换 cloud:// URL（存量缓存可能包含cloud路径）
-      await batchConvertCloudUrls(cachedData, IMAGE_KEYS);
+      const globalProductCache = this.getGlobalProductCache();
       
       // 同步全局商品缓存数据到首页缓存
       if (globalProductCache && Object.keys(globalProductCache).length > 0) {
@@ -699,6 +915,8 @@ Page({
       
       const cachedNewProducts = cachedData.newProducts || [];
       const carouselList = this.computeNewCarouselList(cachedNewProducts, 0);
+      
+      // 立即显示缓存数据，不等待 URL 转换完成
       this.setData({
         seriesList: cachedData.seriesList,
         newProducts: cachedNewProducts,
@@ -707,23 +925,90 @@ Page({
         newCarouselIndex: 0,
         bannerList: cachedData.bannerList || [],
         loading: false,
-        bannerLoading: false  // 轮播图加载完成
+        bannerLoading: false
       });
       
-      // 同时更新本地缓存
-      wx.setStorageSync('homeData', cachedData);
+      // 计算缓存加载耗时
+      const cacheLoadTime = Date.now() - loadStartTime;
+      console.log('[首页] ⏱️ 缓存加载耗时:', cacheLoadTime, 'ms');
+      
+      // 计算页面显示总耗时
+      if (this._pageLoadStartTime) {
+        const displayTime = Date.now();
+        const totalTime = displayTime - this._pageLoadStartTime;
+        console.log('[首页] ⏱️ 页面显示总耗时（从缓存）:', totalTime, 'ms');
+        console.log('[首页] ========== 页面已显示 ==========');
+      }
       
       if (carouselList.length >= 3) {
         this.startNewCarousel();
       }
       if (callback) callback();
+      
+      // 后台异步转换 cloud:// URL，不阻塞页面显示
+      // 转换完成后静默更新缓存和UI
+      this._convertCloudUrlsAndUpdate(cachedData);
+      
+      // 有缓存时，后台拉取数据库与缓存对比，有差异则静默更新
+      this.refreshDataSilently();
       return;
     }
 
-    // ====== 方案1：优先加载轮播图 ======
-    const bannerCollection = getCollection('banner');
+    // 无缓存：从数据库获取并更新永久缓存（传递版本号避免重复调用）
+    this.loadProductsFromDatabase(callback, serverVersion);
+  },
+  
+  /**
+   * 后台异步转换 cloud:// URL，不阻塞页面显示
+   * 转换完成后静默更新缓存和UI
+   */
+  async _convertCloudUrlsAndUpdate(cachedData) {
+    try {
+      // 检查是否有需要转换的 cloud:// URL
+      const cloudUrls = new Set();
+      collectCloudUrls(cachedData, IMAGE_KEYS, cloudUrls);
+      if (cloudUrls.size === 0) {
+        // 没有需要转换的 URL，直接更新缓存
+        wx.setStorageSync('homeData', cachedData);
+        return;
+      }
+      
+      console.log('[首页] 后台转换 cloud:// URL，数量:', cloudUrls.size);
+      
+      // 执行 URL 转换
+      await batchConvertCloudUrls(cachedData, IMAGE_KEYS);
+      
+      // 更新缓存
+      wx.setStorageSync('homeData', cachedData);
+      
+      console.log('[首页] cloud:// URL 转换完成，缓存已更新');
+    } catch (error) {
+      console.error('[首页] 后台转换 cloud:// URL 失败:', error);
+      errorLogger.logNetworkError({
+        pageName: 'home',
+        methodName: '_convertCloudUrlsAndUpdate',
+        message: error.message || String(error),
+        stack: error.stack || '',
+        location: 'home/index.js:_convertCloudUrlsAndUpdate'
+      });
+    }
+  },
+  
+  /**
+   * 从数据库加载商品数据并更新缓存
+   * @param {string} serverVersion - 可选的服务器版本号，如果已获取过可以传入避免重复调用
+   */
+  async loadProductsFromDatabase(callback, serverVersion) {
+    const dbLoadStartTime = Date.now();
+    console.log('[首页] ========== loadProductsFromDatabase 开始 ==========');
+    console.log('[首页] 从数据库加载数据');
     
-    // 先单独加载轮播图，快速显示
+    const categoryCollection = getCollection('category');
+    const productsCollection = getCollection('products');
+    const bannerCollection = getCollection('banner');
+    this.setData({ loading: true });
+
+    // 优先加载轮播图
     bannerCollection.where({ isBanner: true }).get().then(bannerRes => {
       const banners = bannerRes.data || [];
       console.log('[首页] 轮播图加载完成:', banners.length, '张');
@@ -733,7 +1018,7 @@ Page({
         // 立即显示轮播图
         this.setData({ 
           bannerList: banners,
-          bannerLoading: false  // 轮播图加载完成
+          bannerLoading: false
         });
       });
     }).catch(err => {
@@ -741,11 +1026,7 @@ Page({
       this.setData({ bannerLoading: false });
     });
 
-    // ====== 并行加载其他数据 ======
-    const productsCollection = getCollection('products');
-    const categoryCollection = getCollection('category');
-    this.setData({ loading: true });
-
+    // 并行加载其他数据
     Promise.all([
       categoryCollection.where({ status: 'on' }).orderBy('createTime', 'desc').get(),
       productsCollection.get()
@@ -755,12 +1036,13 @@ Page({
       const products = productsRes.data;
 
       const seriesList = categories.slice(0, 3).map(category => {
-        const seriesProducts = products.filter(product => product.categoryId === category._id);
+        const seriesProducts = products.filter(product => product.categoryId === category._id && product.status === 'on');
         return {
           id: category._id,
           title: category.name,
           subtitle: category.subtitle,
           mainImage: category.image,
+          status: category.status,
           products: seriesProducts.slice(0, 3).map(product => ({
             ...product,
             isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -770,7 +1052,7 @@ Page({
       });
 
       const newProducts = products
-        .filter(product => product.isNew === true)
+        .filter(product => product.isNew === true && product.status === 'on')
         .map(product => ({
           ...product,
           isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -808,15 +1090,77 @@ Page({
         newCarouselIndex,
         bannerList: banners,
         loading: false,
-        bannerLoading: false  // 轮播图加载完成
+        bannerLoading: false
       });
+      
+      // 计算数据库加载耗时
+      const dbLoadEndTime = Date.now();
+      const dbLoadTime = dbLoadEndTime - dbLoadStartTime;
+      console.log('[首页] ⏱️ 数据库加载耗时:', dbLoadTime, 'ms');
+      
+      // 计算页面显示总耗时
+      if (this._pageLoadStartTime) {
+        const totalTime = dbLoadEndTime - this._pageLoadStartTime;
+        console.log('[首页] ⏱️ 页面显示总耗时（从数据库）:', totalTime, 'ms');
+        console.log('[首页] ========== 页面已显示 ==========');
+      }
 
+      // 获取当前服务器版本号（优先使用传入的版本号，避免重复调用云函数）
+      let currentVersion = serverVersion || '0';
+      
+      if (!serverVersion) {
+        // 如果没有传入版本号，才调用云函数获取
+        try {
+          console.log('[首页] --- 获取服务器版本号 ---');
+          console.log('[首页] 当前云环境:', getApp().globalData.env);
+          console.log('[首页] 调用云函数名: getProductVersion');
+          console.log('[首页] 调用参数:', JSON.stringify({}));
+          
+          const startTime = Date.now();
+          const versionRes = await wx.cloud.callFunction({
+            name: 'getProductVersion',
+            data: {}
+          });
+          const endTime = Date.now();
+          
+          console.log('[首页] 云函数调用耗时:', endTime - startTime, 'ms');
+          console.log('[首页] versionRes:', JSON.stringify(versionRes, null, 2));
+          console.log('[首页] versionRes.result:', versionRes.result ? JSON.stringify(versionRes.result, null, 2) : 'undefined');
+          console.log('[首页] versionRes.result.success:', versionRes.result?.success);
+          
+          if (versionRes.result && versionRes.result.success) {
+            currentVersion = versionRes.result.version;
+            console.log('[首页] 成功获取版本号:', currentVersion);
+          } else {
+            console.warn('[首页] 服务器返回格式异常');
+            console.log('[首页] result.success:', versionRes.result?.success);
+            console.log('[首页] result.version:', versionRes.result?.version);
+          }
+        } catch (e) {
+          console.error('[首页] 获取版本号失败:', e);
+          console.error('[首页] 错误码:', e.errCode);
+          console.error('[首页] 错误信息:', e.errMsg);
+        }
+      } else {
+        console.log('[首页] --- 使用传入的版本号 ---');
+        console.log('[首页] 版本号:', currentVersion);
+      }
+      console.log('[首页] 当前版本号最终值:', currentVersion);
+
+      // 保留现有的 hasUpdates 标记（可能由全局监听器设置）
+      const existingHomeData = wx.getStorageSync('homeData') || {};
+      
       wx.setStorageSync('homeData', {
+        ...existingHomeData,  // 保留原有字段
         seriesList,
         newProducts,
         extendedNewProducts,
         bannerList: banners,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        version: currentVersion,
+        watcherVersion: currentVersion,  // 同步版本号
+        updateVersion: (existingHomeData.updateVersion || 0) + 1,
+        cacheStatus: 'healthy'  // 标记缓存状态为健康
       });
 
       this.preloadProductData(seriesList);
@@ -837,6 +1181,76 @@ Page({
       });
       if (callback) callback();
     });
+  },
+  
+  /**
+   * 后台静默刷新数据，与缓存对比有差异则更新UI
+   */
+  async refreshDataSilently() {
+    try {
+      const categoryCollection = getCollection('category');
+      const productsCollection = getCollection('products');
+      
+      const [categoryRes, productsRes] = await Promise.all([
+        categoryCollection.where({ status: 'on' }).orderBy('createTime', 'desc').get(),
+        productsCollection.get()
+      ]);
+      
+      const categories = categoryRes.data;
+      const products = productsRes.data;
+      
+      // 构建最新的系列数据
+      const freshSeriesList = categories.slice(0, 3).map(category => {
+        const seriesProducts = products.filter(product => product.categoryId === category._id && product.status === 'on');
+        return {
+          id: category._id,
+          title: category.name,
+          subtitle: category.subtitle,
+          mainImage: category.image,
+          products: seriesProducts.slice(0, 3).map(product => ({
+            ...product,
+            isOutOfStock: product.stock <= 0 && product.status === 'on',
+            isOffline: product.status !== 'on'
+          }))
+        };
+      });
+      
+      // 对比缓存数据
+      const cachedSeriesList = this.data.seriesList;
+      const hasChanges = JSON.stringify(freshSeriesList) !== JSON.stringify(cachedSeriesList);
+      
+      if (hasChanges) {
+        console.log('[首页] 检测到数据变化，静默更新');
+        // 转换 cloud:// URL
+        await batchConvertCloudUrls(freshSeriesList, IMAGE_KEYS);
+        
+        this.setData({ seriesList: freshSeriesList });
+        
+        // 更新缓存
+        const rawCachedData = wx.getStorageSync('homeData') || {};
+        const cachedData = JSON.parse(JSON.stringify(rawCachedData));
+        wx.setStorageSync('homeData', {
+          ...cachedData,
+          seriesList: freshSeriesList,
+          timestamp: Date.now()
+        });
+        
+        // 预加载商品详情数据
+        const allProductIds = freshSeriesList.flatMap(series => series.products.map(p => p._id));
+        this.preloadProductData(allProductIds);
+      } else {
+        console.log('[首页] 数据无变化，无需更新');
+      }
+    } catch (err) {
+      console.error('[首页] 静默刷新失败:', err);
+      errorLogger.logDatabaseError({
+        pageName: 'home',
+        methodName: 'refreshDataSilently',
+        message: err.message || String(err),
+        stack: err.stack || '',
+        location: 'home/index.js:refreshDataSilently'
+      });
+    }
   },
 
   /**
@@ -893,12 +1307,13 @@ Page({
 
       // 构建系列数据
       const seriesList = categories.slice(0, 3).map(category => {
-        const seriesProducts = products.filter(product => product.categoryId === category._id);
+        const seriesProducts = products.filter(product => product.categoryId === category._id && product.status === 'on');
         return {
           id: category._id,
           title: category.name,
           subtitle: category.subtitle,
           mainImage: category.image,
+          status: category.status,
           products: seriesProducts.slice(0, 3).map(product => ({
             ...product,
             isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -907,11 +1322,9 @@ Page({
         };
       });
 
-      // 转换 cloud:// URL 为临时链接
       const dataToConvert = { seriesList };
       await batchConvertCloudUrls(dataToConvert, IMAGE_KEYS);
 
-      // 更新 UI
       this.setData({
         seriesList
       });
@@ -930,6 +1343,157 @@ Page({
     .catch(err => {
       console.error('[首页] 刷新系列数据失败', err);
     });
+  },
+
+  /**
+   * 后台异步刷新系列数据（带超时控制和降级方案）
+   * 不阻塞页面加载，只在数据有变化时才更新UI
+   */
+  async _asyncRefreshCategory() {
+    const TIMEOUT = 8000;
+    const startTime = Date.now();
+    
+    console.log('[首页] --- 后台异步刷新系列数据开始 ---');
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout')), TIMEOUT);
+    });
+    
+    const refreshPromise = this._doRefreshCategory();
+    
+    try {
+      const result = await Promise.race([refreshPromise, timeoutPromise]);
+      
+      if (result && result.changed) {
+        const duration = Date.now() - startTime;
+        console.log(`[首页] 系列数据刷新成功，耗时 ${duration}ms，已静默更新UI`);
+      } else if (result && !result.changed) {
+        const duration = Date.now() - startTime;
+        console.log(`[首页] 系列数据无变化，耗时 ${duration}ms，跳过更新`);
+      }
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      
+      if (error.message === 'Timeout') {
+        console.warn(`[首页] 系列数据刷新超时（${TIMEOUT}ms），保持旧数据`);
+      } else {
+        console.error(`[首页] 系列数据刷新失败，耗时 ${duration}ms，保持旧数据`, error);
+      }
+      
+      // 降级方案：保持旧数据，不更新UI
+      // 用户仍然看到当前页面的数据，不会出现白屏或错误
+    }
+  },
+
+  /**
+   * 实际执行系列数据刷新
+   * 返回 { changed: boolean }
+   */
+  async _doRefreshCategory() {
+    try {
+      const categoryCollection = getCollection('category');
+      const productsCollection = getCollection('products');
+      
+      const [categoryRes, productsRes] = await Promise.all([
+        categoryCollection.where({ status: 'on' }).orderBy('createTime', 'desc').get(),
+        productsCollection.get()
+      ]);
+      
+      const categories = categoryRes.data;
+      const products = productsRes.data;
+      
+      // 构建新的系列数据
+      const newSeriesList = categories.slice(0, 3).map(category => {
+        const seriesProducts = products.filter(
+          p => p.categoryId === category._id && p.status === 'on'
+        );
+        return {
+          id: category._id,
+          title: category.name,
+          subtitle: category.subtitle,
+          mainImage: category.image,
+          status: category.status,
+          products: seriesProducts.slice(0, 3).map(product => ({
+            ...product,
+            isOutOfStock: product.stock <= 0 && product.status === 'on',
+            isOffline: product.status !== 'on'
+          }))
+        };
+      });
+      
+      // 对比是否有变化（只对比关键字段）
+      const hasChanged = this._compareSeriesList(this.data.seriesList, newSeriesList);
+      
+      if (hasChanged) {
+        // 异步转换 URL（不阻塞）
+        const dataToConvert = { seriesList: newSeriesList };
+        await batchConvertCloudUrls(dataToConvert, IMAGE_KEYS);
+        
+        // 静默更新UI
+        this.setData({
+          seriesList: newSeriesList
+        });
+        
+        // 更新缓存
+        const cachedData = wx.getStorageSync('homeData');
+        if (cachedData) {
+          const clonedData = JSON.parse(JSON.stringify(cachedData));
+          clonedData.seriesList = newSeriesList;
+          wx.setStorageSync('homeData', clonedData);
+        }
+        
+        return { changed: true };
+      } else {
+        return { changed: false };
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * 对比两个系列列表是否有变化
+   * 只对比关键字段，避免因时间戳等无关字段导致误判
+   */
+  _compareSeriesList(oldList, newList) {
+    if (!oldList || !newList) return true;
+    if (oldList.length !== newList.length) return true;
+    
+    for (let i = 0; i < oldList.length; i++) {
+      const oldSeries = oldList[i];
+      const newSeries = newList[i];
+      
+      if (oldSeries.id !== newSeries.id) return true;
+      if (oldSeries.title !== newSeries.title) return true;
+      if (oldSeries.subtitle !== newSeries.subtitle) return true;
+      if (oldSeries.mainImage !== newSeries.mainImage) return true;
+      if (oldSeries.status !== newSeries.status) return true;
+      
+      if (!oldSeries.products || !newSeries.products) {
+        if (oldSeries.products !== newSeries.products) return true;
+      } else {
+        if (oldSeries.products.length !== newSeries.products.length) return true;
+        
+        for (let j = 0; j < oldSeries.products.length; j++) {
+          const oldProduct = oldSeries.products[j];
+          const newProduct = newSeries.products[j];
+          
+          if (!oldProduct || !newProduct) {
+            if (oldProduct !== newProduct) return true;
+          } else {
+            if (oldProduct._id !== newProduct._id) return true;
+            if (oldProduct.name !== newProduct.name) return true;
+            if (oldProduct.price !== newProduct.price) return true;
+            if (oldProduct.stock !== newProduct.stock) return true;
+            if (oldProduct.status !== newProduct.status) return true;
+            if (oldProduct.isOutOfStock !== newProduct.isOutOfStock) return true;
+            if (oldProduct.isOffline !== newProduct.isOffline) return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   },
 
   /**
@@ -955,12 +1519,13 @@ Page({
       const banners = bannerRes.data;
 
       const seriesList = categories.slice(0, 3).map(category => {
-        const seriesProducts = products.filter(product => product.categoryId === category._id);
+        const seriesProducts = products.filter(product => product.categoryId === category._id && product.status === 'on');
         return {
           id: category._id,
           title: category.name,
           subtitle: category.subtitle,
           mainImage: category.image,
+          status: category.status,
           products: seriesProducts.slice(0, 3).map(product => ({
             ...product,
             isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -969,9 +1534,8 @@ Page({
         };
       });
 
-      // 加载新品推荐数据，筛选isNew为true的商品并按创建时间倒序排序
       const newProducts = products
-        .filter(product => product.isNew === true)
+        .filter(product => product.isNew === true && product.status === 'on')
         .map(product => ({
           ...product,
           isOutOfStock: product.stock <= 0 && product.status === 'on',
@@ -1031,11 +1595,24 @@ Page({
   preloadProductData(seriesList) {
     // 提取所有商品ID
     const productIds = [];
-    seriesList.forEach(series => {
-      series.products.forEach(product => {
-        productIds.push(product._id);
-      });
-    });
+    
+    // 支持两种参数类型：series数组或商品ID数组
+    if (Array.isArray(seriesList) && seriesList.length > 0) {
+      // 判断第一个元素的类型
+      if (seriesList[0]._id && seriesList[0].products) {
+        // series数组
+        seriesList.forEach(series => {
+          if (series.products && Array.isArray(series.products)) {
+            series.products.forEach(product => {
+              productIds.push(product._id);
+            });
+          }
+        });
+      } else if (typeof seriesList[0] === 'string') {
+        // 商品ID数组
+        productIds.push(...seriesList);
+      }
+    }
     
     // 预加载商品详情数据
     const productsCollection = getCollection('products');

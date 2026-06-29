@@ -1,0 +1,48 @@
+<view class="banner-manage">
+  <!-- 顶部标题栏 -->
+  <view class="header">
+    <text class="title">轮播图管理</text>
+    <button class="add-btn" bindtap="goToAddPage">+ 添加</button>
+  </view>
+
+  <!-- 轮播图列表 -->
+  <view class="banner-list">
+    <view wx:if="{{loading}}" class="loading">
+      <text>加载中...</text>
+    </view>
+    
+    <view wx:elif="{{bannerList.length === 0}}" class="empty">
+      <text class="empty-text">暂无轮播图</text>
+      <button class="empty-btn" bindtap="goToAddPage">添加轮播图</button>
+    </view>
+
+    <view wx:else class="list">
+      <view wx:for="{{bannerList}}" wx:key="_id" class="banner-item">
+        <view class="banner-image-wrapper">
+          <image 
+            class="banner-image" 
+            src="{{item.image}}" 
+            mode="widthFix"
+            bindtap="previewImage"
+            data-banner="{{item}}"
+          />
+        </view>
+        <view class="banner-info">
+          <text class="banner-link">{{item.link || '无链接'}}</text>
+          <view class="banner-status">
+            <text class="sort-order">排序: {{item.sortOrder}}</text>
+            <switch 
+              class="status-switch" 
+              checked="{{item.isActive !== undefined ? item.isActive : true}}"
+              disabled
+            />
+          </view>
+        </view>
+        <view class="banner-actions">
+          <button class="action-btn edit-btn" bindtap="goToEditPage" data-id="{{item._id}}">编辑</button>
+          <button class="action-btn delete-btn" bindtap="deleteBanner" data-banner="{{item}}">删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

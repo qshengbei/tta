@@ -100,7 +100,7 @@
       <text class="empty__text">暂无相关订单</text>
     </view>
     
-    <view wx:else class="orders">
+    <scroll-view wx:else class="orders" scroll-y bindscrolltolower="loadMoreOrders" lower-threshold="50">
       <view wx:for="{{orders}}" wx:key="_id" class="order-item" bindtap="viewOrderDetail" data-order-id="{{item._id}}">
         <view class="order-item__header">
           <text class="order-item__shop">Touch the Aura</text>
@@ -157,7 +157,16 @@
           </view>
         </view>
       </view>
-    </view>
+      
+      <!-- 加载更多提示 -->
+      <view wx:if="{{loadingMore}}" class="loading-more">
+        <view class="loading-more__spinner"></view>
+        <text class="loading-more__text">加载中...</text>
+      </view>
+      <view wx:elif="!hasMore && orders.length > 0" class="no-more">
+        <text class="no-more__text">以上是全部订单</text>
+      </view>
+    </scroll-view>
   </view>
 
   <view wx:if="{{showLogistics}}" class="logistics-modal">

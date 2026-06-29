@@ -1,0 +1,15 @@
+{
+  "name": "getProductVersion",
+  "version": "1.0.0",
+  "description": "获取商品数据版本号",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["version", "product"],
+  "author": "",
+  "license": "ISC"
+}

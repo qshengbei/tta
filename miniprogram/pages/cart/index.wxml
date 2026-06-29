@@ -1,92 +1,114 @@
 <view class="cart">
-  <!-- 搜索和筛选组件 -->
-  <search-filter-panel pageType="cart" cartItems="{{cartItems}}" loading="{{loading}}" bind:search="handleSearch" bind:filter="handleFilter" />
-  
-  
+  <!-- 搜索和筛选组件（固定在顶部） -->
+  <search-filter-panel pageType="cart" cartItems="{{cartItems}}" loading="{{loading}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;" />
+
   <!-- 加载状态 -->
   <view wx:if="{{loading}}" class="cart__loading">
     <view class="cart__loading-spinner"></view>
     <text class="cart__loading-text">加载中...</text>
   </view>
-  
-  <!-- 购物车内容 -->
-  <view wx:else class="cart__content" bindtap="hideDeleteButtons">
-    <!-- 商品列表 -->
-    <view wx:for="{{filteredCartItems}}" wx:key="{{item.productId}}" class="cart__item">
-      <!-- 商品内容区域 -->
-      <view class="cart__item-content" 
-        style="transform: translateX({{item.translateX}}rpx)"
-        bindtouchstart="touchStart"
-        bindtouchmove="touchMove"
-        bindtouchend="touchEnd"
-        data-index="{{index}}">
-        <!-- 点击区域 -->
-        <view class="cart__item-click-area" 
-          catchtap="goToProductDetail" 
-          data-product-id="{{item.productId}}">
-          <!-- 选择框 -->
-          <view class="cart__item-checkbox" catchtap="toggleSelect" data-product-id="{{item.productId}}" style="opacity: {{item.isSoldOut ? 0.5 : 1}};">
-            <view class="cart__checkbox {{item.selected ? 'cart__checkbox--checked' : ''}} {{item.isSoldOut ? 'cart__checkbox--disabled' : ''}}">
-              <image wx:if="{{item.selected}}" class="cart__checkbox-icon" src="../../images/icons/对勾中.png" mode="aspectFit"/>
-              <image wx:else class="cart__checkbox-icon" src="../../images/icons/对勾-未勾选.png" mode="aspectFit"/>
+
+  <!-- 购物车内容 - 使用 scroll-view -->
+  <scroll-view 
+    wx:else 
+    scroll-y 
+    class="cart__scroll"
+    bindscroll="onScroll"
+    bindscrolltolower="loadMoreCartItems"
+    lower-threshold="50"
+    bindrefresherrefresh="onScrollRefresh"
+    refresher-enabled="true"
+    refresher-triggered="{{refreshing}}"
+    scroll-with-animation
+    enhanced
+    show-scrollbar="false"
+  >
+    <view class="cart__content">
+      <view class="cart__list">
+        <!-- 商品列表 -->
+      <view wx:for="{{filteredCartItems}}" wx:key="_id" class="cart__item">
+        <!-- 商品内容区域 -->
+        <view class="cart__item-content" 
+          style="{{ isScrolling || item.translateX === 0 ? '' : 'transform: translateX(' + item.translateX + 'px)' }}"
+          bindtouchstart="touchStart"
+          bindtouchmove="touchMove"
+          bindtouchend="touchEnd"
+          data-index="{{index}}">
+          <!-- 点击区域 -->
+          <view class="cart__item-click-area" 
+            catchtap="goToProductDetail" 
+            data-product-id="{{item.productId}}">
+            <!-- 选择框 -->
+            <view class="cart__item-checkbox" catchtap="toggleSelect" data-product-id="{{item.productId}}" style="opacity: {{item.isSoldOut ? 0.5 : 1}};">
+              <view class="cart__checkbox {{item.selected ? 'cart__checkbox--checked' : ''}} {{item.isSoldOut ? 'cart__checkbox--disabled' : ''}}">
+                <image wx:if="{{item.selected}}" class="cart__checkbox-icon" src="../../images/icons/对勾中.png" mode="aspectFit"/>
+                <image wx:else class="cart__checkbox-icon" src="../../images/icons/对勾-未勾选.png" mode="aspectFit"/>
+              </view>
             </view>
-          </view>
-          <view class="cart__item-image-container">
-            <image class="cart__item-image" src="{{item.coverImage}}" mode="aspectFill"/>
-          </view>
-          <view class="cart__item-info">
-            <text class="cart__item-name">{{item.name}}</text>
-            <view class="cart__item-bottom">
-              <text class="cart__item-price">¥{{item.price}}</text>
-              <view class="cart__item-quantity">
-                <view class="quantity-btn quantity-btn--minus" 
-                  catchtap="decreaseQuantity" 
-                  data-product-id="{{item.productId}}" 
-                  style="opacity: {{item.isSoldOut ? 0.5 : 1}}; pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};">
-                  <image class="quantity-icon" src="../../images/icons/减.png" mode="aspectFit"/>
-                </view>
-                <view class="quantity-input" catchtap="stopPropagation">
-                  <input type="number" 
-                    value="{{item.quantity}}" 
-                    bindinput="onQuantityChange" 
-                    bindblur="onQuantityBlur" 
+            <view class="cart__item-image-container">
+              <image class="cart__item-image" src="{{item.coverImage}}" mode="aspectFill"/>
+            </view>
+            <view class="cart__item-info">
+              <text class="cart__item-name">{{item.name}}</text>
+              <view class="cart__item-bottom">
+                <text class="cart__item-price">¥{{item.price}}</text>
+                <view class="cart__item-quantity">
+                  <view class="quantity-btn quantity-btn--minus" 
+                    catchtap="decreaseQuantity" 
                     data-product-id="{{item.productId}}" 
-                    min="1" 
-                    max="{{item.stock}}" 
-                    style="pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};"/>
-                </view>
-                <view class="quantity-btn quantity-btn--plus" 
-                  catchtap="increaseQuantity" 
-                  data-product-id="{{item.productId}}" 
-                  style="opacity: {{item.isSoldOut ? 0.5 : 1}}; pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};">
-                  <image class="quantity-icon" src="../../images/icons/加.png" mode="aspectFit"/>
+                    style="opacity: {{item.isSoldOut ? 0.5 : 1}}; pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};">
+                    <image class="quantity-icon" src="../../images/icons/减.png" mode="aspectFit"/>
+                  </view>
+                  <view class="quantity-input" catchtap="stopPropagation">
+                    <input type="number" 
+                      value="{{item.quantity}}" 
+                      bindinput="onQuantityChange" 
+                      bindblur="onQuantityBlur" 
+                      data-product-id="{{item.productId}}" 
+                      min="1" 
+                      max="{{item.stock}}" 
+                      style="pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};"/>
+                  </view>
+                  <view class="quantity-btn quantity-btn--plus" 
+                    catchtap="increaseQuantity" 
+                    data-product-id="{{item.productId}}" 
+                    style="opacity: {{item.isSoldOut ? 0.5 : 1}}; pointer-events: {{item.isSoldOut ? 'none' : 'auto'}};">
+                    <image class="quantity-icon" src="../../images/icons/加.png" mode="aspectFit"/>
+                  </view>
                 </view>
               </view>
             </view>
           </view>
+          
+          <!-- 售罄覆盖层（整个卡片） -->
+          <view wx:if="{{item.isSoldOut}}" class="cart__item-sold-out-overlay">
+            <text class="cart__item-sold-out-text">已售罄</text>
+          </view>
         </view>
         
-        <!-- 售罄覆盖层（整个卡片） -->
-        <view wx:if="{{item.isSoldOut}}" class="cart__item-sold-out-overlay">
-          <text class="cart__item-sold-out-text">已售罄</text>
+        <!-- 删除按钮，始终显示在背景 -->
+        <view class="cart__item-delete"
+          catchtap="deleteCartItem"
+          data-product-id="{{item.productId}}">
+          <text class="cart__item-delete-text">删除</text>
         </view>
       </view>
+      </view>
+
+      <!-- 加载更多提示 -->
+      <view wx:if="{{loadingMore}}" class="cart__loading-more">
+        <view class="cart__loading-spinner"></view>
+        <text class="cart__loading-text">加载中...</text>
+      </view>
       
-      <!-- 删除按钮 -->
-      <view class="cart__item-delete" 
-        catchtap="deleteCartItem" 
-        data-product-id="{{item.productId}}">
-        <text class="cart__item-delete-text">删除</text>
+      <!-- 空购物车状态 -->
+      <view wx:if="{{cartItems.length === 0}}" class="cart__empty">
+        <image class="cart__empty-image" src="../../images/icons/暂无商品.png" mode="aspectFit"/>
+        <text class="cart__empty-text">购物车为空</text>
+        <button class="cart__empty-btn" bindtap="goToHome">去逛逛</button>
       </view>
     </view>
-    
-    <!-- 空购物车状态 -->
-    <view wx:if="{{cartItems.length === 0}}" class="cart__empty">
-      <image class="cart__empty-image" src="../../images/icons/暂无商品.png" mode="aspectFit"/>
-      <text class="cart__empty-text">购物车为空</text>
-      <button class="cart__empty-btn" bindtap="goToHome">去逛逛</button>
-    </view>
-  </view>
+  </scroll-view>
   
   <!-- 全选按钮区域 -->
   <view class="cart__select-section" wx:if="{{!loading && cartItems.length > 0}}">

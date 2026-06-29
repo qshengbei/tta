@@ -30,7 +30,7 @@ Component({
       type: String,
       value: '',
       observer: function(newVal) {
-        if (newVal) {
+        if (newVal !== undefined && newVal !== null && newVal !== this.data.searchKeyword) {
           this.setData({
             searchKeyword: newVal
           });

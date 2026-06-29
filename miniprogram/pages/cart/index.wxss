@@ -2,7 +2,6 @@
 .cart {
   min-height: 100vh;
   background-color: #f8f8f8;
-  overflow: hidden;
 }
 
 /* 顶部固定搜索框 */
@@ -365,14 +364,29 @@
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.3);
 }
 
-/* 调整内容区域的padding-top，为顶部操作栏留出空间 */
-.cart__content {
-  padding-top: 20rpx;
+/* scroll-view 滚动容器 */
+.cart__scroll {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* 购物车内容 */
 .cart__content {
+  padding-top: 96rpx;
+  padding-bottom: 320rpx;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* 商品列表内边距 */
+.cart__list {
   padding: 20rpx;
-  padding-bottom: 280rpx;
 }
 
 /* 加载状态 */
@@ -385,7 +399,7 @@
   background-color: #fff;
   border-radius: 12rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-  margin: 20rpx;
+  margin: 96rpx 20rpx 20rpx; /* 上边距为固定搜索面板留空间 */
 }
 
 .cart__loading-spinner {
@@ -443,6 +457,7 @@
   overflow: hidden;
   border-radius: 12rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  background-color: #fff;
 }
 
 /* 点击区域 */
@@ -483,10 +498,10 @@
 
 /* 横屏模式优化 */
 @media (orientation: landscape) {
-  .cart__content {
-    padding: 20rpx 40rpx;
+  .cart__list {
+    padding: 20rpx 40rpx 20rpx;
   }
-  
+
   .cart__item {
     height: 160rpx;
   }
@@ -531,9 +546,7 @@
   right: 0;
   bottom: 0;
   background-color: #fff;
-  transition: transform 0.3s ease;
   z-index: 1;
-  will-change: transform;
 }
 
 /* 点击区域 */
@@ -724,7 +737,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 180rpx;
+  width: 90px;
   background-color: #ff4d4f;
   display: flex;
   align-items: center;
@@ -905,4 +918,33 @@ wx-button:not([size=mini]) {
   width: auto !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+.cart__loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.cart__loading-more .cart__loading-spinner {
+  width: 32rpx;
+  height: 32rpx;
+  margin-right: 12rpx;
+}
+
+.cart__loading-more .cart__loading-text {
+  font-size: 24rpx;
+}
+
+/* 没有更多 */
+.cart__no-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.cart__no-more-text {
+  font-size: 24rpx;
+  color: #999;
 }

@@ -55,6 +55,11 @@
   margin-left: 8rpx;
 }
 
+/* 商品列表滚动容器 */
+.products-scroll {
+  height: calc(100vh - 166rpx);
+}
+
 /* 商品列表 */
 .products-list {
   display: grid;

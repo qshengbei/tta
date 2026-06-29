@@ -3,45 +3,64 @@ const { getCollection } = require("../../../utils/cloud");
 const { parseDbDate } = require("../../../utils/time-utils");
 
 const db = wx.cloud.database();
+const PAGE_SIZE = 20;
 
 Page({
   data: {
     cloths: [],
-    loading: false
+    loading: false,
+    loadingMore: false,
+    hasMore: true,
+    page: 1
   },
 
   onLoad: function (options) {
-    this.fetchCloths();
+    this.loadCloths(true);
   },
 
   onShow: function () {
-    this.fetchCloths();
+    this.loadCloths(true);
   },
 
-  // 获取布料列表
-  fetchCloths() {
-    this.setData({ loading: true });
-    const cloths = getCollection("material");
-    cloths.orderBy('createTime', 'desc').get()
+  // 获取布料列表（skip 分页）
+  loadCloths(reset = false) {
+    if (this.data.loading || this.data.loadingMore) return;
+
+    const { page, hasMore } = this.data;
+    if (!reset && !hasMore) return;
+
+    this.setData({ loading: reset, loadingMore: !reset });
+
+    const offset = reset ? 0 : (page - 1) * PAGE_SIZE;
+
+    getCollection("material")
+      .orderBy('createTime', 'desc')
+      .skip(offset)
+      .limit(PAGE_SIZE)
+      .get()
       .then((res) => {
-        // 格式化时间
-        const formattedCloths = res.data.map(cloth => ({
-          ...cloth,
-          createTime: parseDbDate(cloth.createTime)
+        const formatted = (res.data || []).map(item => ({
+          ...item,
+          createTime: parseDbDate(item.createTime)
         }));
+        const hasMoreData = res.data.length === PAGE_SIZE;
         this.setData({
-          cloths: formattedCloths,
-          loading: false
+          cloths: reset ? formatted : [...this.data.cloths, ...formatted],
+          loading: false,
+          loadingMore: false,
+          hasMore: hasMoreData,
+          page: reset ? 2 : page + 1
         });
       })
       .catch((err) => {
         console.error("获取布料列表失败", err);
-        this.setData({ loading: false });
-        wx.showToast({
-          title: '获取布料列表失败',
-          icon: 'none'
-        });
+        this.setData({ loading: false, loadingMore: false });
+        wx.showToast({ title: '获取布料列表失败', icon: 'none' });
       });
+  },
+
+  onReachBottom() {
+    this.loadCloths(false);
   },
 
   // 添加布料
@@ -86,7 +105,7 @@ Page({
                 title: '删除成功',
                 icon: 'success'
               });
-              this.fetchCloths();
+              this.loadCloths(true);
             })
             .catch((err) => {
               wx.hideLoading();

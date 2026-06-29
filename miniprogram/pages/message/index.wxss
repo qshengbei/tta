@@ -377,6 +377,28 @@
   box-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.05);
 }
 
+/* 加载更多 */
+.loading-more {
+  padding: 24rpx 0;
+  text-align: center;
+}
+
+.loading-text {
+  font-size: 22rpx;
+  color: #9ca3af;
+}
+
+/* 没有更多 */
+.no-more {
+  padding: 24rpx 0;
+  text-align: center;
+}
+
+.no-more-text {
+  font-size: 22rpx;
+  color: #9ca3af;
+}
+
 /* 底部提示 */
 .message-footer {
   padding: 48rpx 0;

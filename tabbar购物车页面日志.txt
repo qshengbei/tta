@@ -1,0 +1,1859 @@
+刚刚在手机上真机调试操作的，刚点击tabbar购物车页面的日志：[购物车页面] 从缓存加载购物车数据
+cache.js? [sm]:159 批量获取商品缓存: 命中18/18
+index.js? [sm]:117 购物车页面-商品实时监听开启
+watcherManager.js? [sm]:102 [WatcherManager] Created watcher: cart_products
+index.js? [sm]:476 [购物车] fetchCartItems 调用 - showLoading: false, forceRefresh: false, reset: true
+index.js? [sm]:484 [购物车] 当前状态 - cachedCartItems数量: 18, currentCartItems数量: 18
+index.js? [sm]:55 [购物车页面] 页面显示
+index.js? [sm]:67 [购物车页面] 数据已初始化且无变更，保持列表不变
+index.js? [sm]:70 [购物车页面] 页面重新可见，启动监听器
+index.js? [sm]:117 购物车页面-商品实时监听开启
+watcherManager.js? [sm]:37 [WatcherManager] Watcher "cart_products" already exists
+value @ watcherManager.js? [sm]:37
+index.js? [sm]:127 [购物车页面] 收到 init 快照，跳过
+index.js? [sm]:511 [购物车] 从数据库获取数据 - reset: true, rawData数量: 18
+index.js? [sm]:513 [购物车] 原始数据前2条: (2) [Object, Object]
+cache.js? [sm]:114 内存缓存命中: product_bff52e9f6a170e3a00ede1150d7a92e9
+cache.js? [sm]:114 内存缓存命中: product_669eebf36a170e1500ef4b0c2045b09a
+cache.js? [sm]:114 内存缓存命中: product_3f895cc36a170dec00ee8da8078ed81c
+cache.js? [sm]:114 内存缓存命中: product_a54a659b6a170d1c00ed001d358eb220
+cache.js? [sm]:114 内存缓存命中: product_c5c2a88a6a170cfb00ef0b664587c2de
+cache.js? [sm]:114 内存缓存命中: product_7d17c2c66a170c6e00f15c1b4096b1e3
+cache.js? [sm]:114 内存缓存命中: product_669eebf36a170c4500ef10045465e2a4
+cache.js? [sm]:114 内存缓存命中: product_f9d11e1d6a170c1800ed5880444fbc1a
+cache.js? [sm]:114 内存缓存命中: product_bff52e9f6a170bcf00eda9bc2f13da56
+cache.js? [sm]:114 内存缓存命中: product_669eebf36a170ba800eefc9900ba52fd
+cache.js? [sm]:114 内存缓存命中: product_85c6ec7c6a170b8700eb52be2c868e35
+cache.js? [sm]:114 内存缓存命中: product_f9d11e1d6a170b6600ed3a3677a29d79
+cache.js? [sm]:114 内存缓存命中: product_c40002b26a170b3700f02cd65ceae5a6
+cache.js? [sm]:114 内存缓存命中: product_bc7ee4c56a1709fa00efcc5979e92032
+cache.js? [sm]:114 内存缓存命中: product_7eeea64669aecf0a00c94e6859101113
+cache.js? [sm]:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08112
+cache.js? [sm]:114 内存缓存命中: product_d3a457a269d54823035917cd6dcfc745
+cache.js? [sm]:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0111
+index.js? [sm]:516 [购物车] 处理后数据数量: 18
+index.js? [sm]:517 [购物车] 处理后第1条数据: {_id: "bc7ee4c56a172fc300f36a706a5eb02a", productId: "bff52e9f6a170e3a00ede1150d7a92e9", name: "Aura｜森系棉语发圈", price: 30, quantity: 2, …}
+index.js? [sm]:522 [购物车] 合并后总数量: 18
+index.js? [sm]:537 [购物车] 准备调用 setData 更新UI
+index.js? [sm]:539 [购物车] setData 完成，filteredCartItems数量: 18
+index.js? [sm]:550 [购物车页面] 购物车缓存已更新
+往下滑动商品列表的日志：
+[购物车滚动] scrollTop: 25
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 54
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 69
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 144
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 187
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 224
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 249
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 272
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 292
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 311
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 327
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 333
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 338
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 343
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 347
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 360
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 372
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 376
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 380
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 383
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 387
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 390
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 393
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 396
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 399
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 402
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 405
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 407
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 410
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 412
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 415
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 417
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 419
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 422
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 424
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 426
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 428
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 431
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 435
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 437
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 438
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 452
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 466
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 483
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 501
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 517
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 532
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 547
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 561
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 575
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 588
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 601
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 613
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 625
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 636
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 648
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 659
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 669
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 679
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 689
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 698
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 708
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 716
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 725
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 733
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 741
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 749
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 757
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 764
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 771
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 778
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 784
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 791
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 803
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 819
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 824
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 830
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 834
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 839
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 844
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 848
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 852
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 856
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 860
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 864
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 868
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 872
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 875
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 878
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 882
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 885
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 888
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 891
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 894
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 896
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 899
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 908
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 922
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 940
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 961
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 971
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 990
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1008
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1025
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1042
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1059
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1075
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1090
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1105
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1120
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1134
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1147
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1160
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1173
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1185
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1197
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1208
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1219
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1230
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1240
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1250
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1260
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1269
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1278
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1287
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1296
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1304
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1312
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1327
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1334
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1341
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1348
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1354
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1360
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1366
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1372
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1378
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1383
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1389
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1394
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1408
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1421
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1433
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1444
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1453
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1462
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1465
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1487
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1503
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1523
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1536
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1549
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1561
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1573
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1585
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1596
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1607
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1617
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1628
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1637
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1647
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1656
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1674
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:575 [购物车页面] loadMoreCartItems called
+index.js? [sm]:476 [购物车] fetchCartItems 调用 - showLoading: false, forceRefresh: false, reset: false
+index.js? [sm]:484 [购物车] 当前状态 - cachedCartItems数量: 18, currentCartItems数量: 18
+index.js? [sm]:368 [购物车滚动] scrollTop: 1682
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1690
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1698
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1705
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1713
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1720
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1726
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1730
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1733
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1735
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1734
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1733
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1732
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1731
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1730
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1729
+index.js? [sm]:369 [购物车滚动] cartItems数量: 18
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 18
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:511 [购物车] 从数据库获取数据 - reset: false, rawData数量: 4
+index.js? [sm]:513 [购物车] 原始数据前2条: (2) [Object, Object]
+cache.js? [sm]:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f02
+cache.js? [sm]:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f01
+cache.js? [sm]:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0fb7
+cache.js? [sm]:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08025
+index.js? [sm]:516 [购物车] 处理后数据数量: 4
+index.js? [sm]:517 [购物车] 处理后第1条数据: {_id: "c9a02d0d6a15f03300cdc7362c6dc8a0", productId: "fb39ee6269aecedd00cb426d7f7d0f02", name: "Aura 克莱因蓝发圈2Aura 克莱因蓝发圈2Aura 克莱因蓝发圈2Aura 克莱因蓝发圈2", price: 39, quantity: 1, …}
+index.js? [sm]:522 [购物车] 合并后总数量: 22
+index.js? [sm]:537 [购物车] 准备调用 setData 更新UI
+index.js? [sm]:539 [购物车] setData 完成，filteredCartItems数量: 22
+index.js? [sm]:368 [购物车滚动] scrollTop: 1728
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1724
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1723
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 1723
+index.js? [sm]:368 [购物车滚动] scrollTop: 1693
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1688
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1689
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 1689
+index.js? [sm]:368 [购物车滚动] scrollTop: 1709
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1726
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1735
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1771
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1788
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1805
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1821
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1836
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1851
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1866
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1880
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1893
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1907
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1919
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1932
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1943
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1955
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1966
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1977
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1987
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1997
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2007
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2016
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2025
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2034
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2043
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2051
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2059
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2081
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2095
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2114
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2131
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2146
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2160
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:575 [购物车页面] loadMoreCartItems called
+index.js? [sm]:576 [购物车页面] 不需要加载更多
+index.js? [sm]:368 [购物车滚动] scrollTop: 2173
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2184
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2195
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2204
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2229
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2241
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2249
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2253
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2252
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2247
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2240
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2237
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2234
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2231
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2228
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2226
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2219
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2216
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2212
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2210
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2208
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2207
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2206
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2205
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 2205
+index.js? [sm]:368 [购物车滚动] scrollTop: 2218
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2229
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2241
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2249
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2253
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2254
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2252
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2250
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2247
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2244
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2240
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2237
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2234
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2231
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2228
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2226
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2223
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2221
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2219
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2217
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2216
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2215
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2213
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2212
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2211
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2210
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2209
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2208
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2207
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2206
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2205
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 2205
+index.js? [sm]:368 [购物车滚动] scrollTop: 2217
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2230
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2241
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2248
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2251
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2252
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2251
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2250
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2247
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2244
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2241
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2238
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2235
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2232
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2227
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2222
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2220
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2218
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2217
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2215
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2214
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2213
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2212
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2211
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2210
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2209
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2208
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2207
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2206
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2205
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 2205
+往回滑动商品列表的日志：
+[购物车滚动] scrollTop: 2185
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2155
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2121
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2097
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2075
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2053
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2032
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 2012
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1992
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1973
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1751
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 1751
+index.js? [sm]:368 [购物车滚动] scrollTop: 1580
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1559
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1544
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1532
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1520
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1510
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1500
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1492
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1487
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1484
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1482
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1479
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1477
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1475
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1473
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1471
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1469
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1467
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1465
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1461
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1457
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1455
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1452
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1448
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1445
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1441
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1438
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1436
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1435
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1434
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1433
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1431
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1429
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1427
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1425
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1424
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1422
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1421
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1420
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1419
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1418
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1417
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1416
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:368 [购物车滚动] scrollTop: 1415
+index.js? [sm]:369 [购物车滚动] cartItems数量: 22
+index.js? [sm]:370 [购物车滚动] filteredCartItems数量: 22
+index.js? [sm]:375 [购物车滚动] 第1个商品 - name: Aura｜森系棉语发圈, coverImage: 有, price: 30
+index.js? [sm]:379 [购物车滚动] 第2个商品 - name: Aura｜琥珀花语发圈, coverImage: 有, price: 29
+index.js? [sm]:393 [购物车滚动] 滚动停止，最终scrollTop: 1415

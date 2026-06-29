@@ -1,143 +1,116 @@
 // pages/category-products/index.js
-import watcherManager from '../../utils/watcherManager';
+import productListBehavior from '../../utils/productListBehavior';
 
-const db = wx.cloud.database()
+const db = wx.cloud.database();
 
 Page({
+  behaviors: [productListBehavior],
 
-  /**
-   * 页面的初始数据
-   */
   data: {
-    products: [],
     categoryName: '',
-    categoryId: '',
-    pageVisible: false
+    categoryId: ''
   },
 
-  /**
-   * 生命周期函数--监听页面加载
-   */
-  onLoad(options) {
-    if (options.id) {
-      this.setData({ categoryId: options.id })
-      this.loadCategoryData(options.id)
-      this.loadProducts(options.id)
+  // ========== Behavior 要求实现的方法 ==========
+
+  _getCacheKey() {
+    return `products_type_${this.data.categoryId || ''}`;
+  },
+
+  _buildDbQuery() {
+    const { categoryId } = this.data;
+    return {
+      typeId: categoryId,
+      isDeleted: false
+    };
+  },
+
+  _shouldUseCache() {
+    return true; // 分类视图稳定，使用缓存
+  },
+
+  _getPageSize() {
+    return 18;
+  },
+
+  _productMatchesCurrentQuery(product, changeType) {
+    if (changeType === 'remove') return true;
+    if (changeType === 'modify' && product.status === 'off') return true;
+    if (product.status !== 'on') return false;
+    if (product.isDeleted === true) return false;
+    return product.typeId === this.data.categoryId;
+  },
+
+  _findInsertIndex(product, list) {
+    // 按 updatedAt desc
+    const time = new Date(product.updatedAt || product.createdAt || 0).getTime();
+    for (let i = 0; i < list.length; i++) {
+      const t = new Date(list[i].updatedAt || list[i].createdAt || 0).getTime();
+      if (time > t) return i;
     }
+    return list.length;
   },
 
-  /**
-   * 加载分类数据
-   */
-  loadCategoryData(categoryId) {
-    db.collection('product_types').doc(categoryId).get().then(res => {
-      if (res.data) {
-        this.setData({ categoryName: res.data.name })
-      }
-    }).catch(err => {
-      console.error('加载分类数据失败:', err)
-    })
-  },
+  // ========== 生命周期 ==========
 
-  /**
-   * 加载分类下的商品
-   */
-  loadProducts(categoryId) {
-    wx.showLoading({ title: '加载中...' })
-    db.collection('products').where({ typeId: categoryId, isDeleted: false }).get().then(res => {
-      this.setData({ products: res.data })
-      wx.hideLoading()
-    }).catch(err => {
-      console.error('加载商品失败:', err)
-      wx.hideLoading()
-    })
+  async onLoad(options) {
+    if (!options.id) return;
+
+    const categoryId = options.id;
+    this.setData({ categoryId });
+
+    // 加载分类名称
+    this.loadCategoryData(categoryId);
+
+    // 初始化 Behavior（缓存加载 + 全局监听订阅）
+    await this._initProductPage();
   },
 
   onShow() {
-    this.setData({ pageVisible: true });
+    // 页面显示时刷新分类名称（可能有修改）
+    if (this.data.categoryId && !this.data.categoryName) {
+      this.loadCategoryData(this.data.categoryId);
+    }
+  },
+
+  onPullDownRefresh() {
     if (this.data.categoryId) {
-      console.log('[分类商品页面] 开始实时监听');
-      this.startCategoryProductWatch();
+      this._loadProducts(true);
     }
+    wx.stopPullDownRefresh();
   },
 
-  onHide() {
-    this.setData({ pageVisible: false });
-    console.log('[分类商品页面] 关闭实时监听');
-    watcherManager.destroy('category_products');
-  },
-
-  onUnload() {
-    console.log('[分类商品页面] 关闭实时监听');
-    watcherManager.destroy('category_products');
-  },
-
-  // 启动分类商品监听
-  startCategoryProductWatch() {
-    const { categoryId } = this.data;
-    if (!categoryId) {
-      console.warn('[分类商品页面] 没有分类ID，无法启动监听');
-      return;
-    }
-
-    // 使用watcherManager创建监听
-    watcherManager.create('category_products', () => {
-      try {
-        const db = wx.cloud.database();
-        return db.collection('products')
-          .where({ typeId: categoryId, isDeleted: false })
-          .watch({
-            onChange: (snapshot) => {
-              if (!this.data.pageVisible) return;
-              console.log('[分类商品页面] 商品数据变化:', snapshot);
-              this.handleProductChanges(snapshot);
-            },
-            onError: (error) => {
-              console.error('[分类商品页面] 商品监听失败:', error);
-              watcherManager.autoReconnect('category_products', 'category product watch error');
-            }
-          });
-      } catch (error) {
-        console.error('[分类商品页面] 初始化商品监听失败:', error);
-        throw error;
-      }
-    });
-  },
-
-  // 处理商品数据变化
-  handleProductChanges(snapshot) {
-    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
-      return;
-    }
-    
-    // 重新获取分类商品
-    this.loadProducts(this.data.categoryId);
-  },
+  // ========== 页面特有方法 ==========
 
   /**
-   * 返回上一页
+   * 加载分类名称
    */
-  goBack() {
-    wx.navigateBack()
+  loadCategoryData(categoryId) {
+    db.collection('product_types').doc(categoryId).get()
+      .then(res => {
+        if (res.data) {
+          this.setData({ categoryName: res.data.name });
+        }
+      })
+      .catch(err => {
+        console.error('[分类商品] 加载分类名称失败:', err);
+      });
   },
 
   /**
    * 跳转到商品详情页
    */
   goToProductDetail(e) {
-    const productId = e.currentTarget.dataset.id
+    const productId = e.currentTarget.dataset.id;
     wx.navigateTo({
       url: `/pages/product-detail/index?id=${productId}`
-    })
+    });
   },
 
   /**
-   * 页面相关事件处理函数--监听用户下拉动作
+   * 返回上一页
    */
-  onPullDownRefresh() {
-    if (this.data.categoryId) {
-      this.loadProducts(this.data.categoryId)
-    }
-    wx.stopPullDownRefresh()
+  goBack() {
+    wx.navigateBack();
   }
-})
+});

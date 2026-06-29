@@ -155,7 +155,8 @@ async function restoreStock(order, now) {
     await db.collection('products').doc(product.productId).update({
       data: {
         stock: currentStock + product.quantity,
-        updatedAt: now
+        updatedAt: now,
+          updatedAtTs: now.getTime()
       }
     });
   }

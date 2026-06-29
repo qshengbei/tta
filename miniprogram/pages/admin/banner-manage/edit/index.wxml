@@ -1,0 +1,52 @@
+<view class="edit-page">
+  <!-- 表单内容 -->
+  <scroll-view scroll-y class="form-content">
+    <view class="form-item">
+      <text class="form-label">轮播图</text>
+      <view class="image-upload" bindtap="chooseImage">
+        <image wx:if="{{formData.image}}" src="{{formData.image}}" mode="widthFix" class="uploaded-image" bindtap="previewImage" catchtap="stopPropagation" />
+        <view wx:else class="upload-placeholder">
+          <text class="upload-text">点击上传</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">链接地址</text>
+      <input 
+        class="form-input" 
+        placeholder="请输入跳转链接"
+        value="{{formData.link}}"
+        data-field="link"
+        bindinput="onInputChange"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">排序值</text>
+      <input 
+        class="form-input" 
+        type="number"
+        placeholder="请输入排序值，数字越小越靠前"
+        value="{{formData.sortOrder}}"
+        data-field="sortOrder"
+        bindinput="onInputChange"
+      />
+    </view>
+
+    <view class="form-item">
+      <text class="form-label">是否启用</text>
+      <switch 
+        class="form-switch" 
+        checked="{{formData.isActive}}"
+        data-field="isActive"
+        bindchange="onSwitchChange"
+      />
+    </view>
+  </scroll-view>
+
+  <!-- 底部悬浮按钮 -->
+  <view class="submit-btn-wrapper">
+    <button class="submit-btn" bindtap="submitForm">{{isEdit ? '保存修改' : '确认添加'}}</button>
+  </view>
+</view>

@@ -3,7 +3,13 @@ Page({
     type: '',
     notifications: [],
     loading: false,
-    openNotificationActionId: ''
+    loadingMore: false,
+    hasMore: true,
+    pageNum: 0,
+    pageSize: 20,
+    openNotificationActionId: '',
+    openid: '',
+    hasNavigatedToDetail: false
   },
 
   onLoad(options) {
@@ -18,15 +24,19 @@ Page({
       wx.setNavigationBarTitle({
         title: `${decodedType}通知`
       });
-      // 加载该类型的通知
-      this.loadNotifications();
+      // 获取并保存 openid，确保分页时使用相同的用户标识
+      const openid = wx.getStorageSync('openid');
+      this.setData({ openid });
+      // 加载该类型的通知（首次加载）
+      this.loadNotifications(true);
     }
   },
 
   onShow() {
-    // 每次页面显示时重新加载通知，确保数据最新
-    if (this.data.type) {
-      this.loadNotifications();
+    // 从通知详情返回时保持列表数据与滚动位置，不重新请求
+    if (this.data.hasNavigatedToDetail) {
+      this.setData({ hasNavigatedToDetail: false });
+      return;
     }
   },
 
@@ -35,104 +45,120 @@ Page({
   },
 
   // 加载通知消息
-  async loadNotifications() {
-    this.setData({ loading: true });
+  async loadNotifications(reset = false) {
+    // 如果是重置，清空现有数据，重置分页
+    if (reset) {
+      this.setData({ 
+        notifications: [], 
+        pageNum: 0, 
+        hasMore: true,
+        loading: true 
+      });
+    }
+    
     try {
-      // 从缓存中获取openid
-      const openid = wx.getStorageSync('openid');
+      // 使用页面初始化时保存的 openid，确保分页时使用相同的用户标识
+      const openid = this.data.openid;
+      if (!openid) {
+        console.error('[通知列表] openid 为空，无法查询通知');
+        return;
+      }
+      const notifications = await this.fetchNotificationsByType(openid);
       
-      console.log('当前用户OPENID:', openid);
-      console.log('加载的通知类型:', this.data.type);
-      
-      const notifications = await this.fetchNotificationsInBatches(openid);
-      
-      console.log('加载通知消息结果，分批总数:', notifications.length);
-      
-      // 过滤该类型的通知，并且isDelete为false或不存在
-      const filteredNotifications = notifications.filter(notification => {
-        const notificationType = this.getNotificationType(notification);
-        return notificationType === this.data.type && (notification.isDelete === false || notification.isDelete === undefined);
-      });
-      
-      console.log('过滤后的通知消息:', filteredNotifications);
-      
-      // 为每个通知添加格式化后的时间
-      const notificationsWithTime = filteredNotifications.map(notification => {
-        console.log('处理通知:', notification.title, 'ID:', notification._id);
-        // 尝试使用createdAt字段
-        const timeField = notification.createdAt;
-        if (timeField) {
-          console.log('通知的时间字段:', timeField);
-          try {
-            let date;
-            if (typeof timeField === 'string') {
-              // 直接使用字符串创建日期对象
-              date = new Date(timeField);
-              console.log('字符串转换为日期:', date);
-            } else if (timeField instanceof Date) {
-              date = timeField;
-              console.log('通知的时间字段是Date对象:', date);
-            } else {
-              date = new Date(timeField);
-              console.log('其他类型转换为日期:', date);
-            }
-            
-            // 检查日期是否有效
-            if (!isNaN(date.getTime())) {
-              // 使用通用时间格式化函数
-              notification.formattedTime = this.formatTimeByRule(date);
-              console.log('通知ID:', notification._id, '标题:', notification.title, '格式化后的时间:', notification.formattedTime);
-            } else {
-              console.error('日期无效:', timeField);
-              notification.formattedTime = '';
-            }
-          } catch (error) {
-            console.error('时间格式化失败:', error);
-            notification.formattedTime = '';
-          }
+      if (notifications.length > 0) {
+        // 为每个通知添加格式化后的时间
+        const notificationsWithTime = notifications.map(notification => {
+          notification.formattedTime = this.formatTimeSimple(notification.createdAt);
+          return notification;
+        });
+        
+        // 如果是重置，直接替换数据；否则追加数据
+        if (reset) {
+          this.setData({ notifications: notificationsWithTime });
         } else {
-          console.log('通知没有时间字段:', notification._id, '标题:', notification.title);
-          notification.formattedTime = '';
+          this.setData({ 
+            notifications: [...this.data.notifications, ...notificationsWithTime] 
+          });
         }
-        return notification;
-      });
-      
-      this.setData({ notifications: notificationsWithTime });
-      console.log('通知数据已更新到本地');
+        
+        // 检查是否还有更多数据
+        this.setData({ hasMore: notifications.length === this.data.pageSize });
+      } else {
+        this.setData({ hasMore: false });
+      }
     } catch (error) {
       console.error('加载通知消息失败', error);
       wx.showToast({ title: '加载消息失败', icon: 'none' });
     } finally {
-      this.setData({ loading: false });
+      this.setData({ loading: false, loadingMore: false });
     }
   },
 
-  async fetchNotificationsInBatches(openid) {
-    const db = wx.cloud.database();
-    const batchSize = 20;
-    const maxBatches = 30;
-    const allNotifications = [];
-
-    for (let batchIndex = 0; batchIndex < maxBatches; batchIndex++) {
-      const skip = batchIndex * batchSize;
-      const batchRes = await db.collection('notifications')
-        .where({
-          openid
-        })
-        .orderBy('createdAt', 'desc')
-        .skip(skip)
-        .limit(batchSize)
-        .get();
-
-      const batchData = batchRes.data || [];
-      allNotifications.push(...batchData);
-
-      if (batchData.length < batchSize) {
-        break;
-      }
+  // 加载更多通知
+  async loadMoreNotifications() {
+    console.log('[通知列表] loadMoreNotifications 被调用', {
+      loadingMore: this.data.loadingMore,
+      hasMore: this.data.hasMore,
+      currentPage: this.data.pageNum,
+      currentCount: this.data.notifications.length
+    });
+    
+    // 如果正在加载或没有更多数据，不执行
+    if (this.data.loadingMore || !this.data.hasMore) {
+      console.log('[通知列表] 不执行加载：loadingMore=', this.data.loadingMore, 'hasMore=', this.data.hasMore);
+      return;
     }
+    
+    this.setData({ loadingMore: true });
+    this.setData({ pageNum: this.data.pageNum + 1 });
+    console.log('[通知列表] 开始加载第', this.data.pageNum, '页');
+    await this.loadNotifications(false);
+  },
 
-    return allNotifications;
+  async fetchNotificationsByType(openid) {
+    const db = wx.cloud.database();
+    const _ = db.command;
+    
+    // 获取该类型对应的所有原始类型值
+    const typeMap = {
+      '订单状态变更': ['orderStatusChange'],
+      '商品补货': ['restock'],
+      '活动通知': ['activity'],
+      '系统通知': ['system'],
+      '欢迎通知': ['welcome']
+    };
+    
+    const rawTypes = typeMap[this.data.type] || [];
+    
+    const skip = this.data.pageNum * this.data.pageSize;
+    
+    console.log('[通知列表] 查询条件:', {
+      openid: openid ? '有值' : '为空',
+      type: this.data.type,
+      rawTypes,
+      skip,
+      pageSize: this.data.pageSize
+    });
+    
+    // 直接查询指定类型的通知，避免先全量查询再过滤
+    const result = await db.collection('notifications')
+      .where({
+        openid,
+        isDelete: _.eq(false),
+        type: _.in(rawTypes.length > 0 ? rawTypes : ['orderStatusChange', 'restock', 'activity', 'system', 'welcome'])
+      })
+      .orderBy('createdAt', 'desc')
+      .skip(skip)
+      .limit(this.data.pageSize)
+      .get();
+
+    console.log('[通知列表] 查询结果:', {
+      total: result.data.length,
+      firstItemOpenid: result.data.length > 0 ? result.data[0].openid : 'N/A',
+      lastItemOpenid: result.data.length > 0 ? result.data[result.data.length - 1].openid : 'N/A'
+    });
+    
+    return result.data || [];
   },
 
   // 获取通知类型
@@ -162,9 +188,9 @@ Page({
       this.closeNotificationActions();
       return;
     }
-    // 标记消息为已读
-    this.markNotificationAsRead(id);
-    // 跳转到消息详情页
+    // 标记消息为已读（仅更新本地，不刷新列表）
+    this.markNotificationAsRead(id, { skipReload: true });
+    this.setData({ hasNavigatedToDetail: true });
     wx.navigateTo({
       url: `/pages/message/detail/index?id=${id}`
     });
@@ -210,12 +236,17 @@ Page({
     this.setData({ openNotificationActionId: '' });
   },
 
+  updateNotificationLocalStatus(id, status) {
+    const notifications = this.data.notifications.map((item) =>
+      item._id === id ? { ...item, status } : item
+    );
+    this.setData({ notifications });
+  },
+
   // 标记通知消息为已读
-  async markNotificationAsRead(id) {
+  async markNotificationAsRead(id, options = {}) {
+    const { skipReload = false } = options;
     try {
-      console.log('开始标记通知为已读，ID:', id);
-      
-      // 调用云函数更新通知状态
       const result = await wx.cloud.callFunction({
         name: 'updateNotificationStatus',
         data: {
@@ -224,12 +255,16 @@ Page({
           status: 'read'
         }
       });
-      
-      console.log('标记通知为已读结果:', result);
-      
-      // 重新加载通知列表
-      await this.loadNotifications();
-      console.log('重新加载通知列表成功');
+
+      if (!(result && result.result && result.result.success)) {
+        throw new Error((result && result.result && result.result.error) || '更新失败');
+      }
+
+      this.updateNotificationLocalStatus(id, 'read');
+
+      if (!skipReload) {
+        await this.loadNotifications(true);
+      }
     } catch (error) {
       console.error('标记消息已读失败', error);
       wx.showToast({ title: '操作失败', icon: 'none' });
@@ -252,7 +287,7 @@ Page({
       }
 
       this.closeNotificationActions();
-      await this.loadNotifications();
+      this.updateNotificationLocalStatus(id, status);
       if (successMessage) {
         wx.showToast({ title: successMessage, icon: 'success' });
       }
@@ -292,7 +327,8 @@ Page({
       }
 
       this.closeNotificationActions();
-      await this.loadNotifications();
+      const notifications = this.data.notifications.filter((item) => item._id !== id);
+      this.setData({ notifications });
       wx.showToast({ title: '已删除', icon: 'success' });
     } catch (error) {
       console.error('删除通知失败', error);
@@ -305,104 +341,38 @@ Page({
     wx.navigateBack({ delta: 1 });
   },
 
-  // 格式化时间
-  formatTime(time) {
-    if (!time) return '';
-    const date = new Date(time);
-    const now = new Date();
-    const diff = now - date;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days === 0) {
-      // 当天显示时分秒
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const seconds = date.getSeconds().toString().padStart(2, '0');
-      return `${hours}:${minutes}:${seconds}`;
-    } else if (days === 1) {
-      // 昨天显示"昨天"
-      return '昨天';
-    } else if (days === 2) {
-      // 前天显示"前天"
-      return '前天';
-    } else if (days < 365) {
-      // 当年显示月日
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      return `${month}-${day}`;
-    } else {
-      // 往年显示年月日
-      const year = date.getFullYear();
-      const month = (date.getMonth() + 1).toString().padStart(2, '0');
-      const day = date.getDate().toString().padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-  },
-
-  // 通用时间格式化函数，根据时间规则显示不同格式
-  formatTimeByRule: function(time) {
+  // 优化的时间格式化函数 - 简单高效
+  formatTimeSimple(time) {
     if (!time) return '';
     
-    try {
-      let date;
-      if (typeof time === 'string') {
-        date = new Date(time);
-      } else if (time instanceof Date) {
-        date = time;
-      } else {
-        date = new Date(time);
-      }
-      
-      // 检查日期是否有效
-      if (isNaN(date.getTime())) {
-        console.error('日期无效:', time);
-        return '';
-      }
-      
-      const now = new Date();
-      
-      // 重置时间部分为0，只比较日期
-      const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      
-      const diffTime = nowOnly - dateOnly;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      // 补零函数
-      function padZero(num) {
-        return num < 10 ? '0' + num : num.toString();
-      }
-      
-      const year = date.getFullYear();
-      const month = padZero(date.getMonth() + 1);
-      const day = padZero(date.getDate());
-      const hours = padZero(date.getHours());
-      const minutes = padZero(date.getMinutes());
-      const seconds = padZero(date.getSeconds());
-      const currentYear = now.getFullYear();
-      
-      if (diffDays === 0) {
-        // 当天，显示时分
-        return `${hours}:${minutes}`;
-      } else if (diffDays === 1) {
-        // 昨天，显示昨天 时分
-        return `昨天 ${hours}:${minutes}`;
-      } else if (diffDays === 2) {
-        // 前天，显示前天 时分
-        return `前天 ${hours}:${minutes}`;
-      } else {
-        // 更久的时间
-        if (year === currentYear) {
-          // 当年，显示月-日 时分
-          return `${month}-${day} ${hours}:${minutes}`;
-        } else {
-          // 往年，显示年月日 时分
-          return `${year}-${month}-${day} ${hours}:${minutes}`;
-        }
-      }
-    } catch (error) {
-      console.error('时间格式化失败:', error);
+    const date = typeof time === 'string' ? new Date(time) : (time instanceof Date ? time : new Date(time));
+    
+    if (isNaN(date.getTime())) {
       return '';
+    }
+    
+    const now = new Date();
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.floor((nowOnly - dateOnly) / (1000 * 60 * 60 * 24));
+    
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const currentYear = now.getFullYear();
+    
+    if (diffDays === 0) {
+      return `${hours}:${minutes}`;
+    } else if (diffDays === 1) {
+      return `昨天 ${hours}:${minutes}`;
+    } else if (diffDays === 2) {
+      return `前天 ${hours}:${minutes}`;
+    } else if (year === currentYear) {
+      return `${month}-${day} ${hours}:${minutes}`;
+    } else {
+      return `${year}-${month}-${day} ${hours}:${minutes}`;
     }
   },
 
@@ -438,10 +408,12 @@ Page({
       // 幂等处理：updatedCount=0 可能是刚被其他页面标记过已读，仍视为成功并刷新
       console.log('批量已读更新数量:', result.result.updatedCount || 0);
       
-      // 重新加载通知列表
-      await this.loadNotifications();
-      console.log('重新加载通知列表成功');
-      
+      const notifications = this.data.notifications.map((item) => ({
+        ...item,
+        status: 'read'
+      }));
+      this.setData({ notifications });
+
       wx.showToast({ title: '已全部标记为已读', icon: 'success' });
     } catch (error) {
       console.error('标记所有消息已读失败', error);

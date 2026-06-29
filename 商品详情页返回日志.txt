@@ -1,0 +1,103 @@
+[商品详情页面] 页面卸载，关闭实时监听
+watcherManager.js:85 [WatcherManager] Closed watcher: product_detail_ed435bfa69aecef000ca29e619b08112
+index.js? [sm]:268 [宝贝页面] onShow 被调用, activeTab: products products.length: 15 hasNavigatedAway: false searchKeyword: 
+index.js? [sm]:283 [宝贝页面] 不是从详情页回来，且无搜索关键词，初始化数据
+index.js? [sm]:684 [宝贝页面] 加载完整商品列表
+index.js? [sm]:689 [宝贝页面] 从本地缓存获取商品数据: 15
+index.js? [sm]:618 [宝贝页面] applySearchAndFilter 被调用
+index.js? [sm]:619 [宝贝页面] searchKeyword: 
+index.js? [sm]:620 [宝贝页面] categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:621 [宝贝页面] inStock: null
+index.js? [sm]:622 [宝贝页面] originalProducts 数量: 15
+index.js? [sm]:625 [宝贝页面] 初始 filteredProducts 数量: 15
+index.js? [sm]:639 [宝贝页面] 应用分类筛选，categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:643 [宝贝页面] 分类筛选后 filteredProducts 数量: 15
+index.js? [sm]:658 [宝贝页面] 设置 products，数量: 15
+index.js? [sm]:995 [宝贝页面] sortProducts 完成，当前 products 数量: 15
+index.js? [sm]:661 [宝贝页面] 当前显示 products 数量: 15
+index.js? [sm]:995 [宝贝页面] sortProducts 完成，当前 products 数量: 15
+index.js? [sm]:305 宝贝页面-实时监听重新连接
+index.js? [sm]:414 [宝贝页面] 开始创建监听器
+index.js? [sm]:417 [宝贝页面] 创建 products 监听
+watcherManager.js:102 [WatcherManager] Created watcher: category_products
+index.js? [sm]:311 category onShow - products.length: 15
+index.js? [sm]:312 category onShow - productsNeedRefresh: false
+index.js? [sm]:324 已有商品数据
+index.js? [sm]:462 [宝贝页面] handleProductChanges被调用
+index.js? [sm]:463 [宝贝页面] snapshot: xa {id: 32, docChanges: Array(15), docs: Array(15), type: "init", EJSON: undefined, …}
+index.js? [sm]:470 [宝贝页面] docChanges: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+index.js? [sm]:473 [宝贝页面] 当前products数量: 15
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0fb7
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "fb39ee6269aecedd00cb426d7f7d0fb7", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…e586-1408542930/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0f01
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "fb39ee6269aecedd00cb426d7f7d0f01", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…e586-1408542930/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0f02
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "fb39ee6269aecedd00cb426d7f7d0f02", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…e586-1408542930/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0111
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "fb39ee6269aecedd00cb426d7f7d0111", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/001.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS风扎染双层发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: d3a457a269d54823035917cd6dcfc745
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "d3a457a269d54823035917cd6dcfc745", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…4e586-1408542930/products/cover-1775585297632.png", createdAt: Wed Apr 08 2026 02:08:35 GMT+0800 (中国标准时间), …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: 1fa8f55169d683fb0372c6697a417a11
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "1fa8f55169d683fb0372c6697a417a11", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…4e586-1408542930/products/cover-1775666090762.png", createdAt: Thu Apr 09 2026 00:36:11 GMT+0800 (中国标准时间), …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: f0df711e69d685fc037324a41c69c9fc
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "f0df711e69d685fc037324a41c69c9fc", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu…4e586-1408542930/products/cover-1775666598537.png", createdAt: Thu Apr 09 2026 00:44:44 GMT+0800 (中国标准时间), …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08025
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "ed435bfa69aecef000ca29e619b08025", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08001
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "ed435bfa69aecef000ca29e619b08001", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08002
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "ed435bfa69aecef000ca29e619b08002", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08112
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "ed435bfa69aecef000ca29e619b08112", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/003.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e68591012e8
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "7eeea64669aecf0a00c94e68591012e8", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101201
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "7eeea64669aecf0a00c94e6859101201", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101202
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "7eeea64669aecf0a00c94e6859101202", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:484 [宝贝页面] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101113
+index.js? [sm]:485 [宝贝页面] 变化的文档: {_id: "7eeea64669aecf0a00c94e6859101113", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/004.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "韩国碎花布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:488 [宝贝页面] 跳过init类型变化
+index.js? [sm]:597 [宝贝页面] 准备setData更新UI
+index.js? [sm]:605 [宝贝页面] setData完成，originalProducts已更新
+index.js? [sm]:618 [宝贝页面] applySearchAndFilter 被调用
+index.js? [sm]:619 [宝贝页面] searchKeyword: 
+index.js? [sm]:620 [宝贝页面] categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:621 [宝贝页面] inStock: null
+index.js? [sm]:622 [宝贝页面] originalProducts 数量: 15
+index.js? [sm]:625 [宝贝页面] 初始 filteredProducts 数量: 15
+index.js? [sm]:639 [宝贝页面] 应用分类筛选，categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:643 [宝贝页面] 分类筛选后 filteredProducts 数量: 15
+index.js? [sm]:658 [宝贝页面] 设置 products，数量: 15
+index.js? [sm]:995 [宝贝页面] sortProducts 完成，当前 products 数量: 15
+index.js? [sm]:661 [宝贝页面] 当前显示 products 数量: 15
+index.js? [sm]:610 [宝贝页面] 商品数据更新完成
+index.js? [sm]:754 [宝贝页面] 系列数据没有变化，跳过更新
+index.js? [sm]:783 [宝贝页面] 分类数据没有变化，跳过更新
+index.js? [sm]:723 [宝贝页面] 从数据库获取到商品数量: 15
+index.js? [sm]:618 [宝贝页面] applySearchAndFilter 被调用
+index.js? [sm]:619 [宝贝页面] searchKeyword: 
+index.js? [sm]:620 [宝贝页面] categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:621 [宝贝页面] inStock: null
+index.js? [sm]:622 [宝贝页面] originalProducts 数量: 15
+index.js? [sm]:625 [宝贝页面] 初始 filteredProducts 数量: 15
+index.js? [sm]:639 [宝贝页面] 应用分类筛选，categories: (16) ["type_001", "type_004", "type_005", "type_006", "type_007", "type_002", "type_008", "type_009", "93abbbd769d67d22036f57c71bee17a6", "type_003", "type_010", "type_011", "type_012", "type_013", "type_014", "type_015"]
+index.js? [sm]:643 [宝贝页面] 分类筛选后 filteredProducts 数量: 15
+index.js? [sm]:658 [宝贝页面] 设置 products，数量: 15
+index.js? [sm]:995 [宝贝页面] sortProducts 完成，当前 products 数量: 15
+index.js? [sm]:661 [宝贝页面] 当前显示 products 数量: 15
+index.js? [sm]:995 [宝贝页面] sortProducts 完成，当前 products 数量: 15

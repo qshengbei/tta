@@ -1,6 +1,6 @@
-<view class="category-page" style="padding-top: {{activeTab === 'products' ? (isTopBarVisible ? '254rpx' : '166rpx') : '166rpx'}};">
+<view class="category-page" style="padding-top: {{pagePaddingTop}};">
   <!-- 顶部固定区域 - 标签切换 -->
-  <view class="top-fixed-bar tabs-only" style="position: fixed; top: 94rpx; left: 0; right: 0; z-index: 999;">
+  <view class="top-fixed-bar tabs-only" style="position: fixed; top: {{tabsTop}}; left: 0; right: 0; z-index: 999; transition: top 0.3s ease; margin: 0; padding: 0;">
     <!-- 标签切换 -->
     <view class="tab-container">
       <view class="tab {{activeTab === 'products' ? 'tab--active' : ''}}" bindtap="switchTab" data-tab="products">
@@ -16,7 +16,7 @@
   </view>
   
   <!-- 排序选项 - 仅在宝贝标签显示 -->
-  <view wx:if="{{activeTab === 'products'}}" class="top-fixed-bar sort-options-bar" style="position: fixed; top: {{isTopBarVisible ? '182rpx' : '94rpx'}}; left: 0; right: 0; z-index: 998; transition: top 0.3s ease;">
+  <view wx:if="{{activeTab === 'products'}}" class="top-fixed-bar sort-options-bar" style="position: fixed; top: {{sortBarTop}}; left: 0; right: 0; z-index: 998; transition: top 0.3s ease; margin: 0; padding: 0;">
     <view class="sort-options">
       <view class="sort-option {{sortType === 'default' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="default">
         <text class="sort-text">综合</text>
@@ -27,19 +27,19 @@
       <view class="sort-option {{sortType === 'price' ? 'sort-option--active' : ''}}" bindtap="setSortType" data-type="price">
         <text class="sort-text">价格</text>
         <image wx:if="{{sortType !== 'price'}}" class="sort-icon" src="../../images/icons/sort.png" mode="aspectFit"/>
-        <image wx:elif="{{priceSortOrder === 'desc'}}" class="sort-icon" src="../../images/icons/sort-up.png" mode="aspectFit"/>
+        <image wx:elif="{{priceSortOrder === 'asc'}}" class="sort-icon" src="../../images/icons/sort-up.png" mode="aspectFit"/>
         <image wx:else class="sort-icon" src="../../images/icons/sort-down.png" mode="aspectFit"/>
       </view>
     </view>
   </view>
 
   <!-- 顶部搜索和筛选组件 -->
-  <search-filter-panel pageType="products" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;"/>
+  <search-filter-panel pageType="products" searchKeyword="{{searchKeyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;"/>
 
   <!-- 宝贝标签内容 -->
   <view hidden="{{activeTab !== 'products'}}" class="products-content">
-    <scroll-view scroll-y="true" class="products-scroll" bindscroll="onProductsScroll" style="height: {{isTopBarVisible ? 'calc(100vh - 254rpx)' : 'calc(100vh - 166rpx)'}};" enable-flex="{{true}}" bounces="{{false}};">
-      <!-- 商品列表 -->
+    <!-- 搜索筛选模式列表（使用 products 数据） -->
+    <scroll-view hidden="{{searchKeyword || (categories && categories.length > 0) || inStock !== null ? false : true}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <view wx:for="{{products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
           <view class="product-image-container">
@@ -56,8 +56,131 @@
             <text class="product-price">¥{{item.price}}</text>
           </view>
         </view>
-        <!-- 没有更多商品提示 -->
-        <view wx:if="{{products.length > 0}}" class="no-more">
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-more__spinner"></view>
+          <text class="loading-more__text">加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && products.length > 0}}" class="no-more">
+          <text class="no-more-text">没有更多啦</text>
+        </view>
+      </view>
+    </scroll-view>
+    
+    <!-- 普通列表 - 综合排序 -->
+    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'default')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+      <view class="products-list">
+        <block wx:if="{{sortDataCache['category_products'] && sortDataCache['category_products'].products}}">
+          <view wx:for="{{sortDataCache['category_products'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+              <view wx:if="{{item.status !== 'on'}}" class="product-sold-out product-sold-out--offline">
+                <text class="product-sold-out-text">已下架</text>
+              </view>
+              <view wx:elif="{{item.stock <= 0}}" class="product-sold-out product-sold-out--outofstock">
+                <text class="product-sold-out-text">补货中</text>
+              </view>
+            </view>
+            <view class="product-info">
+              <text class="product-name">{{item.name}}</text>
+              <text class="product-price">¥{{item.price}}</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-more__spinner"></view>
+          <text class="loading-more__text">加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && sortDataCache['category_products'] && sortDataCache['category_products'].products && sortDataCache['category_products'].products.length > 0}}" class="no-more">
+          <text class="no-more-text">没有更多啦</text>
+        </view>
+      </view>
+    </scroll-view>
+    
+    <!-- 普通列表 - 新品排序 -->
+    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'new')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+      <view class="products-list">
+        <block wx:if="{{sortDataCache['category_products_new'] && sortDataCache['category_products_new'].products}}">
+          <view wx:for="{{sortDataCache['category_products_new'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+              <view wx:if="{{item.status !== 'on'}}" class="product-sold-out product-sold-out--offline">
+                <text class="product-sold-out-text">已下架</text>
+              </view>
+              <view wx:elif="{{item.stock <= 0}}" class="product-sold-out product-sold-out--outofstock">
+                <text class="product-sold-out-text">补货中</text>
+              </view>
+            </view>
+            <view class="product-info">
+              <text class="product-name">{{item.name}}</text>
+              <text class="product-price">¥{{item.price}}</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-more__spinner"></view>
+          <text class="loading-more__text">加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && sortDataCache['category_products_new'] && sortDataCache['category_products_new'].products && sortDataCache['category_products_new'].products.length > 0}}" class="no-more">
+          <text class="no-more-text">没有更多啦</text>
+        </view>
+      </view>
+    </scroll-view>
+    
+    <!-- 普通列表 - 价格升序 -->
+    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'asc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+      <view class="products-list">
+        <block wx:if="{{sortDataCache['category_products_price_asc'] && sortDataCache['category_products_price_asc'].products}}">
+          <view wx:for="{{sortDataCache['category_products_price_asc'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+              <view wx:if="{{item.status !== 'on'}}" class="product-sold-out product-sold-out--offline">
+                <text class="product-sold-out-text">已下架</text>
+              </view>
+              <view wx:elif="{{item.stock <= 0}}" class="product-sold-out product-sold-out--outofstock">
+                <text class="product-sold-out-text">补货中</text>
+              </view>
+            </view>
+            <view class="product-info">
+              <text class="product-name">{{item.name}}</text>
+              <text class="product-price">¥{{item.price}}</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-more__spinner"></view>
+          <text class="loading-more__text">加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && sortDataCache['category_products_price_asc'] && sortDataCache['category_products_price_asc'].products && sortDataCache['category_products_price_asc'].products.length > 0}}" class="no-more">
+          <text class="no-more-text">没有更多啦</text>
+        </view>
+      </view>
+    </scroll-view>
+    
+    <!-- 普通列表 - 价格降序 -->
+    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'desc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+      <view class="products-list">
+        <block wx:if="{{sortDataCache['category_products_price_desc'] && sortDataCache['category_products_price_desc'].products}}">
+          <view wx:for="{{sortDataCache['category_products_price_desc'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
+            <view class="product-image-container">
+              <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
+              <view wx:if="{{item.status !== 'on'}}" class="product-sold-out product-sold-out--offline">
+                <text class="product-sold-out-text">已下架</text>
+              </view>
+              <view wx:elif="{{item.stock <= 0}}" class="product-sold-out product-sold-out--outofstock">
+                <text class="product-sold-out-text">补货中</text>
+              </view>
+            </view>
+            <view class="product-info">
+              <text class="product-name">{{item.name}}</text>
+              <text class="product-price">¥{{item.price}}</text>
+            </view>
+          </view>
+        </block>
+        <view wx:if="{{loadingMore}}" class="loading-more">
+          <view class="loading-more__spinner"></view>
+          <text class="loading-more__text">加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && sortDataCache['category_products_price_desc'] && sortDataCache['category_products_price_desc'].products && sortDataCache['category_products_price_desc'].products.length > 0}}" class="no-more">
           <text class="no-more-text">没有更多啦</text>
         </view>
       </view>
@@ -68,12 +191,15 @@
   <view hidden="{{activeTab !== 'categories'}}" class="categories-content">
     <view class="categories-container">
       <!-- 左侧分类导航 -->
-      <view class="categories-nav">
+      <scroll-view scroll-y="true" class="categories-nav" bindscrolltolower="loadMoreCategories" lower-threshold="50">
         <!-- 一级分类 -->
         <view wx:for="{{level1Categories}}" wx:key="_id" class="nav-item {{selectedCategory === item._id ? 'nav-item--active' : ''}}" bindtap="selectCategory" data-id="{{item._id}}">
           <text class="nav-text">{{item.name}}</text>
         </view>
-      </view>
+        <view wx:if="{{categoryLoadingMore}}" class="loading-more">
+          <text class="loading-text">加载中...</text>
+        </view>
+      </scroll-view>
 
       <!-- 右侧内容区域 -->
       <scroll-view scroll-y="true" class="categories-content-area">
@@ -107,14 +233,17 @@
   <view hidden="{{activeTab !== 'series'}}" class="categories-content">
     <view class="categories-container">
       <!-- 左侧系列导航 -->
-      <view class="categories-nav">
+      <scroll-view scroll-y="true" class="categories-nav" bindscrolltolower="loadMoreSeriesList" lower-threshold="50">
         <view wx:for="{{seriesList}}" wx:key="_id" class="nav-item {{selectedSeries === item._id ? 'nav-item--active' : ''}}" bindtap="selectSeries" data-id="{{item._id}}">
           <text class="nav-text">{{item.name}}</text>
         </view>
-      </view>
+        <view wx:if="{{seriesListLoadingMore}}" class="loading-more">
+          <text class="loading-text">加载中...</text>
+        </view>
+      </scroll-view>
 
       <!-- 右侧内容区域 -->
-      <scroll-view scroll-y="true" class="categories-content-area">
+      <scroll-view scroll-y="true" class="categories-content-area" bindscrolltolower="loadMoreSeriesProducts" lower-threshold="50">
         <!-- 系列内容 -->
         <view wx:if="{{selectedSeries}}" class="series-content">
           <view class="series-header">
@@ -139,6 +268,13 @@
                 <text class="product-name">{{item.name}}</text>
                 <text class="product-price">¥{{item.price}}</text>
               </view>
+            </view>
+            <view wx:if="{{seriesLoadingMore}}" class="loading-more">
+              <view class="loading-more__spinner"></view>
+              <text class="loading-more__text">加载中...</text>
+            </view>
+            <view wx:elif="!seriesHasMore && seriesProducts.length > 0" class="no-more">
+              <text class="no-more-text">没有更多啦</text>
             </view>
           </view>
         </view>

@@ -2,9 +2,6 @@
 import { getCollection } from "../../utils/cloud";
 
 Component({
-  /**
-   * 组件的属性列表
-   */
   properties: {
     visible: {
       type: Boolean,
@@ -12,144 +9,156 @@ Component({
     }
   },
 
-  /**
-   * 组件的初始数据
-   */
   data: {
     cartItems: [],
-    startX: 0, // 触摸开始位置
-    startY: 0, // 触摸开始位置
-    deleteWidth: 180, // 删除按钮宽度
-    showHint: true // 显示提示文字
+    deleteWidth: 180,
+    showHint: true,
+    // 分页相关
+    loadingMore: false,
+    hasMore: true,
+    page: 0,
+    pageSize: 18
   },
 
-  /**
-   * 组件的方法列表
-   */
   methods: {
-    // 关闭弹出层
     close() {
-      // 隐藏所有删除按钮
       this.hideDeleteButtons();
       this.triggerEvent('close');
     },
 
-    // 跳转到购物车页面
     goToCart() {
       wx.switchTab({
         url: '/pages/cart/index'
       });
     },
 
-    // 获取购物车商品
-    fetchCartItems() {
-      const cart = getCollection("cart");
-      const products = getCollection("products");
-      const openid = wx.getStorageSync('openid') || '';
-      
-      const query = openid ? cart.where({ _openid: openid, isDelete: false }) : cart.where({ isDelete: false });
-      
-      query
-        .orderBy('updatedAt', 'desc')
-        .get()
-        .then((res) => {
-          let cartItems = res.data || [];
-          
-          // 过滤掉无效的商品（没有productSnapshot的）
-          cartItems = cartItems.filter(item => item.productSnapshot);
-          
-          // 转换数据格式，使用productSnapshot中的数据
-          const productIdSet = new Set(cartItems.map(item => item.productId));
-          const productIdArray = Array.from(productIdSet);
-          
-          // 批量获取商品详情以检查库存
-          const productPromises = productIdArray.map(productId => {
-            return products.doc(productId).get()
-              .then(productRes => productRes.data)
-              .catch(() => null);
-          });
-          
-          return Promise.all(productPromises).then(productsData => {
-            const productMap = new Map();
-            productIdArray.forEach((productId, index) => {
-              if (productsData[index]) {
-                productMap.set(productId, productsData[index]);
-              }
-            });
-            
-            // 转换购物车数据
-            cartItems = cartItems.map(item => {
-              const product = productMap.get(item.productId);
-              let name = item.productSnapshot.name || '';
-              let price = item.productSnapshot.price || 0;
-              let coverImage = item.productSnapshot.coverImage || '';
-              
-              if (product) {
-                // 从商品集合获取最新数据
-                name = product.name || name;
-                price = typeof product.price === "number" ? product.price : price;
-                coverImage = product.coverImage || coverImage;
-              }
-              
-              return {
-                _id: item._id,
-                productId: item.productId,
-                name: name,
-                price: price,
-                quantity: item.quantity || 1,
-                coverImage: coverImage,
-                translateX: 0 // 初始化滑动距离
-              };
-            });
-            
-            return cartItems;
-          });
-        })
-        .then((cartItems) => {
-          this.setData({
-            cartItems
-          });
-        })
-        .catch((err) => {
-          console.error('获取购物车商品失败', err);
-          this.setData({ cartItems: [] });
+    // 获取购物车商品（分页加载）
+    async fetchCartItems(reset = true) {
+      if (reset) {
+        console.log('[购物车预览] 重置购物车数据');
+        this.setData({ cartItems: [], page: 0, hasMore: true, loadingMore: false });
+      }
+
+      if (this.data.loadingMore || !this.data.hasMore) {
+        console.log('[购物车预览] 正在加载或没有更多数据，跳过');
+        return;
+      }
+
+      this.setData({ loadingMore: true });
+      console.log('[购物车预览] 开始从数据库获取购物车数据，page:', this.data.page);
+
+      try {
+        const cart = getCollection("cart");
+        const openid = wx.getStorageSync('openid') || '';
+        
+        if (!openid) {
+          console.log('[购物车预览] openid为空，无法获取购物车数据');
+          this.setData({ cartItems: [], loadingMore: false, hasMore: false });
+          return;
+        }
+        
+        const page = reset ? 0 : this.data.page;
+        const queryCondition = { _openid: openid, isDelete: false };
+        console.log('[购物车预览] 查询条件:', queryCondition, ', page:', page, ', pageSize:', this.data.pageSize);
+        const query = cart.where(queryCondition);
+        const res = await query
+          .orderBy('updatedAt', 'desc')
+          .skip(page * this.data.pageSize)
+          .limit(this.data.pageSize)
+          .get();
+
+        let rawItems = (res.data || []).filter(item => item.productSnapshot);
+        console.log('[购物车预览] 数据库返回购物车数据，原始长度:', res.data ? res.data.length : 0, '过滤后长度:', rawItems.length);
+        
+        const hasMore = rawItems.length === this.data.pageSize;
+        console.log('[购物车预览] 处理购物车数据，hasMore:', hasMore);
+        const processedItems = await this._processCartItems(rawItems);
+
+        console.log('[购物车预览] 购物车数据处理完成，处理后长度:', processedItems.length, '当前缓存长度:', this.data.cartItems.length);
+        
+        const newCartItems = reset ? processedItems : [...this.data.cartItems, ...processedItems];
+        this.setData({
+          cartItems: newCartItems,
+          loadingMore: false,
+          hasMore: hasMore,
+          page: page + 1
         });
+        console.log('[购物车预览] 购物车数据加载完成，总长度:', newCartItems.length);
+      } catch (err) {
+        console.error('[购物车预览] 获取购物车商品失败', err);
+        this.setData({ loadingMore: false });
+      }
     },
 
-    // 触摸开始
-    touchStart(e) {
-      // 记录触摸开始位置
-      this.setData({
-        startX: e.touches[0].clientX,
-        startY: e.touches[0].clientY
+    // 加载更多
+    loadMoreCartItems() {
+      if (this.data.loadingMore || !this.data.hasMore) return;
+      this.fetchCartItems(false);
+    },
+
+    // 处理购物车商品：批量获取商品最新数据并转换格式
+    async _processCartItems(rawItems) {
+      if (rawItems.length === 0) return [];
+
+      const products = getCollection("products");
+      const productIdSet = new Set(rawItems.map(item => item.productId));
+      const productIdArray = Array.from(productIdSet);
+
+      const productsData = await Promise.all(
+        productIdArray.map(productId =>
+          products.doc(productId).get()
+            .then(productRes => productRes.data)
+            .catch(() => null)
+        )
+      );
+
+      const productMap = new Map();
+      productIdArray.forEach((productId, index) => {
+        if (productsData[index]) {
+          productMap.set(productId, productsData[index]);
+        }
       });
-      
-      // 隐藏其他删除按钮
-      this.hideDeleteButtons();
+
+      return rawItems.map(item => {
+        const product = productMap.get(item.productId);
+        return {
+          _id: item._id,
+          productId: item.productId,
+          name: product ? (product.name || item.productSnapshot.name || '') : (item.productSnapshot.name || ''),
+          price: product && typeof product.price === "number" ? product.price : (item.productSnapshot.price || 0),
+          coverImage: product ? (product.coverImage || item.productSnapshot.coverImage || '') : (item.productSnapshot.coverImage || ''),
+          quantity: item.quantity || 1,
+          translateX: 0
+        };
+      });
     },
 
-    // 触摸移动
+    touchStart(e) {
+      this._startX = e.touches[0].clientX;
+      this._startY = e.touches[0].clientY;
+      // 仅当有已展开的删除按钮时才收起
+      if (this.data.cartItems.some(item => item.translateX < 0)) {
+        this.hideDeleteButtons();
+      }
+    },
+
     touchMove(e) {
-      const startX = this.data.startX;
-      const startY = this.data.startY;
+      if (this._startX == null) return;
+      const startX = this._startX;
+      const startY = this._startY;
       const moveX = e.touches[0].clientX;
       const moveY = e.touches[0].clientY;
       const deleteWidth = this.data.deleteWidth;
-      
-      // 计算滑动距离
+
       const disX = startX - moveX;
       const disY = Math.abs(startY - moveY);
-      
-      // 只有当水平滑动距离大于垂直滑动距离时，才认为是左滑
+
       if (disX > 0 && disY < 50) {
-        // 左滑
         let translateX = -disX;
-        // 限制滑动距离
         if (translateX < -deleteWidth) {
           translateX = -deleteWidth;
         }
-        
-        // 更新当前商品的滑动距离
+
         const productId = e.currentTarget.dataset.productId;
         const cartItems = this.data.cartItems.map(item => {
           if (item.productId === productId) {
@@ -157,37 +166,32 @@ Component({
           }
           return item;
         });
-        
+
         this.setData({ cartItems });
       }
     },
 
-    // 触摸结束
     touchEnd(e) {
-      const deleteWidth = this.data.deleteWidth;
       const productId = e.currentTarget.dataset.productId;
-      
-      // 计算最终滑动距离
+      const item = this.data.cartItems.find(i => i.productId === productId);
+
+      // 已经是初始状态，无需更新，避免真机滚动时无效setData导致重渲染
+      if (!item || item.translateX === 0) return;
+
+      const deleteWidth = this.data.deleteWidth;
       const cartItems = this.data.cartItems.map(item => {
         if (item.productId === productId) {
-          let translateX = item.translateX;
-          // 如果滑动距离超过删除按钮宽度的一半，则显示删除按钮
-          if (translateX < -deleteWidth / 2) {
-            translateX = -deleteWidth;
-          } else {
-            // 否则，恢复原位
-            translateX = 0;
-          }
-          return { ...item, translateX };
+          return { ...item, translateX: item.translateX < -deleteWidth / 2 ? -deleteWidth : 0 };
         }
         return item;
       });
-      
+
       this.setData({ cartItems });
     },
 
-    // 隐藏所有删除按钮
     hideDeleteButtons() {
+      const hasOpen = this.data.cartItems.some(item => item.translateX < 0);
+      if (!hasOpen) return;
       const cartItems = this.data.cartItems.map(item => ({
         ...item,
         translateX: 0
@@ -195,21 +199,20 @@ Component({
       this.setData({ cartItems });
     },
 
-    // 删除购物车商品
     deleteCartItem(e) {
       const productId = e.currentTarget.dataset.productId;
       const cart = getCollection("cart");
-      
-      // 查找对应的购物车商品
+
       const cartItem = this.data.cartItems.find(item => item.productId === productId);
       if (!cartItem || !cartItem._id) {
         console.error('找不到购物车商品或商品ID不存在');
+        wx.showToast({
+          title: '删除失败',
+          icon: 'none'
+        });
         return;
       }
-      
-      console.log('删除购物车商品，ID:', cartItem._id);
-      
-      // 更新商品的isDelete字段为true（软删除）
+
       cart.doc(cartItem._id)
         .update({
           data: {
@@ -217,44 +220,40 @@ Component({
             updatedAt: new Date()
           }
         })
-        .then((res) => {
-          console.log('删除购物车商品成功', res);
-          // 重新获取购物车商品
-          this.fetchCartItems();
+        .then(() => {
+          wx.showToast({
+            title: '删除成功',
+            icon: 'success',
+            duration: 1500
+          });
+          // 标记购物车数据变更，返回购物车时刷新
+          const app = getApp();
+          app.globalData.cartDirty = true;
+          // 直接从数组中移除该商品，而不是重新加载
+          const cartItems = this.data.cartItems.filter(item => item.productId !== productId);
+          this.setData({ cartItems });
         })
         .catch((err) => {
           console.error('删除购物车商品失败', err);
+          wx.showToast({
+            title: '删除失败',
+            icon: 'none'
+          });
         });
     }
   },
 
-  /**
-   * 组件生命周期
-   */
-  lifetimes: {
-    // 组件显示时获取购物车商品
-    show() {
-      if (this.properties.visible) {
-        this.fetchCartItems();
-        // 5秒后隐藏提示文字
-        this.setData({ showHint: true });
-        setTimeout(() => {
-          this.setData({ showHint: false });
-        }, 5000);
-      }
-    }
-  },
-
-  // 监听属性变化
   observers: {
     'visible'(visible) {
       if (visible) {
-        this.fetchCartItems();
-        // 5秒后隐藏提示文字
+        console.log('[购物车预览] 弹窗显示，开始加载购物车数据');
+        this.fetchCartItems(true);
         this.setData({ showHint: true });
         setTimeout(() => {
           this.setData({ showHint: false });
         }, 5000);
+      } else {
+        console.log('[购物车预览] 弹窗关闭');
       }
     }
   }

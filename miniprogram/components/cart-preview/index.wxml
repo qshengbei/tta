@@ -11,19 +11,14 @@
       <text class="cart-preview__close" bindtap="close">×</text>
     </view>
     
-    <view class="cart-preview__body">
-      <view wx:if="{{cartItems.length === 0}}" class="cart-preview__empty">
-        <text>购物车为空</text>
-        <text>去添加商品吧</text>
-      </view>
-      
-      <view wx:else class="cart-preview__items">
+    <scroll-view wx:if="{{cartItems.length > 0}}" class="cart-preview__body" scroll-y="true" bindscrolltolower="loadMoreCartItems" lower-threshold="50">
+      <view class="cart-preview__items">
         <view wx:for="{{cartItems}}" wx:key="_id" class="cart-preview__item-container">
-          <view class="cart-preview__item" 
-                data-product-id="{{item.productId}}" 
-                bindtouchstart="touchStart" 
-                bindtouchmove="touchMove" 
-                bindtouchend="touchEnd" 
+          <view class="cart-preview__item"
+                data-product-id="{{item.productId}}"
+                bindtouchstart="touchStart"
+                bindtouchmove="touchMove"
+                bindtouchend="touchEnd"
                 style="transform: translateX({{item.translateX}}rpx);">
             <image class="cart-preview__item-image" src="{{item.coverImage}}" mode="aspectFill"></image>
             <view class="cart-preview__item-info">
@@ -34,10 +29,23 @@
               <text>×{{item.quantity}}</text>
             </view>
           </view>
-          <view class="cart-preview__item-delete" bindtap="deleteCartItem" data-product-id="{{item.productId}}">
+          <view wx:if="{{item.translateX < 0}}" class="cart-preview__item-delete" bindtap="deleteCartItem" data-product-id="{{item.productId}}">
             <text class="cart-preview__item-delete-text">删除</text>
           </view>
         </view>
+        <view wx:if="{{loadingMore}}" class="cart-preview__loading">
+          <text>加载中...</text>
+        </view>
+        <view wx:elif="{{!hasMore && cartItems.length > 0}}" class="cart-preview__no-more">
+          <text>没有更多啦</text>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view wx:else class="cart-preview__body cart-preview__body--empty">
+      <view class="cart-preview__empty">
+        <text>购物车为空</text>
+        <text>去添加商品吧</text>
       </view>
     </view>
     

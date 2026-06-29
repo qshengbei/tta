@@ -181,6 +181,10 @@
         <image class="admin-section__item-icon" src="../../images/icons/系统设置.png"></image>
         <text class="admin-section__item-text">通知管理</text>
       </view>
+      <view class="admin-section__item" bindtap="goToBannerManagement">
+        <image class="admin-section__item-icon" src="../../images/icons/商品管理.png"></image>
+        <text class="admin-section__item-text">Banner管理</text>
+      </view>
     </view>
   </view>
 

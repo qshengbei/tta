@@ -1,0 +1,212 @@
+购物车页面-商品实时监听开启
+watcherManager.js:102 [WatcherManager] Created watcher: cart_products
+index.js? [sm]:473 [购物车] fetchCartItems 调用 - showLoading: true, forceRefresh: false, reset: true
+index.js? [sm]:481 [购物车] 当前状态 - cachedCartItems数量: 0, currentCartItems数量: 0
+cursorPagination.js:44 [CursorPagination] fetchPage 开始
+cursorPagination.js:45 [CursorPagination] baseQuery: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false}
+cursorPagination.js:46 [CursorPagination] lastCursor: null
+cursorPagination.js:47 [CursorPagination] cursorField: _id
+cursorPagination.js:70 [CursorPagination] 执行查询，pageSize: 18 ，请求 limit: 19
+index.js? [sm]:56 [购物车页面] 页面显示
+index.js? [sm]:68 [购物车页面] 数据已初始化且无变更，保持列表不变
+index.js? [sm]:71 [购物车页面] 页面重新可见，启动监听器
+index.js? [sm]:118 购物车页面-商品实时监听开启
+watcherManager.js:37 [WatcherManager] Watcher "cart_products" already exists
+create @ watcherManager.js:37
+startProductWatch @ index.js? [sm]:120
+onShow @ index.js? [sm]:72
+index.js? [sm]:132 [购物车页面] 收到 init 快照，跳过
+app.js:194 [APP:checkWelcomeMessage] 查询通知完成，耗时: 3080 ms，结果: {data: Array(1), errMsg: "collection.get:ok"}
+app.js:220 [APP:checkWelcomeMessage] 已有欢迎消息
+app.js:222 [APP:checkWelcomeMessage] ====== checkWelcomeMessage 完成 ======，总耗时: 3081 ms
+index.js? [sm]:317 [首页] 当前newProducts数量: 10
+index.js? [sm]:318 [首页] 当前seriesList数量: 3
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0fb7 doc: {_id: "fb39ee6269aecedd00cb426d7f7d0fb7", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08025 doc: {_id: "ed435bfa69aecef000ca29e619b08025", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e68591012e8 doc: {_id: "7eeea64669aecf0a00c94e68591012e8", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0f01 doc: {_id: "fb39ee6269aecedd00cb426d7f7d0f01", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+[pages/cart/index] Some selectors are not allowed in component wxss, including tag name selectors, ID selectors, and attribute selectors.(./components/search-filter-panel/index.wxss:391:22)
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08001 doc: {_id: "ed435bfa69aecef000ca29e619b08001", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101201 doc: {_id: "7eeea64669aecf0a00c94e6859101201", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0f02 doc: {_id: "fb39ee6269aecedd00cb426d7f7d0f02", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/scrunchie-blue-cover.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。INS 风克莱因蓝发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08002 doc: {_id: "ed435bfa69aecef000ca29e619b08002", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/clip-gold-cover.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101202 doc: {_id: "7eeea64669aecf0a00c94e6859101202", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/bag-ivory-cover.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "米白布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: fb39ee6269aecedd00cb426d7f7d0111 doc: {_id: "fb39ee6269aecedd00cb426d7f7d0111", categoryId: "01dd11eb69afd7a00007a272735aec9d", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/001.jpg", createdAt: "2026-03-09T11:00:00.000Z", description: "INS风扎染双层发圈，柔软布料，日常与礼服皆可搭配。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: ed435bfa69aecef000ca29e619b08112 doc: {_id: "ed435bfa69aecef000ca29e619b08112", categoryId: "354f915a69afd7ba00088dfa7e0ef039", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/003.jpg", createdAt: "2026-03-09T11:05:00.000Z", description: "极简线条金属发夹，适合日常通勤与聚会。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 7eeea64669aecf0a00c94e6859101113 doc: {_id: "7eeea64669aecf0a00c94e6859101113", categoryId: "022d455369afd7cc000828680ed500e7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/004.jpg", createdAt: "2026-03-09T11:10:00.000Z", description: "韩国碎花布料耳机包，小体积大容量，INS 风质感。", …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: d3a457a269d54823035917cd6dcfc745 doc: {_id: "d3a457a269d54823035917cd6dcfc745", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1775585297632.png", createdAt: Wed Apr 08 2026 02:08:35 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 1fa8f55169d683fb0372c6697a417a11 doc: {_id: "1fa8f55169d683fb0372c6697a417a11", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1775666090762.png", createdAt: Thu Apr 09 2026 00:36:11 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: f0df711e69d685fc037324a41c69c9fc doc: {_id: "f0df711e69d685fc037324a41c69c9fc", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "dde8ef4869d6831d037037fb1e582dc7", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1775666598537.png", createdAt: Thu Apr 09 2026 00:44:44 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: bc7ee4c56a1709fa00efcc5979e92032 doc: {_id: "bc7ee4c56a1709fa00efcc5979e92032", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779894760493.png", createdAt: Wed May 27 2026 23:12:58 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: c40002b26a170b3700f02cd65ceae5a6 doc: {_id: "c40002b26a170b3700f02cd65ceae5a6", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895087377.png", createdAt: Wed May 27 2026 23:18:15 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: f9d11e1d6a170b6600ed3a3677a29d79 doc: {_id: "f9d11e1d6a170b6600ed3a3677a29d79", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895134659.png", createdAt: Wed May 27 2026 23:19:01 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 85c6ec7c6a170b8700eb52be2c868e35 doc: {_id: "85c6ec7c6a170b8700eb52be2c868e35", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895168741.png", createdAt: Wed May 27 2026 23:19:35 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 669eebf36a170ba800eefc9900ba52fd doc: {_id: "669eebf36a170ba800eefc9900ba52fd", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895202025.png", createdAt: Wed May 27 2026 23:20:07 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: bff52e9f6a170bcf00eda9bc2f13da56 doc: {_id: "bff52e9f6a170bcf00eda9bc2f13da56", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895236135.png", createdAt: Wed May 27 2026 23:20:46 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: f9d11e1d6a170c1800ed5880444fbc1a doc: {_id: "f9d11e1d6a170c1800ed5880444fbc1a", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895287482.png", createdAt: Wed May 27 2026 23:22:00 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 669eebf36a170c4500ef10045465e2a4 doc: {_id: "669eebf36a170c4500ef10045465e2a4", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895350756.png", createdAt: Wed May 27 2026 23:22:44 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 7d17c2c66a170c6e00f15c1b4096b1e3 doc: {_id: "7d17c2c66a170c6e00f15c1b4096b1e3", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895396004.png", createdAt: Wed May 27 2026 23:23:26 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: c5c2a88a6a170cfb00ef0b664587c2de doc: {_id: "c5c2a88a6a170cfb00ef0b664587c2de", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895536417.png", createdAt: Wed May 27 2026 23:25:47 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: a54a659b6a170d1c00ed001d358eb220 doc: {_id: "a54a659b6a170d1c00ed001d358eb220", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895568145.png", createdAt: Wed May 27 2026 23:26:19 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 3f895cc36a170dec00ee8da8078ed81c doc: {_id: "3f895cc36a170dec00ee8da8078ed81c", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895767709.png", createdAt: Wed May 27 2026 23:29:48 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 669eebf36a170e1500ef4b0c2045b09a doc: {_id: "669eebf36a170e1500ef4b0c2045b09a", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895810794.png", createdAt: Wed May 27 2026 23:30:28 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: bff52e9f6a170e3a00ede1150d7a92e9 doc: {_id: "bff52e9f6a170e3a00ede1150d7a92e9", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779895856556.png", createdAt: Wed May 27 2026 23:31:06 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:327 [首页] 处理变化 - dataType: init docId: 9e779e646a173ed000f2d0d02751a672 doc: {_id: "9e779e646a173ed000f2d0d02751a672", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", categoryId: "", coverImage: "https://636c-cloud1-4gs2vu8c6544e586-1408542930.tcb.qcloud.la/products/cover-1779908277954.png", createdAt: Thu May 28 2026 02:58:24 GMT+0800 (中国标准时间), …}
+index.js? [sm]:330 [首页] 跳过init类型变化
+index.js? [sm]:426 [首页] 准备setData更新UI
+index.js? [sm]:427 [首页] finalProducts数量: 10
+index.js? [sm]:428 [首页] updatedSeriesList数量: 3
+index.js? [sm]:438 [首页] setData完成
+index.js? [sm]:454 [首页] 商品增量更新完成
+[pages/cart/index] Some selectors are not allowed in component wxss, including tag name selectors, ID selectors, and attribute selectors.(./components/quantity-selector/index.wxss:46:17)
+Fri May 29 2026 01:06:35 GMT+0800 (中国标准时间) 云开发数据库索引建议
+发起的如下数据库查询经自动检测发现以下问题
+查询语句:
+db.collection('products').where({})
+.get()
+1. 全量查询告警: 空查询语句可能需扫全表
+cursorPagination.js:73 [CursorPagination] 实际返回数量: 19
+cursorPagination.js:76 [CursorPagination] 第一条数据 _id: f9d11e1d6a17301900f00be957dae475 ，cursor字段值: f9d11e1d6a17301900f00be957dae475
+cursorPagination.js:79 [CursorPagination] 第 18 条数据 _id: 21dd03466a17300d00f3cf86059ed6e2 ，cursor字段值: 21dd03466a17300d00f3cf86059ed6e2
+cursorPagination.js:85 [CursorPagination] 判断：有更多数据（返回 19 条 > pageSize 18 ）
+cursorPagination.js:86 [CursorPagination] lastCursor 更新为: 21dd03466a17300d00f3cf86059ed6e2
+index.js? [sm]:508 [购物车] 从数据库获取数据 - reset: true, rawData数量: 18
+index.js? [sm]:510 [购物车] 原始数据前2条: (2) [{…}, {…}]
+cache.js:114 内存缓存命中: product_c5c2a88a6a170cfb00ef0b664587c2de
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f02
+cache.js:114 内存缓存命中: product_bc7ee4c56a1709fa00efcc5979e92032
+cache.js:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08112
+cache.js:114 内存缓存命中: product_c40002b26a170b3700f02cd65ceae5a6
+cache.js:114 内存缓存命中: product_669eebf36a170ba800eefc9900ba52fd
+cache.js:114 内存缓存命中: product_7d17c2c66a170c6e00f15c1b4096b1e3
+cache.js:114 内存缓存命中: product_f9d11e1d6a170b6600ed3a3677a29d79
+cache.js:114 内存缓存命中: product_bff52e9f6a170e3a00ede1150d7a92e9
+cache.js:114 内存缓存命中: product_bff52e9f6a170bcf00eda9bc2f13da56
+cache.js:114 内存缓存命中: product_f9d11e1d6a170c1800ed5880444fbc1a
+cache.js:114 内存缓存命中: product_3f895cc36a170dec00ee8da8078ed81c
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0111
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f01
+cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0fb7
+cache.js:114 内存缓存命中: product_d3a457a269d54823035917cd6dcfc745
+cache.js:114 内存缓存命中: product_669eebf36a170e1500ef4b0c2045b09a
+cache.js:114 内存缓存命中: product_669eebf36a170c4500ef10045465e2a4
+index.js? [sm]:513 [购物车] 处理后数据数量: 18
+index.js? [sm]:515 [购物车] 处理后第1条数据: {_id: "f9d11e1d6a17301900f00be957dae475", productId: "c5c2a88a6a170cfb00ef0b664587c2de", name: "Aura｜暮色玫瑰发圈", price: 26, quantity: 1, …}
+index.js? [sm]:519 [购物车] 合并后总数量: 18
+index.js? [sm]:524 [购物车] 分页器 hasNext: true
+index.js? [sm]:536 [购物车] 准备调用 setData 更新UI，hasMore: true
+index.js? [sm]:538 [购物车] setData 完成，filteredCartItems数量: 18
+index.js? [sm]:549 [购物车页面] 购物车缓存已更新
+Error: timeout
+    at Function.<anonymous> (WAServiceMainContext.js?t=wechat&v=3.16.0:1)
+    at p (WAServiceMainContext.js?t=wechat&v=3.16.0:1)
+    at WAServiceMainContext.js?t=wechat&v=3.16.0:1
+    at WAServiceMainContext.js?t=wechat&v=3.16.0:1(env: macOS,mp,2.01.2510260; lib: 3.16.0)
+Fri May 29 2026 01:06:36 GMT+0800 (中国标准时间) 云开发数据库索引建议
+发起的如下数据库查询经自动检测发现以下问题
+查询语句:
+db.collection('product_types').where({})
+.get()
+1. 全量查询告警: 空查询语句可能需扫全表
+Fri May 29 2026 01:06:36 GMT+0800 (中国标准时间) 云开发数据库索引建议
+发起的如下数据库查询经自动检测发现以下问题，且可能缺乏高效的索引支持，如果此查询需在生产环境频繁使用，建议建立相应完整索引
+查询语句:
+db.collection('cart').where({
+  _openid: 'o1R-w7S-1p19alqjb6dVUyYdunSs',
+  isDelete: false
+})
+.orderBy('_id', 'desc')
+.get()
+索引建议 : 
+组合索引: 
+  _openid: 升序
+  isDelete: 升序
+  _id: 降序
+
+快速创建索引链接：cloud://createindex?env=cloud1-4gs2vu8c6544e586&collection=cart&from=console&s=%5B%7B%22field%22%3A%22_openid%22%2C%22type%22%3A1%7D%2C%7B%22field%22%3A%22isDelete%22%2C%22type%22%3A1%7D%2C%7B%22field%22%3A%22_id%22%2C%22type%22%3A-1%7D%5D
+如建立上述建议的索引，有以下相同前缀的多余索引可以考虑新索引建立完成后去除：
+索引 1: (索引名 _openid_1)
+  _openid: 升序
+
+index.js? [sm]:574 [购物车页面] loadMoreCartItems called
+index.js? [sm]:575 [购物车页面] 当前状态 - loadingMore: false hasMore: true loading: false
+index.js? [sm]:590 [购物车页面] 开始加载更多
+index.js? [sm]:473 [购物车] fetchCartItems 调用 - showLoading: false, forceRefresh: false, reset: false
+index.js? [sm]:481 [购物车] 当前状态 - cachedCartItems数量: 18, currentCartItems数量: 18
+cursorPagination.js:44 [CursorPagination] fetchPage 开始
+cursorPagination.js:45 [CursorPagination] baseQuery: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false}
+cursorPagination.js:46 [CursorPagination] lastCursor: 21dd03466a17300d00f3cf86059ed6e2
+cursorPagination.js:47 [CursorPagination] cursorField: _id
+cursorPagination.js:58 [CursorPagination] cursorCondition: {_id: pi}
+cursorPagination.js:70 [CursorPagination] 执行查询，pageSize: 18 ，请求 limit: 19
+cursorPagination.js:73 [CursorPagination] 实际返回数量: 2
+cursorPagination.js:76 [CursorPagination] 第一条数据 _id: 21dd03466a172ff700f3cf1d46ea8fce ，cursor字段值: 21dd03466a172ff700f3cf1d46ea8fce
+cursorPagination.js:93 [CursorPagination] 判断：没有更多数据（返回 2 条 <= pageSize 18 ）
+cursorPagination.js:94 [CursorPagination] lastCursor 更新为: 21dd03466a172fe200f3cebc3df350a4
+index.js? [sm]:508 [购物车] 从数据库获取数据 - reset: false, rawData数量: 2
+index.js? [sm]:510 [购物车] 原始数据前2条: (2) [{…}, {…}]
+cache.js:114 内存缓存命中: product_85c6ec7c6a170b8700eb52be2c868e35
+cache.js:114 内存缓存命中: product_7eeea64669aecf0a00c94e6859101113
+index.js? [sm]:513 [购物车] 处理后数据数量: 2
+index.js? [sm]:515 [购物车] 处理后第1条数据: {_id: "21dd03466a172ff700f3cf1d46ea8fce", productId: "85c6ec7c6a170b8700eb52be2c868e35", name: "Aura｜樱粉蜜语发圈", price: 16, quantity: 1, …}
+index.js? [sm]:519 [购物车] 合并后总数量: 20
+index.js? [sm]:524 [购物车] 分页器 hasNext: false
+index.js? [sm]:536 [购物车] 准备调用 setData 更新UI，hasMore: false
+index.js? [sm]:538 [购物车] setData 完成，filteredCartItems数量: 20
+Fri May 29 2026 01:06:41 GMT+0800 (中国标准时间) 云开发数据库索引建议
+发起的如下数据库查询经自动检测发现以下问题，且可能缺乏高效的索引支持，如果此查询需在生产环境频繁使用，建议建立相应完整索引
+查询语句:
+db.collection('cart').where({
+  _openid: 'o1R-w7S-1p19alqjb6dVUyYdunSs',
+  isDelete: false,
+  _id: _.lt('21dd03466a17300d00f3cf86059ed6e2')
+})
+.orderBy('_id', 'desc')
+.get()
+索引建议 : 
+组合索引: 
+  _openid: 升序
+  isDelete: 升序
+  _id: 降序
+  _id: 升序
+
+快速创建索引链接：cloud://createindex?env=cloud1-4gs2vu8c6544e586&collection=cart&from=console&s=%5B%7B%22field%22%3A%22_openid%22%2C%22type%22%3A1%7D%2C%7B%22field%22%3A%22isDelete%22%2C%22type%22%3A1%7D%2C%7B%22field%22%3A%22_id%22%2C%22type%22%3A-1%7D%2C%7B%22field%22%3A%22_id%22%2C%22type%22%3A1%7D%5D
+如建立上述建议的索引，有以下相同前缀的多余索引可以考虑新索引建立完成后去除：
+索引 1: (索引名 _openid_1)
+  _openid: 升序
+
+index.js? [sm]:574 [购物车页面] loadMoreCartItems called
+index.js? [sm]:575 [购物车页面] 当前状态 - loadingMore: false hasMore: false loading: false
+index.js? [sm]:584 [购物车页面] 不需要加载更多
+index.js? [sm]:574 [购物车页面] loadMoreCartItems called
+index.js? [sm]:575 [购物车页面] 当前状态 - loadingMore: false hasMore: false loading: false
+index.js? [sm]:584 [购物车页面] 不需要加载更多

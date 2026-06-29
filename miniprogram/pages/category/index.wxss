@@ -209,6 +209,7 @@
 /* 左侧分类导航 */
 .categories-nav {
   width: 150rpx;
+  height: 100%;
   background-color: #f8f8f8;
   overflow-y: auto;
 }
@@ -368,6 +369,10 @@
   text-align: left;
 }
 
+.series-products .no-more {
+  background-color: transparent;
+}
+
 /* 一级分类内容 */
 .category-content {
   width: 100%;
@@ -464,5 +469,34 @@
   
   .category-image {
     height: 120rpx;
+  }
+}
+
+/* 加载更多 */
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.loading-more__spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 2rpx solid #ddd;
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12rpx;
+}
+
+.loading-more__text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
   }
 }

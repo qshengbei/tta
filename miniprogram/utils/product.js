@@ -56,24 +56,35 @@ export async function getProductsDetail(productIds, forceRefresh = false) {
     uncachedIds.push(...productIds);
   }
   
-  // 从数据库获取未缓存的商品
+  // 从数据库获取未缓存的商品（分批并行 + 保持顺序）
   if (uncachedIds.length > 0) {
     const products = getCollection('products');
+    const batchSize = 6; // 每批并行加载 6 个商品
+    const batches = [];
+    
+    // 分批
+    for (let i = 0; i < uncachedIds.length; i += batchSize) {
+      batches.push(uncachedIds.slice(i, i + batchSize));
+    }
+    
     try {
-      const productPromises = uncachedIds.map(productId => 
-        products.doc(productId).get()
-          .then(res => {
-            if (res.data) {
-              cacheProduct(productId, res.data);
-              productMap.set(productId, res.data);
-            }
-          })
-          .catch(err => {
-            console.error(`获取商品详情失败: ${productId}`, err);
-          })
-      );
-      
-      await Promise.all(productPromises);
+      // 按批次顺序处理，每批次内并行加载
+      for (const batch of batches) {
+        const batchPromises = batch.map(productId => 
+          products.doc(productId).get()
+            .then(res => {
+              if (res.data) {
+                cacheProduct(productId, res.data);
+                productMap.set(productId, res.data);
+              }
+            })
+            .catch(err => {
+              console.error(`获取商品详情失败: ${productId}`, err);
+            })
+        );
+        
+        await Promise.all(batchPromises);
+      }
     } catch (err) {
       console.error('批量获取商品详情失败:', err);
     }

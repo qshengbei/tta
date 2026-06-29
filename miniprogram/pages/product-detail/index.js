@@ -2,10 +2,29 @@ import { getCollection } from "../../utils/cloud";
 import QQMapWX from "../../utils/qqmap-wx-jssdk1.2/qqmap-wx-jssdk";
 import { calculateShippingFee, sortExpressRules, DEFAULT_EXPRESS_RULES } from "../../utils/shipping";
 import { scanQRCode } from "../../utils/customer-service";
-import { showShareOptions, hideShareOptions, shareToFriend, shareToTimeline, generatePoster, getShareAppMessageConfig, getShareTimelineConfig } from "../../utils/share";
-import watcherManager from '../../utils/watcherManager';
+import { showShareOptions, hideShareOptions, shareToFriend, shareToTimeline, generatePoster, savePosterToAlbum, closePosterPreview, getShareAppMessageConfig, getShareTimelineConfig } from "../../utils/share";
+import { getGlobalProductWatcher } from '../../utils/globalProductWatcher';
 import { getCachedProduct, cacheExpressRules, getCachedExpressRules, cacheAddress, getCachedAddress } from "../../utils/cache";
 import { getProductDetail, isProductSoldOut, formatPrice, buildPreviewImages } from "../../utils/product";
+
+// 商品类型内存缓存（跨多次调用共享）
+const productTypeCache = new Map();
+const _command = wx.cloud.database().command;
+
+async function batchFetchTypes(typeIds) {
+  const uncached = typeIds.filter(id => !productTypeCache.has(id));
+  if (uncached.length > 0) {
+    const res = await getCollection("product_types")
+      .where({ _id: _command.in(uncached) })
+      .get();
+    (res.data || []).forEach(t => productTypeCache.set(t._id, t));
+  }
+  const result = {};
+  typeIds.forEach(id => {
+    if (productTypeCache.has(id)) result[id] = productTypeCache.get(id);
+  });
+  return result;
+}
 
 Page({
   data: {
@@ -40,7 +59,14 @@ Page({
     buyTips: "", // 购买须知
     customerServiceMethod: "official", // 客服方法：official=官方客服，custom=自定义客服
     pageVisible: false, // 页面可见性
-    pendingRefresh: false // 页面隐藏期间数据是否有变化
+    pendingRefresh: false, // 页面隐藏期间数据是否有变化
+    isPreviewingImage: false, // 是否正在预览图片
+    showPosterPreview: false, // 海报预览弹窗显示状态
+    posterImagePath: "", // 海报图片路径
+    posterCanvasWidth: 750, // 海报画布宽度（rpx）
+    posterCanvasHeight: 1334, // 海报画布高度（rpx）
+    posterCanvasWidthPx: 375, // 海报画布实际像素宽度
+    posterCanvasHeightPx: 667 // 海报画布实际像素高度
   },
 
   onLoad(options) {
@@ -74,8 +100,22 @@ Page({
     const wasHidden = !this.data.pageVisible;
     this.setData({ pageVisible: true });
     
+    // 如果是从图片预览回来的，不刷新页面
+    if (this.data.isPreviewingImage) {
+      console.log('[商品详情页面] 从图片预览回来，不刷新');
+      this.setData({ isPreviewingImage: false });
+      return;
+    }
+    
     if (!this.data.productId) {
       return;
+    }
+    
+    // 监听器健康检查
+    const watcher = getGlobalProductWatcher();
+    const healthCheck = watcher.checkNeedsRefresh();
+    if (healthCheck.needsRefresh) {
+      console.log('[商品详情页面] 监听器健康检查不通过:', healthCheck.reason);
     }
     
     // 1. 先读取并同步最新数据（全局监听器可能已经更新了缓存）
@@ -93,21 +133,26 @@ Page({
     }
     
     // 后台从数据库同步最新数据（兜底）
-    this.fetchProduct(true);
+    // 如果监听器不健康，强制刷新
+    this.fetchProduct(!healthCheck.needsRefresh);
   },
 
   onHide() {
     this.setData({ pageVisible: false });
-    console.log('[商品详情页面] 页面隐藏，关闭监听器');
-    // 页面隐藏时关闭监听器，节省资源
-    const listenerKey = `product_detail_${this.data.productId}`;
-    watcherManager.destroy(listenerKey);
+    console.log('[商品详情页面] 页面隐藏');
+    // 设置页面不可见
+    if (this.__pageId) {
+      getGlobalProductWatcher().setPageVisible(this.__pageId, false);
+    }
   },
 
   onUnload() {
-    console.log('[商品详情页面] 页面卸载，关闭实时监听');
-    const listenerKey = `product_detail_${this.data.productId}`;
-    watcherManager.destroy(listenerKey);
+    console.log('[商品详情页面] 页面卸载');
+    // 取消订阅
+    if (this._unsubscribe) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
   },
 
   // 启动商品详情监听
@@ -118,56 +163,36 @@ Page({
       return;
     }
 
-    const listenerKey = `product_detail_${productId}`;
+    // 生成页面唯一 ID
+    this.__pageId = `product_detail_${productId}_${Date.now()}`;
     
-    // 先销毁旧的监听（如果有的话）
-    Object.keys(watcherManager.watchers || {}).forEach(key => {
-      if (key.startsWith('product_detail_') && key !== listenerKey) {
-        console.log('[商品详情页面] 销毁旧监听:', key);
-        watcherManager.destroy(key);
-      }
-    });
-    
-    // 使用watcherManager创建监听
-    watcherManager.create(listenerKey, () => {
-      try {
-        const db = wx.cloud.database();
-        return db.collection('products').doc(productId).watch({
-          onChange: (snapshot) => {
-            if (!this.data.pageVisible) return;
-            console.log('[商品详情页面] 商品数据变化:', snapshot);
-            // 处理商品变化
-            this.handleProductChanges(snapshot);
-          },
-          onError: (error) => {
-            console.error('[商品详情页面] 商品监听失败:', error);
-            // 自动重连
-            watcherManager.autoReconnect(listenerKey, 'product detail watch error');
-          }
-        });
-      } catch (error) {
-        console.error('[商品详情页面] 初始化商品监听失败:', error);
-        throw error;
-      }
-    });
+    // 订阅全局商品监听
+    const watcher = getGlobalProductWatcher();
+    this._unsubscribe = watcher.subscribe(
+      this.__pageId, `product_detail_${productId}`,
+      (change) => this._onProductChanged(change)
+    );
   },
 
-  // 处理商品数据变化
-  handleProductChanges(snapshot) {
-    console.log('[商品详情页面] handleProductChanges 被调用', snapshot);
-    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
+  /**
+   * 全局监听器回调处理
+   * @param {Object} change { type: 'add'|'modify'|'remove', product, docId, cacheKey }
+   */
+  _onProductChanged(change) {
+    console.log('[商品详情页面] _onProductChanged:', change);
+    
+    // 只处理当前商品的变化
+    if (change.docId !== this.data.productId) {
       return;
     }
 
-    const change = snapshot.docChanges[0];
-    if (change.dataType === 'init') {
-      return;
-    }
+    const { type, product } = change;
 
-    console.log('[商品详情页面] 处理商品变化:', change.dataType);
-
-    // 如果是删除，标记商品已下架
-    if (change.dataType === 'remove') {
+    // 兼容 'update' 和 'modify' 两种类型
+    const isModify = type === 'modify' || type === 'update';
+    
+    if (type === 'remove') {
+      // 商品被删除
       if (this.data.pageVisible) {
         this.setData({
           product: {
@@ -178,7 +203,6 @@ Page({
           errorMessage: '商品已下架'
         });
       } else {
-        // 页面隐藏时，标记待更新
         this.setData({ 
           product: {
             ...this.data.product,
@@ -189,28 +213,70 @@ Page({
           pendingRefresh: true 
         });
       }
+    } else if (isModify) {
+      // 商品被修改
+      const shouldRemove = product.status !== 'on' || product.isDeleted === true;
+      
+      if (shouldRemove) {
+        // 商品下架或删除
+        if (this.data.pageVisible) {
+          this.setData({
+            product: {
+              ...this.data.product,
+              status: 'off'
+            },
+            error: true,
+            errorMessage: '商品已下架'
+          });
+        } else {
+          this.setData({ 
+            product: {
+              ...this.data.product,
+              status: 'off'
+            },
+            error: true,
+            errorMessage: '商品已下架',
+            pendingRefresh: true 
+          });
+        }
+      } else {
+        // 正常更新
+        if (this.data.pageVisible) {
+          this.updateProductData(product);
+        } else {
+          console.log('[商品详情页面] 页面隐藏，标记待更新');
+          this.setData({ 
+            product,
+            pendingRefresh: true 
+          });
+        }
+      }
+    } else if (type === 'add') {
+      // 新增商品（商品详情页一般不会收到 add 事件）
+      if (this.data.pageVisible) {
+        this.updateProductData(product);
+      }
+    }
+  },
+
+  // 处理商品数据变化（兼容旧接口）
+  handleProductChanges(snapshot) {
+    console.warn('[商品详情页面] handleProductChanges 已弃用，请使用 _onProductChanged');
+    if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
       return;
     }
 
-    // 如果是新增或更新，直接使用 snapshot 中的数据
-    const product = change.doc || snapshot.docs[0];
-    if (!product) {
-      console.warn('[商品详情页面] 没有获取到商品数据');
+    const change = snapshot.docChanges[0];
+    if (change.dataType === 'init') {
       return;
     }
 
-    // 注意：全局商品缓存由全局监听器更新，这里只负责UI更新
-    if (this.data.pageVisible) {
-      // 页面可见时，直接更新UI
-      this.updateProductData(product);
-    } else {
-      // 页面隐藏时，标记待更新
-      console.log('[商品详情页面] 页面隐藏，标记待更新');
-      this.setData({ 
-        product,
-        pendingRefresh: true 
-      });
-    }
+    const type = change.dataType === 'update' ? 'modify' : change.dataType;
+    this._onProductChanged({
+      type,
+      product: change.doc || snapshot.docs[0],
+      docId: change.id || change.doc?._id
+    });
   },
 
   // 更新商品数据（实时监听触发时调用）
@@ -809,7 +875,8 @@ Page({
             data: {
               quantity: res.data[0].quantity + this.data.quantity,
               message: this.data.message,
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              updatedAtTs: Date.now()
             }
           });
         } else {
@@ -832,7 +899,8 @@ Page({
                 isDelete: false,
                 sort: sort,
                 createdAt: new Date(),
-                updatedAt: new Date()
+                updatedAt: new Date(),
+                updatedAtTs: Date.now()
               }
             });
           });
@@ -891,6 +959,7 @@ Page({
 
   // 显示购物车预览
   showCartPreview() {
+    console.log('[商品详情页] 点击购物车按钮，显示购物车预览弹窗');
     this.setData({
       showCartPreview: true
     });
@@ -898,6 +967,7 @@ Page({
 
   // 关闭购物车预览
   closeCartPreview() {
+    console.log('[商品详情页] 关闭购物车预览弹窗');
     this.setData({
       showCartPreview: false
     });
@@ -1231,6 +1301,7 @@ Page({
 
   // 处理图片点击，显示预览
   handleImageTap(e) {
+    this.setData({ isPreviewingImage: true });
     const currentIndex = parseInt(e.currentTarget.dataset.index) || 0;
     wx.previewImage({
       current: this.data.previewImageUrls[currentIndex],
@@ -1284,6 +1355,16 @@ Page({
     generatePoster(this);
   },
 
+  // 保存海报到相册
+  savePosterToAlbum() {
+    savePosterToAlbum(this);
+  },
+
+  // 关闭海报预览
+  closePosterPreview() {
+    closePosterPreview(this);
+  },
+
   // 分享给微信好友的配置
   onShareAppMessage() {
     const product = this.data.product;
@@ -1311,198 +1392,97 @@ Page({
   },
 
   // 获取同布料的商品
-  fetchSameMaterialProducts(materialId) {
+  async fetchSameMaterialProducts(materialId) {
     console.log('开始获取同布料商品，materialId:', materialId);
-    const products = getCollection("products");
-    const productTypes = getCollection("product_types");
-    
-    console.log('开始查询同布料商品，materialId:', materialId);
-    products
-      .where({ materialId: materialId })
-      .get()
-      .then((res) => {
-        console.log('查询结果:', res);
-        const sameMaterialProducts = res.data || [];
-        console.log('获取到同布料商品:', sameMaterialProducts.length);
-        console.log('商品详情:', sameMaterialProducts);
-        
-        // 分离当前商品和其他同布料商品
-        const currentProduct = this.data.product;
-        const otherProducts = sameMaterialProducts.filter(product => product._id !== currentProduct._id);
-        
-        // 构建分组结果
-        const groupedProducts = [];
-        
-        // 添加当前商品区域
-        groupedProducts.push({
-          type: '当前商品',
-          products: [currentProduct]
-        });
-        
-        // 如果有其他同布料商品，添加布料同款区域
-        if (otherProducts.length > 0) {
-          // 按类型分组
-          const typeGroupedProducts = {};
-          
-          // 先获取所有类型信息
-          const typeIds = [...new Set(otherProducts.map(product => product.typeId).filter(Boolean))];
-          console.log('类型ID:', typeIds);
-          
-          if (typeIds.length === 0) {
-            console.log('没有类型ID，按默认分组');
-            // 没有类型ID时，将所有商品放在默认分组
-            groupedProducts.push({
-              type: '布料同款',
-              products: otherProducts
-            });
-            this.setData({
-              groupedProducts: groupedProducts
-            });
+    try {
+      // 递归分页加载全部，每次取 20 条（免费版单次上限）
+      const sameMaterialProducts = await this._fetchAllByMaterial(materialId);
+
+      const currentProduct = this.data.product;
+      const otherProducts = sameMaterialProducts.filter(p => p._id !== currentProduct._id);
+
+      const groupedProducts = [{
+        type: '当前商品',
+        products: [currentProduct]
+      }];
+
+      if (otherProducts.length === 0) {
+        this.setData({ groupedProducts });
+        return;
+      }
+
+      // 批量获取类型和父类型信息（利用内存缓存，后续调用秒回）
+      const typeIds = [...new Set(otherProducts.map(p => p.typeId).filter(Boolean))];
+      let typeMap = {}, parentTypeMap = {};
+
+      if (typeIds.length > 0) {
+        typeMap = await batchFetchTypes(typeIds);
+        const parentTypeIds = [...new Set(Object.values(typeMap).map(t => t.parentId).filter(Boolean))];
+        if (parentTypeIds.length > 0) {
+          parentTypeMap = await batchFetchTypes(parentTypeIds);
+        }
+      }
+
+      // 按父类型分组
+      const typeGrouped = {};
+      const ungrouped = [];
+
+      otherProducts.forEach(product => {
+        const type = typeMap[product.typeId];
+        if (type && type.parentId) {
+          const parentType = parentTypeMap[type.parentId];
+          if (parentType) {
+            const name = parentType.name;
+            if (!typeGrouped[name]) typeGrouped[name] = { type: name, products: [] };
+            typeGrouped[name].products.push(product);
             return;
           }
-          
-          const typePromises = typeIds.map(typeId => productTypes.doc(typeId).get());
-          
-          Promise.all(typePromises)
-            .then((typeResults) => {
-              const typeMap = {};
-              typeResults.forEach(result => {
-                if (result.data) {
-                  typeMap[result.data._id] = result.data;
-                }
-              });
-              console.log('类型信息:', typeMap);
-              
-              // 再获取所有父类型信息
-              const parentTypeIds = [...new Set(Object.values(typeMap).map(type => type.parentId).filter(Boolean))];
-              console.log('父类型ID:', parentTypeIds);
-              
-              if (parentTypeIds.length === 0) {
-                console.log('没有父类型ID，按默认分组');
-                // 没有父类型ID时，将所有商品放在默认分组
-                groupedProducts.push({
-                  type: '布料同款',
-                  products: otherProducts
-                });
-                this.setData({
-                  groupedProducts: groupedProducts
-                });
-                return;
-              }
-              
-              const parentTypePromises = parentTypeIds.map(parentId => productTypes.doc(parentId).get());
-              
-              Promise.all(parentTypePromises)
-                .then((parentTypeResults) => {
-                  const parentTypeMap = {};
-                  parentTypeResults.forEach(result => {
-                    if (result.data) {
-                      parentTypeMap[result.data._id] = result.data;
-                    }
-                  });
-                  console.log('父类型信息:', parentTypeMap);
-                  
-                  // 按父类型分组
-                  const ungroupedProducts = [];
-                  
-                  otherProducts.forEach(product => {
-                    const type = typeMap[product.typeId];
-                    console.log('处理商品:', product.name, 'typeId:', product.typeId, 'type:', type);
-                    if (type && type.parentId) {
-                      const parentType = parentTypeMap[type.parentId];
-                      console.log('父类型:', parentType);
-                      if (parentType) {
-                        const parentTypeName = parentType.name;
-                        if (!typeGroupedProducts[parentTypeName]) {
-                          typeGroupedProducts[parentTypeName] = {
-                            type: parentTypeName,
-                            products: []
-                          };
-                        }
-                        typeGroupedProducts[parentTypeName].products.push(product);
-                        console.log('添加商品到分组:', parentTypeName, product.name);
-                      } else {
-                        // 父类型不存在，加入未分组商品
-                        ungroupedProducts.push(product);
-                      }
-                    } else {
-                      // 类型不存在或没有父类型，加入未分组商品
-                      ungroupedProducts.push(product);
-                    }
-                  });
-                  
-                  // 创建布料同款分组
-                  const fabricSameGroup = {
-                    type: '布料同款',
-                    subGroups: []
-                  };
-                  
-                  // 将分组后的商品添加到布料同款分组
-                  const fabricSameProducts = Object.values(typeGroupedProducts);
-                  if (fabricSameProducts.length > 0) {
-                    fabricSameGroup.subGroups.push(...fabricSameProducts);
-                  }
-                  
-                  // 将未分组商品添加到布料同款分组
-                  if (ungroupedProducts.length > 0) {
-                    fabricSameGroup.subGroups.push({
-                      type: '其他',
-                      products: ungroupedProducts
-                    });
-                  }
-                  
-                  // 添加布料同款分组到结果中
-                  if (fabricSameGroup.subGroups.length > 0) {
-                    groupedProducts.push(fabricSameGroup);
-                  }
-                  
-                  console.log('最终分组结果:', groupedProducts);
-                  this.setData({
-                    groupedProducts: groupedProducts
-                  });
-                })
-                .catch((err) => {
-                  console.error("获取父类型信息失败", err);
-                  // 出错时，将所有商品放在布料同款分组
-                  groupedProducts.push({
-                    type: '布料同款',
-                    products: otherProducts
-                  });
-                  this.setData({
-                    groupedProducts: groupedProducts
-                  });
-                });
-          })
-          .catch((err) => {
-            console.error("获取类型信息失败", err);
-            // 出错时，将所有商品放在布料同款分组
-            groupedProducts.push({
-              type: '布料同款',
-              products: otherProducts
-            });
-            this.setData({
-              groupedProducts: groupedProducts
-            });
-          });
-      } else {
-        // 没有其他同布料商品
-        console.log('没有其他同布料商品');
-        this.setData({
-          groupedProducts: groupedProducts
-        });
-      }
-      })
-      .catch((err) => {
-        console.error("获取同布料商品失败", err);
-        // 出错时，只显示当前商品
-        const currentProduct = this.data.product;
-        this.setData({
-          groupedProducts: [{
-            type: '当前商品',
-            products: [currentProduct]
-          }]
-        });
+        }
+        ungrouped.push(product);
       });
+
+      const subGroups = Object.values(typeGrouped);
+      if (ungrouped.length > 0) subGroups.push({ type: '其他', products: ungrouped });
+
+      if (subGroups.length > 0) {
+        groupedProducts.push({ type: '布料同款', subGroups });
+      }
+
+      console.log('分组结果:', groupedProducts);
+      this.setData({ groupedProducts });
+
+    } catch (err) {
+      console.error("获取同布料商品失败", err);
+      this.setData({
+        groupedProducts: [{
+          type: '当前商品',
+          products: [this.data.product]
+        }]
+      });
+    }
+  },
+
+  // 递归分页加载全部同布料商品（免费版每次上限 20 条）
+  async _fetchAllByMaterial(materialId) {
+    const pageSize = 20;
+    let allProducts = [];
+    let skip = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await getCollection("products")
+        .where({ materialId: materialId })
+        .orderBy('_id', 'desc')
+        .skip(skip)
+        .limit(pageSize)
+        .get();
+      const data = res.data || [];
+      allProducts = [...allProducts, ...data];
+      hasMore = data.length === pageSize;
+      skip += pageSize;
+    }
+
+    return allProducts;
   },
 
   // 显示商品选择器
@@ -1564,6 +1544,7 @@ Page({
 
   // 处理商品选择模态框中图片点击
   handleOptionImageTap(e) {
+    this.setData({ isPreviewingImage: true });
     const product = e.currentTarget.dataset.product;
     const currentIndex = parseInt(e.currentTarget.dataset.index) || 0;
     
@@ -1586,6 +1567,7 @@ Page({
 
   // 处理商品选择模态框顶部已选商品图片点击
   handleSelectedImageTap() {
+    this.setData({ isPreviewingImage: true });
     wx.previewImage({
       current: this.data.previewImageUrls[0],
       urls: this.data.previewImageUrls
@@ -1594,6 +1576,7 @@ Page({
 
   // 处理商品详情图片点击
   handleDetailImageTap(e) {
+    this.setData({ isPreviewingImage: true });
     const currentIndex = parseInt(e.currentTarget.dataset.index) || 0;
     wx.previewImage({
       current: this.data.previewImageUrls[currentIndex],

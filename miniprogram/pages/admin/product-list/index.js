@@ -1,4 +1,7 @@
-// pages/product-list/index.js
+// pages/admin/product-list/index.js
+import PagePaginator from '../../../utils/pagePaginator';
+import productCacheStore from '../../../utils/productCacheStore';
+
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -17,16 +20,17 @@ Page({
     categoryId: '',
     typeId: '',
     categories: [],
-    inStock: null
+    inStock: null,
+    // 分页相关
+    loadingMore: false,
+    hasMore: true,
+    showSkeleton: true
   },
 
   async onLoad(options) {
-    // 解析页面参数
     const { type, keyword, categoryId, typeId, categories, inStock } = options;
-    
-    // 对关键词进行 URL 解码
     const decodedKeyword = keyword ? decodeURIComponent(keyword) : '';
-    
+
     this.setData({
       pageType: type || 'all',
       keyword: decodedKeyword,
@@ -36,17 +40,38 @@ Page({
       inStock: inStock !== undefined ? inStock === 'true' : null
     });
 
-    // 设置页面标题
     await this.setPageTitle();
-    
-    // 加载商品数据
-    this.loadProducts();
+
+    // 缓存优先加载
+    const cacheKey = this._getCacheKey();
+    const cache = productCacheStore.get(cacheKey);
+
+    if (cache && cache.data && cache.data.length > 0 && !cache.stale) {
+      console.log('[Admin商品列表] 从缓存加载第一页, total:', cache.data.length);
+      this.setData({
+        products: cache.data.slice(0, 18),
+        hasMore: cache.data.length >= 18 || cache.hasMore,
+        showSkeleton: false
+      });
+      this.__cacheIndex = Math.min(18, cache.data.length);
+    }
+
+    this.loadProducts(true);
   },
 
   onShow() {
-    // 页面显示时刷新商品列表
-    console.log('商品列表页面显示，刷新商品数据');
-    this.loadProducts();
+    if (this._initialized) {
+      console.log('[Admin商品列表] 页面显示，刷新数据');
+      this.loadProducts(true);
+    }
+    this._initialized = true;
+  },
+
+  _getCacheKey() {
+    const { pageType, categoryId, typeId } = this.data;
+    if (pageType === 'category' || pageType === 'series') return `admin_products_series_${categoryId || ''}`;
+    if (pageType === 'type') return `admin_products_type_${typeId || ''}`;
+    return 'admin_products_all';
   },
 
   // 获取系列名称
@@ -85,27 +110,22 @@ Page({
   async setPageTitle() {
     const { pageType, keyword, categoryId, typeId, categories, inStock } = this.data;
     let title = '商品列表';
-    
+
     // 检查是否有搜索条件
     const hasSearch = keyword && keyword.trim() !== '';
     // 检查是否有筛选条件
     const hasFilter = (categories && categories.length > 0) || (inStock !== null);
-    
+
     if (hasSearch && hasFilter) {
-      // 既有搜索条件也有筛选条件
       title = '搜索和筛选结果';
     } else if (hasSearch) {
-      // 只有搜索条件
       title = '搜索结果';
     } else if (hasFilter) {
-      // 只有筛选条件
       title = '筛选结果';
     } else {
-      // 没有搜索和筛选条件
       switch (pageType) {
         case 'category':
         case 'series':
-          // 根据categoryId获取系列名称
           if (categoryId) {
             title = await this.getCategoryName(categoryId);
           } else {
@@ -113,7 +133,6 @@ Page({
           }
           break;
         case 'type':
-          // 根据typeId获取分类名称
           if (typeId) {
             title = await this.getTypeName(typeId);
           } else {
@@ -124,120 +143,199 @@ Page({
           title = '全部商品';
       }
     }
-    
+
     this.setData({ pageTitle: title });
     wx.setNavigationBarTitle({ title });
   },
 
-  loadProducts() {
-    const { pageType, keyword, categoryId, typeId, categories, inStock } = this.data;
-    console.log('loadProducts called with:', {
-      pageType,
-      keyword,
-      categoryId,
-      typeId,
-      categories,
-      inStock
+  buildQueryParams(categoryIds = []) {
+    const { pageType, keyword, categoryId, categories, inStock } = this.data;
+    const params = {};
+
+    if (pageType === 'category' || pageType === 'series') {
+      if (categoryId) {
+        params.categoryId = categoryId;
+      }
+      if (categories && categories.length > 0) {
+        params.typeId = _.in(categories);
+      }
+    } else if (pageType === 'type' && categoryIds.length > 0) {
+      if (categories && categories.length > 0) {
+        const intersectedIds = categoryIds.filter(id => categories.includes(id));
+        if (intersectedIds.length > 0) {
+          params.typeId = _.in(intersectedIds);
+        } else {
+          params._id = '___NO_RESULTS___';
+        }
+      } else {
+        params.typeId = _.in(categoryIds);
+      }
+    } else if (categories && categories.length > 0) {
+      params.typeId = _.in(categories);
+    }
+
+    if (keyword && keyword.trim() !== '') {
+      params.name = db.RegExp({ regexp: keyword, options: 'i' });
+    }
+
+    if (inStock !== null) {
+      params.stock = inStock ? _.gt(0) : _.lte(0);
+    }
+
+    return params;
+  },
+
+  initProductListPaginator(params) {
+    this.productListPaginator = new PagePaginator(this, {
+      collectionName: 'products',
+      dataKey: 'products',
+      pageSize: 18,
+      cursorField: '_id',
+      sortOrder: 'desc',
+      extraQuery: params
     });
-    this.setData({ loading: true });
-    
-    // 处理分类查询，获取一级分类及其所有二级分类的ID
-    if (pageType === 'type' && typeId) {
-      // 查询该一级分类下的所有二级分类
-      db.collection('product_types').where({ parentId: typeId }).get().then(res => {
-        const subCategoryIds = res.data.map(item => item._id);
-        // 合并一级分类ID和所有二级分类ID
-        const allCategoryIds = [typeId, ...subCategoryIds];
-        console.log('All category IDs:', allCategoryIds);
-        
-        // 构建查询
-        this.buildQuery(allCategoryIds, pageType, keyword, categoryId, categories, inStock);
-      }).catch(err => {
-        console.error('获取二级分类失败:', err);
-        // 失败时只查询一级分类
-        this.buildQuery([typeId], pageType, keyword, categoryId, categories, inStock);
-      });
+  },
+
+  async loadProducts(reset = false) {
+    const { pageType, typeId } = this.data;
+    const PAGE_SIZE = 18;
+    const cacheKey = this._getCacheKey();
+
+    if (reset) {
+      if (this.__cacheIndex == null || this.data.products.length === 0) {
+        this.setData({ loading: true, hasMore: true });
+      }
     } else {
-      // 其他页面类型直接构建查询
-      this.buildQuery([], pageType, keyword, categoryId, categories, inStock);
+      // 加载更多：优先从缓存取
+      if (this.data.loadingMore || !this.data.hasMore) return;
+      this.setData({ loadingMore: true });
+
+      const cache = productCacheStore.get(cacheKey);
+      if (cache && cache.data && this.__cacheIndex != null && this.__cacheIndex < cache.data.length) {
+        const page = cache.data.slice(this.__cacheIndex, this.__cacheIndex + PAGE_SIZE);
+        this.setData({
+          products: [...this.data.products, ...page],
+          loadingMore: false,
+          hasMore: page.length === PAGE_SIZE || cache.hasMore
+        });
+        this.__cacheIndex += page.length;
+        return;
+      }
+      this.setData({ loadingMore: true });
+    }
+
+    try {
+      let categoryIds = [];
+
+      if (pageType === 'type' && typeId) {
+        const res = await db.collection('product_types').where({ parentId: typeId }).get();
+        categoryIds = [typeId, ...res.data.map(item => item._id)];
+      }
+
+      const params = this.buildQueryParams(categoryIds);
+
+      if (reset || !this.productListPaginator) {
+        this.initProductListPaginator(params);
+      }
+
+      let data;
+      if (reset) {
+        data = await this.productListPaginator.loadFirstPage({}, { skipSetData: true });
+      } else {
+        data = await this.productListPaginator.loadNextPage();
+      }
+
+      if (reset) {
+        const newProducts = data || [];
+        const { sortType, priceSortOrder } = this.data;
+        let sortedProducts = [...newProducts];
+        switch (sortType) {
+          case 'new':
+            sortedProducts.sort((a, b) => {
+              const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return timeB - timeA;
+            });
+            break;
+          case 'price':
+            sortedProducts.sort((a, b) => {
+              const priceA = a.price || 0;
+              const priceB = b.price || 0;
+              return priceSortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+            });
+            break;
+          default:
+            sortedProducts.sort((a, b) => {
+              const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+              const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+              return timeB - timeA;
+            });
+            break;
+        }
+        this.setData({
+          originalProducts: [...newProducts],
+          products: sortedProducts,
+          loading: false,
+          loadingMore: false,
+          hasMore: this.productListPaginator.hasNext(),
+          showSkeleton: false
+        });
+
+        // 写入缓存
+        const cacheKey = this._getCacheKey();
+        if (newProducts.length > 0) {
+          productCacheStore.set(cacheKey, {
+            data: newProducts,
+            cacheIndex: newProducts.length,
+            cursor: newProducts[newProducts.length - 1]?._id || null,
+            hasMore: this.productListPaginator.hasNext(),
+            stale: false
+          });
+          this.__cacheIndex = newProducts.length;
+        }
+      } else {
+        // 加载更多：追加到缓存
+        const newData = data || [];
+        if (newData.length > 0) {
+          this.setData({
+            products: [...this.data.products, ...newData],
+            loadingMore: false,
+            hasMore: newData.length === 18
+          });
+
+          const cacheKey = this._getCacheKey();
+          const cursor = newData[newData.length - 1]?._id || null;
+          productCacheStore.append(cacheKey, newData, cursor, newData.length === 18);
+          this.__cacheIndex += newData.length;
+        } else {
+          this.setData({ loadingMore: false, hasMore: false });
+        }
+      }
+    } catch (err) {
+      console.error('加载商品失败:', err);
+      this.setData({ loading: false, loadingMore: false });
     }
   },
 
-  // 构建查询并加载商品
-  buildQuery(categoryIds, pageType, keyword, categoryId, categories, inStock) {
-    let query = db.collection('products');
-    
-    // 首先根据页面类型和相应的 ID 设置基础查询条件
-    if (pageType === 'category' || pageType === 'series') {
-      // categoryId 是系列id
-      if (categoryId) {
-        query = query.where({
-          categoryId: categoryId
-        });
-      }
-    } else if (pageType === 'type' && categoryIds.length > 0) {
-      // typeId 是分类id，查询一级分类及其所有二级分类的商品
-      query = query.where({
-        typeId: _.in(categoryIds)
-      });
+  loadMoreProducts() {
+    if (this.data.loadingMore || !this.data.hasMore || this.data.loading) {
+      return;
     }
-    
-    // 然后叠加搜索条件（适用于所有页面类型）
-    if (keyword && keyword.trim() !== '') {
-      query = query.where({
-        name: db.RegExp({ regexp: keyword, options: 'i' })
-      });
-    }
-    
-    // 最后叠加筛选条件（适用于所有页面类型）
-    if (categories && categories.length > 0) {
-      query = query.where({
-        typeId: _.in(categories)
-      });
-    }
-    if (inStock !== null) {
-      query = query.where({
-        stock: inStock ? _.gt(0) : _.lte(0)
-      });
-    }
-    
-    query.get().then(res => {
-      console.log('Query result:', res);
-      const products = res.data || [];
-      console.log('Found products:', products);
-      
-      // 查看每个商品的status字段
-      products.forEach((product, index) => {
-        console.log(`Product ${index} status:`, product.status);
-      });
-      
-      this.setData({
-        products,
-        originalProducts: [...products],
-        loading: false
-      });
-      
-      // 应用排序
-      this.applySort();
-    }).catch(err => {
-      console.error('加载商品失败:', err);
-      this.setData({ loading: false });
-    });
+    this.loadProducts();
   },
 
   setSortType(e) {
     const { type } = e.currentTarget.dataset;
     let { sortType, priceSortOrder } = this.data;
-    
+
     if (type === 'price') {
-      // 切换价格排序方向
       if (sortType === 'price') {
         priceSortOrder = priceSortOrder === 'asc' ? 'desc' : 'asc';
       } else {
         priceSortOrder = 'asc';
       }
     }
-    
+
     this.setData({ sortType: type, priceSortOrder });
     this.applySort();
   },
@@ -245,52 +343,43 @@ Page({
   applySort() {
     const { sortType, priceSortOrder, originalProducts } = this.data;
     let sortedProducts = [...originalProducts];
-    
+
     switch (sortType) {
       case 'new':
-        // 按创建时间排序，最新的在前
         sortedProducts.sort((a, b) => {
-          const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return timeB - timeA;
+          const diff = (b.createdAt ? new Date(b.createdAt).getTime() : 0) - (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+          return diff !== 0 ? diff : (a._id > b._id ? 1 : -1);
         });
         break;
       case 'price':
-        // 按价格排序
         sortedProducts.sort((a, b) => {
-          const priceA = a.price || 0;
-          const priceB = b.price || 0;
-          return priceSortOrder === 'asc' ? priceA - priceB : priceB - priceA;
+          const diff = priceSortOrder === 'asc' ? (a.price || 0) - (b.price || 0) : (b.price || 0) - (a.price || 0);
+          return diff !== 0 ? diff : (a._id > b._id ? 1 : -1);
         });
         break;
       default:
-        // 综合排序，恢复原始顺序
         sortedProducts = [...originalProducts];
         break;
     }
-    
+
     this.setData({ products: sortedProducts });
   },
 
   handleSearch(e) {
     const { keyword } = e.detail;
-    // 在当前页面刷新搜索结果，而不是跳转新页面
-    this.setData({
-      keyword: keyword
-    });
+    this.setData({ keyword: keyword });
     this.setPageTitle();
-    this.loadProducts();
+    this.loadProducts(true);
   },
 
   handleFilter(e) {
     const { category, inStock } = e.detail;
-    // 在当前页面刷新筛选结果，而不是跳转新页面
     this.setData({
       categories: category || [],
       inStock: inStock
     });
     this.setPageTitle();
-    this.loadProducts();
+    this.loadProducts(true);
   },
 
   goToProductDetail(e) {
@@ -320,7 +409,6 @@ Page({
       content: '确定要下架这个商品吗？',
       success: (res) => {
         if (res.confirm) {
-          // 使用云函数下架商品
           wx.cloud.callFunction({
             name: 'updateProduct',
             data: {
@@ -332,19 +420,16 @@ Page({
             }
           }).then(res => {
             console.log('云函数下架结果:', res);
-            
+
             if (res.result && res.result.success) {
               console.log('云函数下架成功');
               wx.showToast({
                 title: '商品下架成功',
                 icon: 'success'
               });
-              
-              // 标记商品数据需要刷新
+
               getApp().globalData.productsNeedRefresh = true;
-              
-              // 刷新商品列表
-              this.loadProducts();
+              this.loadProducts(true);
             } else {
               console.error('云函数下架失败:', res.result.error);
               wx.showToast({
@@ -372,7 +457,6 @@ Page({
       content: '确定要上架这个商品吗？',
       success: (res) => {
         if (res.confirm) {
-          // 使用云函数上架商品
           wx.cloud.callFunction({
             name: 'updateProduct',
             data: {
@@ -384,19 +468,16 @@ Page({
             }
           }).then(res => {
             console.log('云函数上架结果:', res);
-            
+
             if (res.result && res.result.success) {
               console.log('云函数上架成功');
               wx.showToast({
                 title: '商品上架成功',
                 icon: 'success'
               });
-              
-              // 标记商品数据需要刷新
+
               getApp().globalData.productsNeedRefresh = true;
-              
-              // 刷新商品列表
-              this.loadProducts();
+              this.loadProducts(true);
             } else {
               console.error('云函数上架失败:', res.result.error);
               wx.showToast({

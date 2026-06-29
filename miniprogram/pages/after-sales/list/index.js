@@ -81,7 +81,12 @@ Page({
     currentOrderId: '',
     currentProductIndex: null,
     loading: true,
-    pageVisible: false
+    pageVisible: false,
+    // 分页相关
+    loadingMore: false,
+    hasMore: true,
+    pageNum: 0,
+    pageSize: 20
   },
 
   onLoad(options) {
@@ -93,7 +98,7 @@ Page({
       currentOrderId: options?.orderId || '',
       currentProductIndex: productIndex
     });
-    this.fetchAfterSalesList();
+    this.fetchAfterSalesList(true);
   },
 
   onShow() {
@@ -103,7 +108,7 @@ Page({
     if (wasHidden) {
       console.log('售后列表页面-实时监听恢复连接');
     }
-    this.fetchAfterSalesList();
+    this.fetchAfterSalesList(true);
     // 确保监听正在运行
     if (!watcherManager.get('after_sales_list')) {
       console.log('[售后列表页面] 开始实时监听');
@@ -167,12 +172,20 @@ Page({
     if (!snapshot.docChanges || snapshot.docChanges.length === 0) {
       return;
     }
-    
-    // 重新获取售后列表
-    this.fetchAfterSalesList();
+
+    // 监听初始化init事件跳过，避免与onLoad/onShow中的数据加载冲突
+    if (snapshot.type === 'init') {
+      return;
+    }
+
+    // 重新获取售后列表（带重置）
+    this.fetchAfterSalesList(true);
   },
 
-  fetchAfterSalesList() {
+  fetchAfterSalesList(reset = false) {
+    if (reset) {
+      this.setData({ pageNum: 0, hasMore: true, afterSalesList: [] });
+    }
     this.setData({ loading: true });
     wx.showLoading({ title: '加载中...' });
 
@@ -196,6 +209,9 @@ Page({
       return;
     }
 
+    const { pageNum, pageSize } = this.data;
+    const skipNum = pageNum * pageSize;
+
     const orders = getCollection("orders");
     orders.where({ _openid: openid }).get()
       .then((res) => {
@@ -203,27 +219,41 @@ Page({
 
         if (orderIds.length === 0) {
           wx.hideLoading();
-          this.setData({ afterSalesList: [], loading: false });
+          this.setData({ afterSalesList: [], loading: false, loadingMore: false });
           return null;
         }
 
         return getCollection("after_sales_cases").where({
           orderId: db.command.in(orderIds)
-        }).orderBy('createdAt', 'desc').get().then((caseRes) => {
-          if (caseRes.data && caseRes.data.length > 0) {
+        }).orderBy('createdAt', 'desc').skip(skipNum).limit(pageSize).get().then((caseRes) => {
+          const newCases = (caseRes.data || []).map((item) => this.normalizeCaseRecord(item, false));
+          const hasMore = newCases.length === pageSize;
+          
+          if (newCases.length > 0) {
+            const afterSalesList = pageNum === 0 ? newCases : [...this.data.afterSalesList, ...newCases];
             this.setData({
-              afterSalesList: caseRes.data.map((item) => this.normalizeCaseRecord(item, false)),
-              loading: false
+              afterSalesList,
+              loading: false,
+              loadingMore: false,
+              hasMore,
+              pageNum: pageNum + 1
             });
             return true;
           }
 
           return getCollection('afterSales').where({
             orderId: db.command.in(orderIds)
-          }).orderBy('createdAt', 'desc').get().then((legacyRes) => {
+          }).orderBy('createdAt', 'desc').skip(skipNum).limit(pageSize).get().then((legacyRes) => {
+            const legacyItems = (legacyRes.data || []).map((item) => this.normalizeCaseRecord(item, true));
+            const hasMore = legacyItems.length === pageSize;
+            const afterSalesList = pageNum === 0 ? legacyItems : [...this.data.afterSalesList, ...legacyItems];
+            
             this.setData({
-              afterSalesList: (legacyRes.data || []).map((item) => this.normalizeCaseRecord(item, true)),
-              loading: false
+              afterSalesList,
+              loading: false,
+              loadingMore: false,
+              hasMore,
+              pageNum: pageNum + 1
             });
             return true;
           });
@@ -234,7 +264,7 @@ Page({
       })
       .catch((err) => {
         wx.hideLoading();
-        this.setData({ loading: false });
+        this.setData({ loading: false, loadingMore: false });
         console.error("获取售后记录失败", err);
         wx.showToast({
           title: '获取售后记录失败',
@@ -361,6 +391,14 @@ Page({
     });
   },
 
+  loadMoreAfterSales() {
+    if (this.data.loadingMore || !this.data.hasMore || this.data.currentOrderId) {
+      return;
+    }
+    this.setData({ loadingMore: true });
+    this.fetchAfterSalesList();
+  },
+
   cancelAfterSales(e) {
     const id = e.currentTarget.dataset.id;
     const orderId = e.currentTarget.dataset.orderId;
@@ -410,7 +448,7 @@ Page({
       }
       wx.hideLoading();
       wx.showToast({ title: '取消成功', icon: 'success' });
-      this.fetchAfterSalesList();
+      this.fetchAfterSalesList(true);
     }).catch((err) => {
       wx.hideLoading();
       console.error('取消售后失败', err);

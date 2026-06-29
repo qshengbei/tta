@@ -455,3 +455,52 @@
     transform: rotate(360deg);
   }
 }
+
+/* 订单列表滚动容器 */
+.order-list {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.orders {
+  flex: 1;
+  height: calc(100vh - 280rpx);
+}
+
+/* 加载更多 */
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.loading-more__spinner {
+  width: 32rpx;
+  height: 32rpx;
+  border: 2rpx solid #ddd;
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12rpx;
+}
+
+.loading-more__text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 没有更多 */
+.no-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.no-more__text {
+  font-size: 24rpx;
+  color: #999;
+}
