@@ -255,6 +255,10 @@ class OrderCacheStore {
 
     const existingIndex = entry.data.findIndex(o => o._id === order._id);
     if (existingIndex !== -1) {
+      const oldOrder = entry.data[existingIndex];
+      const oldUpdateTime = oldOrder.updatedAtTs || 0;
+      const newUpdateTime = order.updatedAtTs || 0;
+      
       entry.data[existingIndex] = { ...entry.data[existingIndex], ...order };
       entry.timestamp = Date.now();
       
@@ -265,6 +269,23 @@ class OrderCacheStore {
 
       if (entry.cursor && entry.cursor._id === order._id) {
         entry.cursor = { updatedAtTs: order.updatedAtTs || entry.data[existingIndex].updatedAtTs, _id: order._id };
+      }
+
+      if (newUpdateTime !== oldUpdateTime) {
+        entry.data.splice(existingIndex, 1);
+        const newInsertIdx = this._findInsertIndex(order, entry.data);
+        entry.data.splice(newInsertIdx, 0, order);
+        
+        if (existingIndex < entry.cacheIndex && newInsertIdx >= entry.cacheIndex) {
+          entry.cacheIndex--;
+        } else if (existingIndex >= entry.cacheIndex && newInsertIdx < entry.cacheIndex) {
+          entry.cacheIndex++;
+        }
+        
+        if (newUpdateTime > (entry.cursor?.updatedAtTs || 0) || 
+            (newUpdateTime === (entry.cursor?.updatedAtTs || 0) && order._id > (entry.cursor?._id || ''))) {
+          entry.cursor = { updatedAtTs: newUpdateTime, _id: order._id };
+        }
       }
       
       this._caches.set(key, entry);
@@ -326,6 +347,10 @@ class OrderCacheStore {
       return;
     }
 
+    const oldOrder = entry.data[idx];
+    const oldUpdateTime = oldOrder.updatedAtTs || 0;
+    const newUpdateTime = order.updatedAtTs || 0;
+    
     entry.data[idx] = { ...entry.data[idx], ...order };
     entry.timestamp = Date.now();
     
@@ -336,6 +361,23 @@ class OrderCacheStore {
 
     if (entry.cursor && entry.cursor._id === order._id) {
       entry.cursor = { updatedAtTs: order.updatedAtTs || entry.data[idx].updatedAtTs, _id: order._id };
+    }
+
+    if (newUpdateTime !== oldUpdateTime) {
+      entry.data.splice(idx, 1);
+      const newInsertIdx = this._findInsertIndex(order, entry.data);
+      entry.data.splice(newInsertIdx, 0, order);
+      
+      if (idx < entry.cacheIndex && newInsertIdx >= entry.cacheIndex) {
+        entry.cacheIndex--;
+      } else if (idx >= entry.cacheIndex && newInsertIdx < entry.cacheIndex) {
+        entry.cacheIndex++;
+      }
+      
+      if (newUpdateTime > (entry.cursor?.updatedAtTs || 0) || 
+          (newUpdateTime === (entry.cursor?.updatedAtTs || 0) && order._id > (entry.cursor?._id || ''))) {
+        entry.cursor = { updatedAtTs: newUpdateTime, _id: order._id };
+      }
     }
 
     this._caches.set(key, entry);
@@ -425,14 +467,14 @@ class OrderCacheStore {
       const mid = Math.floor((left + right) / 2);
       const midTime = list[mid].updatedAtTs || 0;
       if (midTime > orderTime) {
-        right = mid;
-      } else if (midTime < orderTime) {
         left = mid + 1;
+      } else if (midTime < orderTime) {
+        right = mid;
       } else {
         if (list[mid]._id > orderId) {
-          right = mid;
-        } else {
           left = mid + 1;
+        } else {
+          right = mid;
         }
       }
     }

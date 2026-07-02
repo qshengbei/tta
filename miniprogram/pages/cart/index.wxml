@@ -39,8 +39,8 @@
             catchtap="goToProductDetail" 
             data-product-id="{{item.productId}}">
             <!-- 选择框 -->
-            <view class="cart__item-checkbox" catchtap="toggleSelect" data-product-id="{{item.productId}}" style="opacity: {{item.isSoldOut ? 0.5 : 1}};">
-              <view class="cart__checkbox {{item.selected ? 'cart__checkbox--checked' : ''}} {{item.isSoldOut ? 'cart__checkbox--disabled' : ''}}">
+            <view class="cart__item-checkbox" catchtap="toggleSelect" data-product-id="{{item.productId}}" style="opacity: {{item.isSoldOut || item.status !== 'on' || item.isDeleted ? 0.5 : 1}};">
+              <view class="cart__checkbox {{item.selected ? 'cart__checkbox--checked' : ''}} {{item.isSoldOut || item.status !== 'on' || item.isDeleted ? 'cart__checkbox--disabled' : ''}}">
                 <image wx:if="{{item.selected}}" class="cart__checkbox-icon" src="../../images/icons/对勾中.png" mode="aspectFit"/>
                 <image wx:else class="cart__checkbox-icon" src="../../images/icons/对勾-未勾选.png" mode="aspectFit"/>
               </view>

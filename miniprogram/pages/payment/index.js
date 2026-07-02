@@ -362,12 +362,6 @@ Page({
                 title: '订单生成中...',
                 mask: true
               });
-              // 模拟支付成功
-              wx.showToast({
-                title: '支付成功',
-                icon: 'success',
-                duration: 1000
-              });
               
               // 支付成功后创建订单
               this.createOrder('paid');
@@ -528,86 +522,45 @@ Page({
       
       console.log('开始扣减库存，商品数量:', orderData.products.length);
       
-      // 扣减库存
-      for (const product of orderData.products) {
+      // 并行扣减库存
+      const stockPromises = orderData.products.map(product => {
         if (!product.productId) {
-          throw new Error('商品ID为空');
+          return Promise.reject(new Error('商品ID为空'));
         }
         if (!product.quantity) {
-          throw new Error('商品数量为空');
+          return Promise.reject(new Error('商品数量为空'));
         }
         
-        console.log('扣减库存:', product.productId, product.quantity);
-        
-        // 先获取商品信息，确认库存是否足够
-        const productRes = await db.collection('products').doc(product.productId).get();
-        if (!productRes.data) {
-          throw new Error('商品不存在');
-        }
-        
-        const currentStock = productRes.data.stock || 0;
-        console.log('当前商品库存:', currentStock);
-        
-        if (currentStock < product.quantity) {
-          throw new Error('商品库存不足');
-        }
-        
-        // 扣减库存
-        const newStock = currentStock - product.quantity;
-        console.log('准备更新商品库存，商品ID:', product.productId, '当前库存:', currentStock, '扣减数量:', product.quantity, '新库存:', newStock);
-        
-        // 直接使用云函数调用更新库存，确保操作能够成功
-        try {
-          const result = await wx.cloud.callFunction({
-            name: 'updateStock',
-            data: {
-              productId: product.productId,
-              stock: newStock
+        return db.collection('products').doc(product.productId).get()
+          .then(productRes => {
+            if (!productRes.data) {
+              throw new Error('商品不存在');
             }
-          });
-          console.log('云函数更新库存成功:', result);
-          
-          // 更新商品缓存
-          if (result.success && result.data && result.data.product) {
-            const updatedProduct = result.data.product;
-            // 缓存商品详情
-            const cache = require('../../utils/cache');
-            cache.cacheProduct(product.productId, updatedProduct);
-            console.log('商品缓存更新成功');
-          }
-        } catch (error) {
-          console.error('云函数更新库存失败:', error);
-          // 如果云函数调用失败，尝试直接更新
-          try {
-            await db.collection('products')
-              .doc(product.productId)
-              .update({
-                data: {
-                  stock: newStock
-                }
-              });
-            console.log('直接更新库存成功');
             
-            // 重新获取商品信息并更新缓存
-            const updatedProductRes = await db.collection('products').doc(product.productId).get();
-            if (updatedProductRes.data) {
-              const updatedProduct = updatedProductRes.data;
-              // 缓存商品详情
-              const cache = require('../../utils/cache');
-              cache.cacheProduct(product.productId, updatedProduct);
-              console.log('商品缓存更新成功');
+            const currentStock = productRes.data.stock || 0;
+            if (currentStock < product.quantity) {
+              throw new Error('商品库存不足');
             }
-          } catch (directError) {
-            console.error('直接更新库存失败:', directError);
-            throw new Error('更新库存失败');
-          }
-        }
-        
-        // 检查库存是否成功扣减
-        const updatedProductRes = await db.collection('products').doc(product.productId).get();
-        const updatedStock = updatedProductRes.data.stock || 0;
-        console.log('扣减后商品库存:', updatedStock);
-      }
+            
+            const newStock = currentStock - product.quantity;
+            console.log('准备更新商品库存，商品ID:', product.productId, '当前库存:', currentStock, '扣减数量:', product.quantity, '新库存:', newStock);
+            
+            return wx.cloud.callFunction({
+              name: 'updateStock',
+              data: {
+                productId: product.productId,
+                stock: newStock
+              }
+            }).catch(error => {
+              console.error('云函数更新库存失败，尝试直接更新:', error);
+              return db.collection('products').doc(product.productId).update({
+                data: { stock: newStock }
+              });
+            });
+          });
+      });
+      
+      await Promise.all(stockPromises);
       
       console.log('库存扣减成功');
       
@@ -666,38 +619,29 @@ Page({
       // 隐藏加载提示
       wx.hideLoading();
       
-      // 更新订单数量缓存
-      this.updateOrderCountCache(orderData.deliveryType, null, status);
-
-      // 发送订单状态通知（下单成功 pending / 直接支付成功 paid）
-      this.sendOrderStatusNotification({
-        status,
-        orderId: dbOrderId,
-        orderNumber: orderData.orderNumber,
-        deliveryType: orderData.deliveryType,
-        cancelReason: status === 'pending' ? '' : undefined
-      });
+      // 异步执行后续操作，不阻塞主流程
+      this._executePostOrderOperations(dbOrderId, orderData, status);
       
-      // 如果是已支付状态，删除购物车中对应的商品（软删除）
+      // 如果是已支付状态，立即跳转到支付成功页面
       if (status === 'paid') {
-        this.deleteCartItems();
+        wx.showToast({
+          title: '支付成功',
+          icon: 'success',
+          duration: 1000
+        });
         
-        // 跳转到支付成功页面
         setTimeout(() => {
           wx.redirectTo({
             url: '/pages/payment-success/index?orderId=' + dbOrderId + '&orderNumber=' + this.data.orderId
           });
-        }, 1500);
+        }, 1000);
       } else if (status === 'pending') {
-        // 显示订单生成成功提示
         wx.showToast({
           title: '订单生成成功',
           icon: 'success',
           duration: 1000
         });
         
-        // 跳转到对应配送方式的待支付标签列表
-        // 使用 redirectTo 跳转到订单列表页面，这样当用户点击返回时，会回到商品详情页
         setTimeout(() => {
           wx.redirectTo({
             url: `/pages/order-list/index?status=pending&deliveryType=${orderData.deliveryType}`
@@ -771,7 +715,7 @@ Page({
       });
   },
 
-  sendOrderStatusNotification({ status, orderId, orderNumber, deliveryType, cancelReason = '' }) {
+  sendOrderStatusNotification({ status, orderId, orderNumber, deliveryType, amount = 0, cancelReason = '' }) {
     const openid = wx.getStorageSync('openid');
     if (!openid || !status || !orderId) return;
      console.log('调用sendOrderStatusNotification，状态:', status, '订单ID:', orderId);
@@ -784,6 +728,7 @@ Page({
           status,
           orderNumber,
           deliveryType,
+          amount,
           cancelReason
         },
         extras: {
@@ -795,6 +740,27 @@ Page({
     }).catch((err) => {
       console.error('订单状态通知发送失败:', err);
     });
+  },
+
+  // 异步执行订单创建后的操作
+  _executePostOrderOperations(dbOrderId, orderData, status) {
+    // 更新订单数量缓存
+    this.updateOrderCountCache(orderData.deliveryType, null, status);
+
+    // 发送订单状态通知
+    this.sendOrderStatusNotification({
+      status,
+      orderId: dbOrderId,
+      orderNumber: orderData.orderNumber,
+      deliveryType: orderData.deliveryType,
+      amount: orderData.totalPrice || 0,
+      cancelReason: status === 'pending' ? '' : undefined
+    });
+
+    // 如果是已支付状态，删除购物车中对应的商品
+    if (status === 'paid') {
+      this.deleteCartItems();
+    }
   },
   
   /**
@@ -919,6 +885,10 @@ Page({
     const cart = getCollection("cart");
     const openid = wx.getStorageSync('openid') || '';
     const productIds = orderData.products.map(product => product.productId);
+
+    // 设置购物车脏标记，让购物车页面知道需要刷新
+    const app = getApp();
+    app.globalData.cartDirty = true;
 
     // 查找购物车中对应的商品并软删除
     if (openid) {

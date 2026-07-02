@@ -187,6 +187,16 @@ Page({
     const hasTimeRange = this.data.filterOptions.timeRange !== null;
     const hasFilters = hasSearch || hasTimeRange;
 
+    if (getApp().globalData.needRefreshOrderList) {
+      getApp().globalData.needRefreshOrderList = false;
+      console.log('[订单列表] 强制刷新，从数据库加载');
+      this.fetchOrders();
+      this.checkAndRefreshExpiredLogistics();
+      this.setData({ hasNavigatedAway: false });
+      console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
+      return;
+    }
+
     if (this.data.hasNavigatedAway) {
       this.setData({ hasNavigatedAway: false });
       console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
@@ -195,14 +205,6 @@ Page({
 
     if (this.data.isSwitchingStatus) {
       this.setData({ isSwitchingStatus: false });
-      return;
-    }
-
-    if (getApp().globalData.needRefreshOrderList) {
-      getApp().globalData.needRefreshOrderList = false;
-      console.log('[订单列表] 强制刷新，从数据库加载');
-      this.fetchOrders();
-      this.checkAndRefreshExpiredLogistics();
       return;
     }
 
@@ -1683,6 +1685,34 @@ Page({
     });
   },
 
+  _updateOrderLogisticsState(orderId, logisticsResult) {
+    const { state, stateName, isCheck } = logisticsResult;
+    const orders = [...this.data.orders];
+    const orderIndex = orders.findIndex(item => item._id === orderId);
+    
+    if (orderIndex !== -1) {
+      orders[orderIndex].logisticsState = {
+        state: state || '',
+        stateName: stateName || '',
+        isCheck: isCheck || '',
+        lastGetTime: new Date()
+      };
+      this.setData({ orders });
+    }
+    
+    const originalOrders = [...this.data.originalOrders];
+    const originalIndex = originalOrders.findIndex(item => item._id === orderId);
+    if (originalIndex !== -1) {
+      originalOrders[originalIndex].logisticsState = {
+        state: state || '',
+        stateName: stateName || '',
+        isCheck: isCheck || '',
+        lastGetTime: new Date()
+      };
+      this.setData({ originalOrders });
+    }
+  },
+
   // 查看物流
   async viewLogistics(e) {
     const orderId = e.currentTarget.dataset.orderId;
@@ -1753,6 +1783,8 @@ Page({
           setTimeout(() => {
             this.onShow();
           }, 1500);
+        } else if (logisticsResult.result.orderId) {
+          this._updateOrderLogisticsState(orderId, logisticsResult.result);
         }
       }
 

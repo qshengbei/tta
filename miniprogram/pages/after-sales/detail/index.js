@@ -427,8 +427,9 @@ Page({
       }
       wx.hideLoading();
       wx.showToast({ title: '取消成功', icon: 'success' });
-      // 设置全局标志，通知订单详情页需要刷新
+      // 设置全局标志，通知订单详情页和订单列表页需要刷新
       getApp().globalData.needRefreshOrderDetail = true;
+      getApp().globalData.needRefreshOrderList = true;
       setTimeout(() => wx.navigateBack(), 1200);
     }).catch((err) => {
       wx.hideLoading();

@@ -2617,6 +2617,8 @@ Page({
           title: '提交成功',
           icon: 'success'
         });
+        // 设置全局标志，通知订单列表页需要刷新
+        getApp().globalData.needRefreshOrderList = true;
         // 关闭弹窗，监听会自动更新订单数据
         this.closeAfterSalesTypeModal();
       } else {

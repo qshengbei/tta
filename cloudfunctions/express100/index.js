@@ -752,13 +752,6 @@ async function queryLogisticsAndUpdateOrder(expressNo, companyCode, fromAddress,
 
   const isDelivered = String(logisticsResult.isCheck) === '1';
 
-  if (!isDelivered) {
-    return {
-      ...logisticsResult,
-      orderUpdated: false
-    };
-  }
-
   try {
     const orderRes = await db.collection('orders')
       .where({
@@ -778,31 +771,35 @@ async function queryLogisticsAndUpdateOrder(expressNo, companyCode, fromAddress,
 
     const order = orderRes.data[0];
     const now = new Date();
+    const updateData = {
+      logisticsState: {
+        state: logisticsResult.state || '',
+        stateName: logisticsResult.stateName || '',
+        isCheck: logisticsResult.isCheck || '',
+        lastGetTime: now,
+        checkTime: logisticsResult.arrivalTime || ''
+      },
+      updatedAt: now
+    };
+
+    if (isDelivered) {
+      updateData.status = 'delivered';
+      updateData.deliveredAt = now;
+      updateData.receiptConfirm = {
+        type: 'pending',
+        confirmedAt: null,
+        confirmedBy: 'system',
+        source: 'logistics_query'
+      };
+    }
 
     await db.collection('orders').doc(order._id).update({
-      data: {
-        status: 'delivered',
-        deliveredAt: now,
-        logisticsState: {
-          state: logisticsResult.state || '',
-          stateName: logisticsResult.stateName || '',
-          isCheck: logisticsResult.isCheck || '',
-          lastGetTime: now,
-          checkTime: logisticsResult.arrivalTime || ''
-        },
-        receiptConfirm: {
-          type: 'pending',
-          confirmedAt: null,
-          confirmedBy: 'system',
-          source: 'logistics_query'
-        },
-        updatedAt: now
-      }
+      data: updateData
     });
 
     return {
       ...logisticsResult,
-      orderUpdated: true,
+      orderUpdated: isDelivered,
       orderId: order._id,
       orderNumber: order.orderNumber
     };

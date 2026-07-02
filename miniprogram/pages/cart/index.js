@@ -78,8 +78,12 @@ Page({
     // 检查是否从商品详情页返回
     if (this._fromDetail) {
       this._fromDetail = false;
-      console.log('[购物车页面] 从商品详情页返回，保持列表不变');
-      return;
+      console.log('[购物车页面] 从商品详情页返回');
+      // 如果购物车数据有变更，仍然需要刷新
+      if (!app.globalData.cartDirty && !healthCheck.needsRefresh) {
+        console.log('[购物车页面] 购物车数据无变更，保持列表不变');
+        return;
+      }
     }
     
     // 如果购物车数据已经初始化过，且没有检测到数据变更，则保持列表不变
@@ -182,6 +186,8 @@ Page({
             coverImage: product.coverImage || item.coverImage,
             category: product.category || item.category,
             typeId: product.typeId || item.typeId,
+            status: product.status || 'on',
+            isDeleted: product.isDeleted || false,
             isSoldOut: isProductSoldOut(product)
           };
           needUpdate = true;
@@ -258,6 +264,8 @@ Page({
             item.coverImage = product.coverImage || item.coverImage;
             item.category = product.category || item.category;
             item.typeId = product.typeId || item.typeId;
+            item.status = product.status || 'on';
+            item.isDeleted = product.isDeleted || false;
             item.isSoldOut = isProductSoldOut(product);
             
             // 不需要更新商品缓存！缓存由管理员负责更新
@@ -301,6 +309,7 @@ Page({
       
       // 合并购物车数据和商品信息
       const cartItems = firstPageItems.map(item => {
+        console.log('[购物车] 商品ID:', item.productId, '数量:', item.quantity, '购物车ID:', item._id);
         const product = productMap.get(item.productId);
         if (product) {
           return {
@@ -311,18 +320,26 @@ Page({
             coverImage: product.coverImage || item.coverImage,
             category: product.category || item.category,
             typeId: product.typeId || item.typeId,
+            status: product.status || 'on',
+            isDeleted: product.isDeleted || false,
             isSoldOut: isProductSoldOut(product)
           };
         }
         return item;
       });
       
+      // 兜底处理：合并相同商品（防止数据库中存在重复记录）
+      const mergedCartItems = this._mergeSameProducts(cartItems);
+      if (mergedCartItems.length !== cartItems.length) {
+        console.log('[购物车] 发现重复商品，已合并，原数量:', cartItems.length, '合并后数量:', mergedCartItems.length);
+      }
+      
       this.setData({
-        cartItems,
-        filteredCartItems: cartItems,
+        cartItems: mergedCartItems,
+        filteredCartItems: mergedCartItems,
         hasMore: hasMore,
-        lastId: cartItems.length > 0 ? cartItems[cartItems.length - 1]._id : null,
-        lastUpdatedAtTs: cartItems.length > 0 ? (cartItems[cartItems.length - 1].updatedAtTs || null) : null
+        lastId: mergedCartItems.length > 0 ? mergedCartItems[mergedCartItems.length - 1]._id : null,
+        lastUpdatedAtTs: mergedCartItems.length > 0 ? (mergedCartItems[mergedCartItems.length - 1].updatedAtTs || null) : null
       }, () => {
         console.log('[购物车] 从缓存加载数据完成，当前 hasMore:', this.data.hasMore, 'cartItems数量:', this.data.cartItems.length);
       });
@@ -448,6 +465,8 @@ Page({
         coverImage: coverImage,
         category: category,
         typeId: typeId,
+        status: product ? (product.status || 'on') : 'on',
+        isDeleted: product ? (product.isDeleted || false) : false,
         selected: isSelected,
         translateX: 0,
         updatedAt: item.updatedAt,
@@ -1612,29 +1631,36 @@ Page({
       return;
     }
     
-    const checkoutData = {
-      items: selectedItems.map(item => ({
-        productId: item.productId,
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        coverImage: item.coverImage,
-        stock: item.stock,
-        typeId: item.typeId,
-        cartId: item._id
-      })),
-      totalPrice: this.data.totalPrice,
-      fromCart: true
-    };
+    const cartItems = selectedItems.map(item => ({
+      productId: item.productId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      coverImage: item.coverImage,
+      stock: item.stock,
+      typeId: item.typeId,
+      cartId: item._id
+    }));
     
     wx.navigateTo({
-      url: `/pages/checkout/index?data=${encodeURIComponent(JSON.stringify(checkoutData))}`
+      url: `/pages/order-confirm/index?cartItems=${encodeURIComponent(JSON.stringify(cartItems))}`
     });
   },
 
   // 切换商品选中状态
   toggleSelect(e) {
     const productId = e.currentTarget.dataset.productId;
+    const item = this.data.cartItems.find(item => item.productId === productId);
+    
+    if (!item) return;
+    
+    if (item.isSoldOut || item.status !== 'on' || item.isDeleted) {
+      wx.showToast({
+        title: item.isSoldOut ? '商品已售罄，无法勾选' : '商品已下架，无法勾选',
+        icon: 'none'
+      });
+      return;
+    }
     
     const cartItems = this.data.cartItems.map(item => {
       if (item.productId === productId) {
@@ -1689,8 +1715,8 @@ Page({
     const selectAll = !this.data.selectAll;
     
     const cartItems = this.data.cartItems.map(item => {
-      // 售罄商品不能选中
-      if (item.isSoldOut) {
+      // 售罄、下架或已删除的商品不能选中
+      if (item.isSoldOut || item.status !== 'on' || item.isDeleted) {
         return { ...item, selected: false };
       }
       return { ...item, selected: selectAll };
@@ -1700,7 +1726,7 @@ Page({
     
     // 同时更新filteredCartItems
     const filteredCartItems = this.data.filteredCartItems.map(item => {
-      if (item.isSoldOut) {
+      if (item.isSoldOut || item.status !== 'on' || item.isDeleted) {
         return { ...item, selected: false };
       }
       const updatedItem = cartItems.find(i => i.productId === item.productId);
@@ -1751,8 +1777,8 @@ Page({
   updateSelectionStatus() {
     const { cartItems } = this.data;
     
-    // 过滤掉售罄商品后计算
-    const availableItems = cartItems.filter(item => !item.isSoldOut);
+    // 过滤掉售罄、下架或已删除的商品后计算
+    const availableItems = cartItems.filter(item => !item.isSoldOut && item.status === 'on' && !item.isDeleted);
     const selectedItems = availableItems.filter(item => item.selected);
     const selectAll = availableItems.length > 0 && selectedItems.length === availableItems.length;
     
@@ -1908,5 +1934,22 @@ Page({
     if (productId) {
       this.goToProductDetail(e);
     }
+  },
+
+  // 合并相同商品（兜底处理）
+  _mergeSameProducts(items) {
+    const productMap = new Map();
+    
+    items.forEach(item => {
+      const key = item.productId;
+      if (productMap.has(key)) {
+        const existingItem = productMap.get(key);
+        existingItem.quantity += item.quantity;
+      } else {
+        productMap.set(key, { ...item });
+      }
+    });
+    
+    return Array.from(productMap.values());
   }
 });
