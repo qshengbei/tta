@@ -49,6 +49,8 @@ class GlobalOrderWatcher {
     this._healthCheckInterval = 30000;
     this._healthyThreshold = 120000;
     this._healthListeners = [];
+    this._recentChanges = new Map();
+    this._recentChangesCleanupTimer = null;
   }
 
   getHealthStatus(healthyThreshold = 30000) {
@@ -59,8 +61,9 @@ class GlobalOrderWatcher {
     return {
       isHealthy,
       isActive: this._isActive,
-      subscriberCount: this._subscribers.size,
-      registeredCacheKeyCount: this._registeredCacheKeys.size,
+      subscriberCount: this._subscribers ? this._subscribers.size : 0,
+      visiblePages: this._pageVisible ? [...this._pageVisible.keys()] : [],
+      registeredCacheKeys: this._registeredCacheKeys ? [...this._registeredCacheKeys.keys()] : [],
       lastMessageTime: this._lastMessageTime,
       timeSinceLastMessage,
       reconnectAttempts: this._reconnectAttempts,
@@ -101,7 +104,6 @@ class GlobalOrderWatcher {
 
   init() {
     if (this._isActive || this._isInit) {
-      console.warn('[GlobalOrderWatcher] already initialized');
       return;
     }
     this._isInit = true;
@@ -116,12 +118,12 @@ class GlobalOrderWatcher {
     }
 
     this._subscribers.set(pageId, { handler, cacheKey: cacheKey || '' });
-
-    console.log('[GlobalOrderWatcher] Page subscribed:', pageId, 'cacheKey:', cacheKey);
-
     this._pageVisible.set(pageId, true);
 
-    if (this._isInit && !this._isActive && !this._watchInstance) {
+    if (!this._isActive || !this._watchInstance) {
+      if (this._watchInstance) {
+        this._closeWatch();
+      }
       this._startWatch();
     }
 
@@ -215,23 +217,27 @@ class GlobalOrderWatcher {
   }
 
   getStatus() {
+    const subscribers = this._subscribers || new Map();
+    const pageVisible = this._pageVisible || new Map();
+    const registeredCacheKeys = this._registeredCacheKeys || new Map();
+    const cacheUpdated = this._cacheUpdated || new Map();
+    
     return {
       isActive: this._isActive,
-      subscriberCount: this._subscribers.size,
-      visiblePages: [...this._pageVisible.entries()].filter(([, v]) => v).map(([k]) => k),
-      registeredCacheKeys: [...this._registeredCacheKeys.keys()],
-      cacheUpdatedKeys: [...this._cacheUpdated.keys()],
-      reconnectAttempts: this._reconnectAttempts
+      subscriberCount: subscribers.size,
+      visiblePages: [...pageVisible.entries()].filter(([, v]) => v).map(([k]) => k),
+      registeredCacheKeys: [...registeredCacheKeys.keys()],
+      cacheUpdatedKeys: [...cacheUpdated.keys()],
+      reconnectAttempts: this._reconnectAttempts,
+      isWatchInstance: !!this._watchInstance,
+      lastMessageTime: this._lastMessageTime
     };
   }
 
   _startWatch() {
     if (this._watchInstance) {
-      console.warn('[GlobalOrderWatcher] watch already started');
       return;
     }
-
-    console.log('[GlobalOrderWatcher] Starting orders watch...');
 
     if (this._healthCheckTimer) {
       clearInterval(this._healthCheckTimer);
@@ -239,7 +245,6 @@ class GlobalOrderWatcher {
 
     try {
       this._watchInstance = getDb().collection('orders')
-        .where({ isDeleted: getCmd().neq(true) })
         .watch({
           onChange: (snapshot) => {
             this._handleChange(snapshot);
@@ -253,7 +258,7 @@ class GlobalOrderWatcher {
       this._isActive = true;
       this._reconnectAttempts = 0;
       this._lastMessageTime = Date.now();
-      console.log('[GlobalOrderWatcher] Watch started successfully');
+      console.log('[GlobalOrderWatcher] Watch started successfully, _isActive:', this._isActive);
 
       this._startHealthCheck();
     } catch (error) {
@@ -272,7 +277,6 @@ class GlobalOrderWatcher {
     this._lastMessageTime = Date.now();
     
     if (snapshot.type === 'init') {
-      console.log('[GlobalOrderWatcher] init event, skipping');
       return;
     }
 
@@ -280,35 +284,87 @@ class GlobalOrderWatcher {
       return;
     }
 
-    console.log('[GlobalOrderWatcher] onChange:',
-      snapshot.type,
-      'docChanges:', snapshot.docChanges.length);
-
     const hasVisible = [...this._pageVisible.values()].some(v => v === true);
-    console.log('[GlobalOrderWatcher] hasVisible:', hasVisible);
 
     snapshot.docChanges.forEach((change) => {
       const order = change.doc || {};
       const changeType = change.dataType;
 
-      console.log('[GlobalOrderWatcher] Change:', changeType, order._id, order.orderNumber);
+      if (this._isDuplicateChange(order._id, changeType, order.updatedAtTs)) {
+        return;
+      }
+      this._recordChange(order._id, changeType, order.updatedAtTs);
+
+      if (order.isDeleted === true) {
+        this._removeOrderFromAllCaches(order);
+        
+        if (hasVisible) {
+          this._notifySubscribers({
+            changeType: 'remove',
+            order,
+            docId: order._id
+          });
+        } else {
+          this._registeredCacheKeys.forEach((_, cacheKey) => {
+            this._markCacheUpdated(cacheKey);
+          });
+        }
+        return;
+      }
 
       this._updateAllCaches(order, changeType);
 
       if (hasVisible) {
-        console.log('[GlobalOrderWatcher] 通知订阅者更新UI');
         this._notifySubscribers({
           changeType: changeType,
           order,
           docId: order._id
         });
       } else {
-        console.log('[GlobalOrderWatcher] 没有可见页面，标记缓存已更新');
         this._registeredCacheKeys.forEach((_, cacheKey) => {
           this._markCacheUpdated(cacheKey);
         });
       }
     });
+  }
+
+  _isDuplicateChange(orderId, changeType, updatedAtTs) {
+    if (!orderId) return false;
+    const key = `${orderId}_${changeType}`;
+    const lastChange = this._recentChanges.get(key);
+    if (lastChange) {
+      const timeDiff = Date.now() - lastChange.timestamp;
+      if (timeDiff < 3000) {
+        if (updatedAtTs && lastChange.updatedAtTs === updatedAtTs) {
+          return true;
+        }
+        if (timeDiff < 500) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  _recordChange(orderId, changeType, updatedAtTs) {
+    if (!orderId) return;
+    const key = `${orderId}_${changeType}`;
+    this._recentChanges.set(key, {
+      timestamp: Date.now(),
+      updatedAtTs: updatedAtTs || 0
+    });
+    
+    if (!this._recentChangesCleanupTimer) {
+      this._recentChangesCleanupTimer = setTimeout(() => {
+        const now = Date.now();
+        this._recentChanges.forEach((value, key) => {
+          if (now - value.timestamp > 5000) {
+            this._recentChanges.delete(key);
+          }
+        });
+        this._recentChangesCleanupTimer = null;
+      }, 5000);
+    }
   }
 
   _updateAllCaches(order, changeType) {
@@ -318,10 +374,10 @@ class GlobalOrderWatcher {
       return;
     }
 
-    const statusTags = ['all', 'pending', 'paid', 'shipping', 'refund', 'completed', 'cancelled'];
-    const cacheKeys = statusTags.map(tag => `order_cache_${openid}_${tag}`);
+    const relevantTags = this._getRelevantStatusTags(order, changeType);
+    const cacheKeys = relevantTags.map(tag => `order_cache_${openid}_${tag}`);
 
-    console.log(`[GlobalOrderWatcher] _updateAllCaches - openid: ${openid}, changeType: ${changeType}, cacheKeys:`, cacheKeys);
+    console.log(`[GlobalOrderWatcher] _updateAllCaches - openid: ${openid}, changeType: ${changeType}, relevantTags:`, relevantTags);
 
     if (changeType === 'add') {
       cacheKeys.forEach(cacheKey => {
@@ -398,10 +454,66 @@ class GlobalOrderWatcher {
     }
   }
 
+  _removeOrderFromAllCaches(order) {
+    const orderId = order._id;
+    const openid = order._openid;
+
+    this._registeredCacheKeys.forEach((_, cacheKey) => {
+      try {
+        if (cacheKey.includes(openid)) {
+          const existingEntry = orderCacheStore.get(cacheKey);
+          if (existingEntry && existingEntry.data.some(o => o._id === orderId)) {
+            orderCacheStore.removeOrder(cacheKey, orderId);
+            orderCacheStore.markStale(cacheKey);
+          }
+        }
+      } catch (e) {
+        console.warn('[GlobalOrderWatcher] 移除订单失败:', cacheKey, e);
+      }
+    });
+  }
+
+  _getRelevantStatusTags(order, changeType) {
+    const tags = ['all'];
+    
+    if (changeType === 'add') {
+      const currentTag = this._getStatusTagForOrder(order);
+      if (currentTag) tags.push(currentTag);
+    } else if (changeType === 'modify' || changeType === 'update') {
+      const currentTag = this._getStatusTagForOrder(order);
+      if (currentTag) tags.push(currentTag);
+      
+      const registeredTags = [...this._registeredCacheKeys.keys()]
+        .map(key => this._getStatusTagFromCacheKey(key))
+        .filter(tag => tag !== 'all' && tag !== currentTag);
+      tags.push(...registeredTags);
+    } else if (changeType === 'remove') {
+      const currentTag = this._getStatusTagForOrder(order);
+      if (currentTag) tags.push(currentTag);
+    }
+    
+    return [...new Set(tags)];
+  }
+
+  _getStatusTagForOrder(order) {
+    if (!order || !order.status) return null;
+    
+    const status = order.status;
+    
+    if (status === 'pending') return 'pending';
+    if (status === 'paid') return 'paid';
+    if (['shipping', 'delivered'].includes(status)) return 'shipping';
+    if (['refund', 'refund_completed'].includes(status)) return 'refund';
+    if (['completed', 'refund_completed'].includes(status)) return 'completed';
+    if (status === 'cancelled') return 'cancelled';
+    
+    return null;
+  }
+
   _getStatusTagFromCacheKey(cacheKey) {
     const parts = cacheKey.split('_');
     if (parts.length >= 4) {
-      return parts[3];
+      return parts[parts.length - 1];
     }
     return 'all';
   }

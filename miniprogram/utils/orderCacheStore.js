@@ -249,6 +249,10 @@ class OrderCacheStore {
     const entry = this.get(key);
     if (!entry) return;
 
+    if (order.isDeleted === true) {
+      return;
+    }
+
     const existingIndex = entry.data.findIndex(o => o._id === order._id);
     if (existingIndex !== -1) {
       entry.data[existingIndex] = { ...entry.data[existingIndex], ...order };
@@ -288,6 +292,15 @@ class OrderCacheStore {
     if (orderUpdateTime > (entry.serverMaxUpdateTime || 0)) {
       entry.serverMaxUpdateTime = orderUpdateTime;
     }
+
+    if (entry.cursor) {
+      const cursorTime = entry.cursor.updatedAtTs || 0;
+      if (orderUpdateTime > cursorTime || (orderUpdateTime === cursorTime && order._id > entry.cursor._id)) {
+        entry.cursor = { updatedAtTs: orderUpdateTime, _id: order._id };
+      }
+    } else {
+      entry.cursor = { updatedAtTs: orderUpdateTime, _id: order._id };
+    }
     
     const afterCursor = entry.cursor ? `{updatedAtTs=${entry.cursor.updatedAtTs}, _id=${entry.cursor._id}}` : 'null';
     const afterMaxTime = entry.serverMaxUpdateTime || 0;
@@ -307,6 +320,11 @@ class OrderCacheStore {
 
     const idx = entry.data.findIndex(o => o._id === order._id);
     if (idx === -1) return;
+
+    if (order.isDeleted === true) {
+      this.removeOrder(key, order._id);
+      return;
+    }
 
     entry.data[idx] = { ...entry.data[idx], ...order };
     entry.timestamp = Date.now();
@@ -396,7 +414,8 @@ class OrderCacheStore {
   }
 
   _findInsertIndex(order, list) {
-    const targetId = order._id;
+    const orderTime = order.updatedAtTs || 0;
+    const orderId = order._id;
     if (!list || list.length === 0) return 0;
 
     let left = 0;
@@ -404,10 +423,17 @@ class OrderCacheStore {
 
     while (left < right) {
       const mid = Math.floor((left + right) / 2);
-      if (list[mid]._id > targetId) {
+      const midTime = list[mid].updatedAtTs || 0;
+      if (midTime > orderTime) {
+        right = mid;
+      } else if (midTime < orderTime) {
         left = mid + 1;
       } else {
-        right = mid;
+        if (list[mid]._id > orderId) {
+          right = mid;
+        } else {
+          left = mid + 1;
+        }
       }
     }
     return left;

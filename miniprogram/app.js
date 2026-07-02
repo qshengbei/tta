@@ -42,11 +42,8 @@ App({
     this.getOpenid();
 
     // 登录成功后启动全局商品监听器和订单监听器
-    console.log('[APP] 准备注册登录成功回调');
     this.onLoginReady(() => {
-      console.log('[APP] 登录成功回调被触发，启动全局商品监听器');
       getGlobalProductWatcher().init();
-      console.log('[APP] 启动全局订单监听器');
       getGlobalOrderWatcher().init();
     });
 

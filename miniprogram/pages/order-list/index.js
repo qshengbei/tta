@@ -1486,9 +1486,7 @@ Page({
         });
         this.processOrders(cached.data);
 
-        if (!cached.stale) {
-          this._validateOrderCacheAsync();
-        }
+        this._validateOrderCacheAsync();
       } else {
         this.fetchOrders();
       }
@@ -2072,12 +2070,6 @@ Page({
           console.log('[订单列表] 订单不再匹配，从列表移除，新长度:', filteredOrders.length);
           this.setData({ originalOrders: filteredOrders });
           this.processOrders(filteredOrders);
-          
-          const newStatusTag = this._getStatusTagForOrder(order);
-          if (newStatusTag && newStatusTag !== this.data.selectedStatus) {
-            this.clearCache(newStatusTag);
-          }
-          this.clearCache('all');
         }
       }
     } else {

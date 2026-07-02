@@ -1,91 +1,224 @@
-管理员操作发货后的日志：
-globalOrderWatcher.js:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
-globalOrderWatcher.js:288 [GlobalOrderWatcher] hasVisible: false
-globalOrderWatcher.js:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-globalOrderWatcher.js:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: false, matchesNow: false
-globalOrderWatcher.js:306 [GlobalOrderWatcher] 没有可见页面，标记缓存已更新
-globalOrderWatcher.js:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
-globalOrderWatcher.js:288 [GlobalOrderWatcher] hasVisible: false
-globalOrderWatcher.js:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-globalOrderWatcher.js:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: false, matchesNow: false
-globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: false, matchesNow: false
-globalOrderWatcher.js:306 [GlobalOrderWatcher] 没有可见页面，标记缓存已更新
-[自动热重载] 已开启代码文件保存后自动热重载
-index.js? [sm]:95 订单管理页面显示
-
-用户端在订单列表页面，管理员操作发货后的日志：
-globalOrderWatcher.js? [sm]:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
-globalOrderWatcher.js? [sm]:288 [GlobalOrderWatcher] hasVisible: true
-globalOrderWatcher.js? [sm]:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-globalOrderWatcher.js? [sm]:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: true, matchesNow: false
-orderCacheStore.js? [sm]:378 [OrderCacheStore] removeOrder - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, orderId: c40002b26a150f5600b1865f37fa7cfd, idx: 9, isLast: false
-orderCacheStore.js? [sm]:379   移除前 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1782961870591, dataLength: 11
-orderCacheStore.js? [sm]:380   移除后 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1782961870591, dataLength: 10
-orderCacheStore.js? [sm]:381   当前状态 - cacheIndex: 0, hasMore: false
-globalOrderWatcher.js? [sm]:373 [GlobalOrderWatcher] 缓存移除订单（状态变更离开）: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all c40002b26a150f5600b1865f37fa7cfd
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: true, matchesNow: false
-orderCacheStore.js? [sm]:378 [OrderCacheStore] removeOrder - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, orderId: c40002b26a150f5600b1865f37fa7cfd, idx: 1, isLast: false
-orderCacheStore.js? [sm]:379   移除前 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1779766091249, dataLength: 3
-orderCacheStore.js? [sm]:380   移除后 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1779766091249, dataLength: 2
-orderCacheStore.js? [sm]:381   当前状态 - cacheIndex: 0, hasMore: false
-globalOrderWatcher.js? [sm]:373 [GlobalOrderWatcher] 缓存移除订单（状态变更离开）: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid c40002b26a150f5600b1865f37fa7cfd
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:299 [GlobalOrderWatcher] 通知订阅者更新UI
-globalOrderWatcher.js? [sm]:439 [GlobalOrderWatcher] _notifySubscribers - 订阅者数量: 1
-globalOrderWatcher.js? [sm]:443 [GlobalOrderWatcher] 检查订阅者: order_list_page isVisible: true cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
-globalOrderWatcher.js? [sm]:451 [GlobalOrderWatcher] 调用订阅者 handler: order_list_page
-index.js? [sm]:2016 [订单列表] 监听器收到订单变化: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-index.js? [sm]:2017 [订单列表] 订单状态: shipping 当前选中标签: paid
-index.js? [sm]:2048 [订单列表] _handleOrderUpdate - index: -1 originalOrders长度: 2
-index.js? [sm]:2049 [订单列表] 订单状态变化 - 新状态: shipping 当前标签: paid
-globalOrderWatcher.js? [sm]:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
-globalOrderWatcher.js? [sm]:288 [GlobalOrderWatcher] hasVisible: true
-globalOrderWatcher.js? [sm]:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-globalOrderWatcher.js? [sm]:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: true, matchesNow: false
-globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
-globalOrderWatcher.js? [sm]:299 [GlobalOrderWatcher] 通知订阅者更新UI
-globalOrderWatcher.js? [sm]:439 [GlobalOrderWatcher] _notifySubscribers - 订阅者数量: 1
-globalOrderWatcher.js? [sm]:443 [GlobalOrderWatcher] 检查订阅者: order_list_page isVisible: true cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
-globalOrderWatcher.js? [sm]:451 [GlobalOrderWatcher] 调用订阅者 handler: order_list_page
-index.js? [sm]:2016 [订单列表] 监听器收到订单变化: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
-index.js? [sm]:2017 [订单列表] 订单状态: shipping 当前选中标签: paid
-index.js? [sm]:2048 [订单列表] _handleOrderUpdate - index: -1 originalOrders长度: 2
-index.js? [sm]:2049 [订单列表] 订单状态变化 - 新状态: shipping 当前标签: paid
+app.js? [sm]:8 [APP] ====== onLaunch 开始 ======
+errorLogger.js? [sm]:54 [ErrorLogger] 全局异常处理器已注册
+app.js? [sm]:28 [APP] 开始初始化 wx.cloud
+app.js? [sm]:34 [APP] wx.cloud.init 完成，耗时: 46 ms
+app.js? [sm]:41 [APP] 准备调用 getOpenid()
+app.js? [sm]:75 [APP:getOpenid] ====== getOpenid 开始 ======
+app.js? [sm]:78 [APP:getOpenid] 准备调用 wx.cloud.callFunction(name="login")
+app.js? [sm]:45 [APP] 准备注册登录成功回调
+app.js? [sm]:60 [APP] ====== onLaunch 完成 ======，总耗时: 48 ms
+app.js? [sm]:180 [APP] ====== onShow ======
+index.js? [sm]:184 [首页] ========== onLoad 开始 ==========
+index.js? [sm]:185 [首页] 页面加载开始时间: 18:20:20
+globalProductWatcher.js? [sm]:156 [GlobalProductWatcher] Page subscribed: home_page cacheKey: home_products
+globalProductWatcher.js? [sm]:160 [GlobalProductWatcher] Page visibility: home_page true
+index.js? [sm]:897 [首页] ========== loadProducts 开始 ==========
+index.js? [sm]:1003 [首页] ========== loadProductsFromDatabase 开始 ==========
+index.js? [sm]:1004 [首页] 从数据库加载数据
+index.js? [sm]:215 [首页] ========== onShow 开始 ==========
+index.js? [sm]:221 [首页] ⏱️ onLoad → onShow 耗时: 18 ms
+globalProductWatcher.js? [sm]:255 [GlobalProductWatcher] Page visibility: home_page true
+index.js? [sm]:235 [首页] 正在加载中，等待完成后再检查更新
+app.js? [sm]:84 [APP:getOpenid] 云函数login返回成功，耗时: 331 ms，结果: {errMsg: "cloud.callFunction:ok", result: , requestID: "28ac00ea-ca72-46fb-85ab-8fa015085cec"}
+app.js? [sm]:87 [APP:getOpenid] 保存openid完成 o1R-w7XrgR7OHEk_SXuzYAoGIQHo
+app.js? [sm]:95 [APP:getOpenid] 执行登录回调
+app.js? [sm]:47 [APP] 登录成功回调被触发，启动全局商品监听器
+globalProductWatcher.js? [sm]:320 [GlobalProductWatcher] Starting products watch...
+globalProductWatcher.js? [sm]:343 [GlobalProductWatcher] Watch started successfully
+app.js? [sm]:49 [APP] 启动全局订单监听器
+app.js? [sm]:52 [APP] 获取全局订单监听器实例: true
+globalOrderWatcher.js? [sm]:106 [GlobalOrderWatcher] init() called, _isActive: false _isInit: false
+globalOrderWatcher.js? [sm]:249 [GlobalOrderWatcher] _startWatch() called, _watchInstance: false
+globalOrderWatcher.js? [sm]:255 [GlobalOrderWatcher] Starting orders watch...
+globalOrderWatcher.js? [sm]:262 [GlobalOrderWatcher] Creating watch on orders collection...
+globalOrderWatcher.js? [sm]:264 [GlobalOrderWatcher] db instance: true
+globalOrderWatcher.js? [sm]:265 [GlobalOrderWatcher] collection orders: true
+globalOrderWatcher.js? [sm]:285 [GlobalOrderWatcher] Watch started successfully, _isActive: true
+globalOrderWatcher.js? [sm]:298 [GlobalOrderWatcher] _startHealthCheck() called
+globalOrderWatcher.js? [sm]:315 [GlobalOrderWatcher] Health check timer started, interval: 30000 ms
+app.js? [sm]:54 [APP] 全局订单监听器初始化完成
+app.js? [sm]:104 [APP:getOpenid] 准备调用 checkWelcomeMessage
+app.js? [sm]:124 [APP:checkWelcomeMessage] ====== checkWelcomeMessage 开始 ======
+app.js? [sm]:128 [APP:checkWelcomeMessage] 准备查询 notifications，openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo
+app.js? [sm]:107 [APP:getOpenid] ====== getOpenid 成功完成 ======，总耗时: 362 ms
+index.js? [sm]:1014 [首页] 轮播图加载完成: 3 张
+index.js? [sm]:1099 [首页] ⏱️ 数据库加载耗时: 507 ms
+index.js? [sm]:1104 [首页] ⏱️ 页面显示总耗时（从数据库）: 520 ms
+index.js? [sm]:1105 [首页] ========== 页面已显示 ==========
+index.js? [sm]:1114 [首页] --- 获取服务器版本号 ---
+index.js? [sm]:1115 [首页] 当前云环境: cloud1-4gs2vu8c6544e586
+index.js? [sm]:1116 [首页] 调用云函数名: getProductVersion
+index.js? [sm]:1117 [首页] 调用参数: {}
+app.js? [sm]:137 [APP:checkWelcomeMessage] 查询通知完成，耗时: 225 ms，结果: {data: , errMsg: "collection.get:ok"}
+app.js? [sm]:163 [APP:checkWelcomeMessage] 已有欢迎消息
+app.js? [sm]:165 [APP:checkWelcomeMessage] ====== checkWelcomeMessage 完成 ======，总耗时: 225 ms
+index.js? [sm]:1126 [首页] 云函数调用耗时: 266 ms
+index.js? [sm]:1127 [首页] versionRes: {
+  "errMsg": "cloud.callFunction:ok",
+  "result": {
+    "success": true,
+    "version": "1782987532000",
+    "lastUpdated": "2026-07-02T10:18:52.770Z",
+    "message": "获取版本号成功"
+  },
+  "requestID": "802ad90b-1ee3-4050-9326-7ec5789efbb0"
+}
+index.js? [sm]:1128 [首页] versionRes.result: {
+  "success": true,
+  "version": "1782987532000",
+  "lastUpdated": "2026-07-02T10:18:52.770Z",
+  "message": "获取版本号成功"
+}
+index.js? [sm]:1129 [首页] versionRes.result.success: true
+index.js? [sm]:1133 [首页] 成功获取版本号: 1782987532000
+index.js? [sm]:1148 [首页] 当前版本号最终值: 1782987532000
+globalOrderWatcher.js? [sm]:270 [GlobalOrderWatcher] watch onChange callback triggered
+globalOrderWatcher.js? [sm]:271 [GlobalOrderWatcher] snapshot type: init
+globalOrderWatcher.js? [sm]:272 [GlobalOrderWatcher] snapshot docChanges length: 52
+globalOrderWatcher.js? [sm]:319 [GlobalOrderWatcher] _handleChange() called, snapshot: {"id":3,"docChanges":[{"id":3,"dataType":"init","queueType":"init","docId":"54479e7f6a06ea86004d383a2d43c8e8","doc":{"_id":"54479e7f6a06ea86004d383a2d43c8e8","_openid":"o1R-w7S-1p19alqjb6dVUyYdunSs","address":{"cityName":"广州市","countyName":"海珠区","detailInfo":"新港中路397号","errMsg":"chooseAddress:ok","nationalCode":"510000","postalCode":"510000","provinceName":"广东省","telNumber":"020-81167888","userName":"张三"},"afterSalesProcessTime":"2026-05-15T09:43:28.934Z","afterSalesResult":"正在拦截快递","afterSalesStatus":"intercepting","bankType":"ICBC","createdAt":"2026-05-15T09:42:29.047Z","deliveredAt":"2026-05-15T09:42:59.429Z","deliveryDistance":null,"deliveryType":"express","distance":null,"expireTime":"2026-05-15T09:42:59.047Z","fromAddress":"福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","logisticsInfo":{"companyCode":"yuantong","companyName":"圆通速递","trackingNumber":"YT7620094453454","updatedAt":"2026-05-15T09:42:58.840Z"},"logisticsState":{"checkTime":"2026-05-13 17","isCheck":"1","lastGetTime":"2026-05-15T09:42:59.429Z","state":"7","stateName":"转投"},"message":"","orderNumber":"202605151742269353","originalStatusBeforeRefund":"delivered","payTime":"2026-05-15T09:42:29.047Z","pickupCode":"1911","pickupDate":"","pickupLatitude":24.574953,"pickupLongitude":118.064664,"pickupTime":"10:00","policySnapshot":{"afterSalesTypeConfigs":{},"autoConfirmReceiptDays":3,"noReasonReturnDays":7,"normalAfterSalesDays":7,"policyEffectiveAt":"2026-04-29T16:48:14.256Z","policyVersion":"v_1778838149047","qualityAfterSalesDays":15,"supportLogisticsIssue":true,"supportNoReasonExchange":false,"supportNoReasonOnlyRefund":false,"supportNoReasonReturn":true,"supportNoReasonReturnRefund":true,"supportQualityExchange":true,"supportQualityRefund":true,"supportQualityResend":true,"supportWrongItemOrMissing":true},"products":[{"coverImage":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/clip-gold-cover.jpg","name":"Aura 极简金属发夹","price":15,"productId":"ed435bfa69aecef000ca29e619b08025","quantity":1,"supportNoReasonReturn":false,"typeId":"type_008"}],"productsNames":"Aura 极简金属发夹","receiptConfirm":{"confirmedAt":null,"confirmedBy":"system","source":"logistics_delivery","type":"pending"},"shippingTime":"2026-05-15T09:42:58.840Z","status":"refund_completed","statusText":"已支付","totalPrice":21,"tradeNo":"TN1778838149047N5B3NUZ7","updatedAt":"2026-05-15T09:43:35.634Z","updatedAtTs":1778838215634}},{"id":3,"dataType":"init","queueType":"init","docId":"f9d11e1d6a1024da0027e3a94cca1e61","doc":{"_id":"f9d11e1d6a1024da0027e3a94cca1e61","_openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","address":{"cityName":"厦门市","countyName":"集美区","detailInfo":"集美街道园博一号小区南门","detailInfoNew":"园博一号小区南门","errMsg":"chooseAddress:ok","nationalCode":"350211","nationalCodeFull":"350211001","postalCode":"361021","provinceName":"福建省","streetName":"集美街道","telNumber":"17759502086","userName":"霉霉"},"bankType":"ICBC","createdAt":"2026-05-22T09:41:44.498Z","deliveryDistance":null,"deliveryType":"express","distance":null,"expireTime":"2026-05-22T09:42:14.498Z","fromAddress":"福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","logisticsInfo":{"companyCode":"yuantong","companyName":"圆通速递","trackingNumber":"YT8882747885749","updatedAt":"2026-07-02T06:50:09.382Z"},"logisticsState":{"isCheck":"0","lastGetTime":"2026-07-02T06:50:10.218Z","state":"5","stateName":"派件中"},"message":"","orderNumber":"202605221741383886","payTime":"2026-05-22T09:41:44.498Z","pickupCode":"9695","pickupDate":"","pickupLatitude":24.574953,"pickupLongitude":118.064664,"pickupTime":"10:00","policySnapshot":{"afterSalesTypeConfigs":{},"autoConfirmReceiptDays":3,"noReasonReturnDays":7,"normalAfterSalesDays":7,"policyEffectiveAt":"2026-04-29T16:48:14.256Z","policyVersion":"v_1779442904498","qualityAfterSalesDays":15,"supportLogisticsIssue":true,"supportNoReasonExchange":false,"supportNoReasonOnlyRefund":false,"supportNoReasonReturn":true,"supportNoReasonReturnRefund":true,"supportQualityExchange":true,"supportQualityRefund":true,"supportQualityResend":true,"supportWrongItemOrMissing":true},"products":[{"coverImage":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/scrunchie-blue-cover.jpg","name":"Aura 克莱因蓝发圈","price":28,"productId":"fb39ee6269aecedd00cb426d7f7d0fb7","quantity":5,"supportNoReasonReturn":false,"typeId":"type_005"}],"productsNames":"Aura 克莱因蓝发圈","shippingTime":"2026-07-02T06:50:09.382Z","status":"shipping","statusText":"已支付","totalPrice":140,"tradeNo":"TN1779442904498N956OZMO","updatedAt":"2026-07-02T06:50:10.218Z","updatedAtTs":1782975009382}},{"id":3,"dataType":"init","queueType":"init","docId":"7d17c2c66a1027830025bc54327f52c5","doc":{"_id":"7d17c2c66a1027830025bc54327f52c5","_openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","address":{"cityName":"厦门市","countyName":"集美区","detailInfo":"集美街道园博一号小区南门","detailInfoNew":"园博一号小区南门","errMsg":"chooseAddress:ok","nationalCode":"350211","nationalCodeFull":"350211001","postalCode":"361021","provinceName":"福建省","streetName":"集美街道","telNumber":"17759502086","userName"
+globalOrderWatcher.js? [sm]:323 [GlobalOrderWatcher] init event, skipping
+globalProductWatcher.js? [sm]:373 [GlobalProductWatcher] init event, skipping
+index.js? [sm]:529 [首页] 页面隐藏
+globalProductWatcher.js? [sm]:255 [GlobalProductWatcher] Page visibility: home_page false
+globalProductWatcher.js? [sm]:267 [GlobalProductWatcher] 所有页面隐藏，后续变更只更新缓存
+index.js? [sm]:27 从本地存储获取openid成功: o1R-w7XrgR7OHEk_SXuzYAoGIQHo
+index.js? [sm]:196 查询条件: {_openid: "o1R-w7XrgR7OHEk_SXuzYAoGIQHo"}
+index.js? [sm]:204 开始查询订单，初始offset: 0 limit: 20
+index.js? [sm]:206 查询订单，当前offset: 0 limit: 20
+index.js? [sm]:736 检查管理员权限，openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo
+index.js? [sm]:196 查询条件: {_openid: "o1R-w7XrgR7OHEk_SXuzYAoGIQHo"}
+index.js? [sm]:204 开始查询订单，初始offset: 0 limit: 20
+index.js? [sm]:206 查询订单，当前offset: 0 limit: 20
+index.js? [sm]:736 检查管理员权限，openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo
+index.js? [sm]:68 从数据库获取用户信息成功: {data: , errMsg: "collection.get:ok"}
+index.js? [sm]:68 从数据库获取用户信息成功: {data: , errMsg: "collection.get:ok"}
+index.js? [sm]:741 管理员openid列表: ["o1R-w7S-1p19alqjb6dVUyYdunSs"]
+index.js? [sm]:743 是否是管理员: false
+index.js? [sm]:209 查询结果数据长度: 20
+index.js? [sm]:212 添加订单数据，当前总数: 0 添加数量: 20
+index.js? [sm]:214 添加后总数: 20
+index.js? [sm]:216 更新offset: 20
+index.js? [sm]:218 返回数据等于limit，继续查询
+index.js? [sm]:206 查询订单，当前offset: 20 limit: 20
+index.js? [sm]:741 管理员openid列表: ["o1R-w7S-1p19alqjb6dVUyYdunSs"]
+index.js? [sm]:743 是否是管理员: false
+index.js? [sm]:209 查询结果数据长度: 20
+index.js? [sm]:212 添加订单数据，当前总数: 0 添加数量: 20
+index.js? [sm]:214 添加后总数: 20
+index.js? [sm]:216 更新offset: 20
+index.js? [sm]:218 返回数据等于limit，继续查询
+index.js? [sm]:206 查询订单，当前offset: 20 limit: 20
+index.js? [sm]:209 查询结果数据长度: 6
+index.js? [sm]:212 添加订单数据，当前总数: 20 添加数量: 6
+index.js? [sm]:214 添加后总数: 26
+index.js? [sm]:216 更新offset: 40
+index.js? [sm]:219 返回数据少于limit，结束查询
+index.js? [sm]:230 获取当前用户的订单数据总数: 26
+index.js? [sm]:231 获取当前用户的订单数据: (26) [Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object]
+index.js? [sm]:287 最终快递运输订单数量: {pending: , paid: 3, shipping: 11, delivered: , completed: 1, …}
+index.js? [sm]:288 最终上门自提订单数量: {pending: , paid: , completed: }
+index.js? [sm]:289 最终同城配送订单数量: {pending: , paid: , shipping: , completed: }
+index.js? [sm]:312 缓存订单数量到本地存储成功: {orderCounts: , pickupCounts: , localCounts: , timestamp: 1782987628148}
+index.js? [sm]:209 查询结果数据长度: 6
+index.js? [sm]:212 添加订单数据，当前总数: 20 添加数量: 6
+index.js? [sm]:214 添加后总数: 26
+index.js? [sm]:216 更新offset: 40
+index.js? [sm]:219 返回数据少于limit，结束查询
+index.js? [sm]:230 获取当前用户的订单数据总数: 26
+index.js? [sm]:231 获取当前用户的订单数据: (26) [Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object]
+index.js? [sm]:287 最终快递运输订单数量: {pending: , paid: 3, shipping: 11, delivered: , completed: 1, …}
+index.js? [sm]:288 最终上门自提订单数量: {pending: , paid: , completed: }
+index.js? [sm]:289 最终同城配送订单数量: {pending: , paid: , shipping: , completed: }
+index.js? [sm]:312 缓存订单数量到本地存储成功: {orderCounts: , pickupCounts: , localCounts: , timestamp: 1782987628154}
+index.js? [sm]:2225 [Component] data field "filterOptions" is overwritten by property with the same name (when preparing "components/order-search-filter-panel/index").
+global @ index.js? [sm]:2225
+globalOrderWatcher.js? [sm]:197 [GlobalOrderWatcher] Page visibility: order_list_page true
+index.js? [sm]:219 [订单列表] 页面无数据，快速显示缓存
+index.js? [sm]:260 [订单列表] 无缓存数据，从数据库加载
+index.js? [sm]:596 [订单列表] 游标分页查询 - isFirstPage: true, pageSize: 18, fetchLimit: 19, lastUpdatedAtTs: null, lastId: null
+index.js? [sm]:286 [订单列表] 首次进入，跳过时间戳对比
+index.js? [sm]:226 [订单列表] 页面之前隐藏，重新连接监听器
+index.js? [sm]:1984 [订单列表] startOrderWatch() called, _unsubOrderWatcher: false
+index.js? [sm]:1991 [订单列表] 获取全局订单监听器: true
+globalOrderWatcher.js? [sm]:244 [订单列表] 监听器状态: {isActive: true, subscriberCount: , visiblePages: , registeredCacheKeys: , cacheUpdatedKeys: , …}
+index.js? [sm]:1995 [订单列表] 订阅缓存key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:116 [GlobalOrderWatcher] subscribe() called, pageId: order_list_page cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:121 [GlobalOrderWatcher] Registered cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:126 [GlobalOrderWatcher] Subscribers count: 1
+globalOrderWatcher.js? [sm]:129 [GlobalOrderWatcher] Page visibility set: order_list_page true
+index.js? [sm]:2001 [订单列表] 订阅成功，unsub函数: true
+index.js? [sm]:240 [订单列表] onShow 耗时: 13ms
+index.js? [sm]:669 [订单列表] 游标分页结果 - 查询返回: 15条, 实际返回: 15条, hasMore: false, 新游标: updatedAtTs=1782960043625, _id=5290ec146a15340100b671761859bee9
+index.js? [sm]:1163 普通列表 - 全部: 15条
+index.js? [sm]:714 [订单列表] 写入时间戳 - 取首条数据时间戳: 1782987532299, 订单数: 15, 状态: all
+index.js? [sm]:718 [订单列表] 写入缓存(set) - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 数据条数: 15, serverMaxUpdateTime: 1782987532299, hasMore: false
+globalOrderWatcher.js? [sm]:302 [GlobalOrderWatcher] Health check - isActive: true timeSinceLastMessage: 28847 ms
+globalProductWatcher.js? [sm]:381 [GlobalProductWatcher] onChange: undefined docChanges: 1
+globalProductWatcher.js? [sm]:386 [GlobalProductWatcher] hasVisible: false
+servicewechat.com:1 [GlobalProductWatcher] _pageVisible entries: [["home_page",false]]
+globalProductWatcher.js? [sm]:393 [GlobalProductWatcher] Change: update 60977a436a338fa700acabbe717fdf43
+globalProductWatcher.js? [sm]:428 [GlobalProductWatcher] _updateRelevantCaches - 找到 0 个缓存 key: []
+globalProductWatcher.js? [sm]:399 [GlobalProductWatcher] 更新首页缓存
+globalProductWatcher.js? [sm]:662 [GlobalProductWatcher] ========== 开始更新首页缓存 ==========
+globalProductWatcher.js? [sm]:663 [GlobalProductWatcher] 变化类型: update
+globalProductWatcher.js? [sm]:664 [GlobalProductWatcher] 商品ID: 60977a436a338fa700acabbe717fdf43
+globalProductWatcher.js? [sm]:665 [GlobalProductWatcher] 重试次数: 0
+globalProductWatcher.js? [sm]:669 [GlobalProductWatcher] --- 步骤1: 获取服务器版本号 ---
+globalProductWatcher.js? [sm]:672 [GlobalProductWatcher] 准备调用云函数: getProductVersion
+globalProductWatcher.js? [sm]:673 [GlobalProductWatcher] 当前云环境: cloud1-4gs2vu8c6544e586
+globalOrderWatcher.js? [sm]:270 [GlobalOrderWatcher] watch onChange callback triggered
+globalOrderWatcher.js? [sm]:271 [GlobalOrderWatcher] snapshot type: undefined
+globalOrderWatcher.js? [sm]:272 [GlobalOrderWatcher] snapshot docChanges length: 1
+globalOrderWatcher.js? [sm]:319 [GlobalOrderWatcher] _handleChange() called, snapshot: {"id":4,"docChanges":[{"id":4,"dataType":"update","queueType":"update","docId":"188ebdaf6a463b0d000220753d59d015","doc":{"_id":"188ebdaf6a463b0d000220753d59d015","_openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","address":{"cityName":"厦门市","countyName":"集美区","detailInfo":"集美街道园博一号小区南门","detailInfoNew":"园博一号小区南门","errMsg":"chooseAddress:ok","nationalCode":"350211","nationalCodeFull":"350211001","postalCode":"361021","provinceName":"福建省","streetName":"集美街道","telNumber":"17759502086","userName":"霉霉"},"bankType":"ABC","createdAt":"2026-07-02T10:18:52.299Z","deliveryDistance":null,"deliveryType":"express","distance":null,"expireTime":"2026-07-02T10:19:22.299Z","message":"","orderNumber":"202607021818508379","payTime":"2026-07-02T10:18:52.299Z","pickupCode":"1203","pickupDate":"","pickupLatitude":24.574953,"pickupLongitude":118.064664,"pickupTime":"10:00","policySnapshot":{"afterSalesTypeConfigs":{},"autoConfirmReceiptDays":3,"noReasonReturnDays":7,"normalAfterSalesDays":7,"policyEffectiveAt":"2026-04-29T16:48:14.256Z","policyVersion":"v_1782987532299","qualityAfterSalesDays":15,"supportLogisticsIssue":true,"supportNoReasonExchange":false,"supportNoReasonOnlyRefund":false,"supportNoReasonReturn":true,"supportNoReasonReturnRefund":true,"supportQualityExchange":true,"supportQualityRefund":true,"supportQualityResend":true,"supportWrongItemOrMissing":true},"products":[{"coverImage":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/cover-1781763959401.png","name":"发圈测试29","price":29,"productId":"60977a436a338fa700acabbe717fdf43","quantity":1,"supportNoReasonReturn":false,"typeId":"type_001"}],"productsNames":"发圈测试29","status":"cancelled","statusText":"已支付","totalPrice":33,"tradeNo":"TN1782987532299R44LK7GW","updatedAt":"2026-07-02T10:20:56.248Z","updatedAtTs":1782987656248,"cancelReason":"用户主动取消","cancelTime":"2026-07-02T10:20:56.248Z"},"updatedFields":{"cancelReason":"用户主动取消","cancelTime":"2026-07-02T10:20:56.248Z","status":"cancelled","updatedAt":"2026-07-02T10:20:56.248Z","updatedAtTs":1782987656248},"removedFields":[]}],"docs":[{"_id":"54479e7f6a06ea86004d383a2d43c8e8","_openid":"o1R-w7S-1p19alqjb6dVUyYdunSs","address":{"cityName":"广州市","countyName":"海珠区","detailInfo":"新港中路397号","errMsg":"chooseAddress:ok","nationalCode":"510000","postalCode":"510000","provinceName":"广东省","telNumber":"020-81167888","userName":"张三"},"afterSalesProcessTime":"2026-05-15T09:43:28.934Z","afterSalesResult":"正在拦截快递","afterSalesStatus":"intercepting","bankType":"ICBC","createdAt":"2026-05-15T09:42:29.047Z","deliveredAt":"2026-05-15T09:42:59.429Z","deliveryDistance":null,"deliveryType":"express","distance":null,"expireTime":"2026-05-15T09:42:59.047Z","fromAddress":"福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","logisticsInfo":{"companyCode":"yuantong","companyName":"圆通速递","trackingNumber":"YT7620094453454","updatedAt":"2026-05-15T09:42:58.840Z"},"logisticsState":{"checkTime":"2026-05-13 17","isCheck":"1","lastGetTime":"2026-05-15T09:42:59.429Z","state":"7","stateName":"转投"},"message":"","orderNumber":"202605151742269353","originalStatusBeforeRefund":"delivered","payTime":"2026-05-15T09:42:29.047Z","pickupCode":"1911","pickupDate":"","pickupLatitude":24.574953,"pickupLongitude":118.064664,"pickupTime":"10:00","policySnapshot":{"afterSalesTypeConfigs":{},"autoConfirmReceiptDays":3,"noReasonReturnDays":7,"normalAfterSalesDays":7,"policyEffectiveAt":"2026-04-29T16:48:14.256Z","policyVersion":"v_1778838149047","qualityAfterSalesDays":15,"supportLogisticsIssue":true,"supportNoReasonExchange":false,"supportNoReasonOnlyRefund":false,"supportNoReasonReturn":true,"supportNoReasonReturnRefund":true,"supportQualityExchange":true,"supportQualityRefund":true,"supportQualityResend":true,"supportWrongItemOrMissing":true},"products":[{"coverImage":"cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/clip-gold-cover.jpg","name":"Aura 极简金属发夹","price":15,"productId":"ed435bfa69aecef000ca29e619b08025","quantity":1,"supportNoReasonReturn":false,"typeId":"type_008"}],"productsNames":"Aura 极简金属发夹","receiptConfirm":{"confirmedAt":null,"confirmedBy":"system","source":"logistics_delivery","type":"pending"},"shippingTime":"2026-05-15T09:42:58.840Z","status":"refund_completed","statusText":"已支付","totalPrice":21,"tradeNo":"TN1778838149047N5B3NUZ7","updatedAt":"2026-05-15T09:43:35.634Z","updatedAtTs":1778838215634},{"_id":"f9d11e1d6a1024da0027e3a94cca1e61","_openid":"o1R-w7XrgR7OHEk_SXuzYAoGIQHo","address":{"cityName":"厦门市","countyName":"集美区","detailInfo":"集美街道园博一号小区南门","detailInfoNew":"园博一号小区南门","errMsg":"chooseAddress:ok","nationalCode":"350211","nationalCodeFull":"350211001","postalCode":"361021","provinceName":"福建省","streetName":"集美街道","telNumber":"17759502086","userName":"霉霉"},"bankType":"ICBC","createdAt":"2026-05-22T09:41:44.498Z","deliveryDistance":null,"deliveryType":"express","distance":null,"expireTime":"2026-05-22T09:42:14.498Z","fromAddress":"福建省厦门市集美区园博一号小区16栋-2楼玻璃门旁边货框","logisticsInfo":{"companyCode":"yuantong","company
+globalOrderWatcher.js? [sm]:332 [GlobalOrderWatcher] onChange: undefined docChanges: 1
+globalOrderWatcher.js? [sm]:337 [GlobalOrderWatcher] hasVisible: true
+globalOrderWatcher.js? [sm]:343 [GlobalOrderWatcher] Change: update 188ebdaf6a463b0d000220753d59d015 202607021818508379
+globalOrderWatcher.js? [sm]:418 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, relevantTags: (2) ["all", "cancelled"]
+globalOrderWatcher.js? [sm]:449 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: true, matchesNow: true
+globalOrderWatcher.js? [sm]:457 [GlobalOrderWatcher] existedBefore: true, matchesNow: true
+globalOrderWatcher.js? [sm]:461 [GlobalOrderWatcher] 缓存更新订单: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all 188ebdaf6a463b0d000220753d59d015
+globalOrderWatcher.js? [sm]:449 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: false, matchesNow: true
+globalOrderWatcher.js? [sm]:354 [GlobalOrderWatcher] 通知订阅者更新UI
+globalOrderWatcher.js? [sm]:570 [GlobalOrderWatcher] _notifySubscribers - 订阅者数量: 1
+globalOrderWatcher.js? [sm]:574 [GlobalOrderWatcher] 检查订阅者: order_list_page isVisible: true cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:582 [GlobalOrderWatcher] 调用订阅者 handler: order_list_page
+index.js? [sm]:2026 [订单列表] 监听器收到订单变化: update 188ebdaf6a463b0d000220753d59d015 202607021818508379
+index.js? [sm]:2027 [订单列表] 订单状态: cancelled 当前选中标签: all
+index.js? [sm]:2058 [订单列表] _handleOrderUpdate - index: 0 originalOrders长度: 15
+index.js? [sm]:2059 [订单列表] 订单状态变化 - 新状态: cancelled 当前标签: all
+index.js? [sm]:2075 [订单列表] stillMatches: true
+index.js? [sm]:1163 普通列表 - 全部: 15条
+index.js? [sm]:596 [订单列表] 游标分页查询 - isFirstPage: true, pageSize: 18, fetchLimit: 19, lastUpdatedAtTs: null, lastId: null
+globalProductWatcher.js? [sm]:682 [GlobalProductWatcher] 云函数调用耗时: 316 ms
+globalProductWatcher.js? [sm]:683 [GlobalProductWatcher] 云函数返回结果: {
+  "errMsg": "cloud.callFunction:ok",
+  "result": {
+    "success": true,
+    "version": "1782987656000",
+    "lastUpdated": "2026-07-02T10:20:56.189Z",
+    "message": "获取版本号成功"
+  },
+  "requestID": "d7411145-d8e1-43b3-be93-983cfaafa5c6"
+}
+globalProductWatcher.js? [sm]:687 [GlobalProductWatcher] 成功获取服务器版本号: 1782987656000
+globalProductWatcher.js? [sm]:706 [GlobalProductWatcher] --- 步骤2: 获取当前缓存 ---
+globalProductWatcher.js? [sm]:708 [GlobalProductWatcher] 缓存存在: true
+globalProductWatcher.js? [sm]:709 [GlobalProductWatcher] 缓存系列列表长度: 3
+globalProductWatcher.js? [sm]:719 [GlobalProductWatcher] --- 步骤3: 创建备份 ---
+globalProductWatcher.js? [sm]:721 [GlobalProductWatcher] 备份创建成功，系列列表长度: 3
+globalProductWatcher.js? [sm]:724 [GlobalProductWatcher] --- 步骤4: 计算更新数据 ---
+globalProductWatcher.js? [sm]:757 [GlobalProductWatcher] 处理修改操作
+globalProductWatcher.js? [sm]:785 [GlobalProductWatcher] 更新商品信息
+globalProductWatcher.js? [sm]:845 [GlobalProductWatcher] 商品上架，添加到列表
+globalProductWatcher.js? [sm]:956 [GlobalProductWatcher] 更新后系列列表长度: 3
+globalProductWatcher.js? [sm]:957 [GlobalProductWatcher] 更新后新品列表长度: 4
+globalProductWatcher.js? [sm]:960 [GlobalProductWatcher] --- 步骤5: 写入缓存 ---
+globalProductWatcher.js? [sm]:973 [GlobalProductWatcher] 缓存写入成功
+globalProductWatcher.js? [sm]:974 [GlobalProductWatcher] 缓存版本: 1782987656000
+globalProductWatcher.js? [sm]:975 [GlobalProductWatcher] 缓存状态: healthy
+globalProductWatcher.js? [sm]:976 [GlobalProductWatcher] ========== 更新成功 ==========
+globalProductWatcher.js? [sm]:406 [GlobalProductWatcher] 没有可见页面，跳过通知
+index.js? [sm]:669 [订单列表] 游标分页结果 - 查询返回: 15条, 实际返回: 15条, hasMore: false, 新游标: updatedAtTs=1782960043625, _id=5290ec146a15340100b671761859bee9
+index.js? [sm]:1163 普通列表 - 全部: 15条
+index.js? [sm]:714 [订单列表] 写入时间戳 - 取首条数据时间戳: 1782987656248, 订单数: 15, 状态: all
+index.js? [sm]:718 [订单列表] 写入缓存(set) - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 数据条数: 15, serverMaxUpdateTime: 1782987656248, hasMore: false
