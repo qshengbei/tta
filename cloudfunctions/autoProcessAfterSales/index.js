@@ -8,6 +8,8 @@ const LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 const EXPIRE_GRACE_MS = 1000;
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
 
+const { logOrderOperation } = require('./common/orderLogHelper');
+
 function normalizeDate(value) {
   if (!value) {
     return null;
@@ -435,6 +437,29 @@ exports.main = async (event, context) => {
           
           await db.collection('orders').doc(order._id).update({
             data: orderUpdateData
+          });
+          
+          // 异步记录订单操作日志，不影响主流程
+          setImmediate(async () => {
+            try {
+              const action = actionResult.action === 'intercept' ? 'auto_start_intercepting' : 'auto_process_after_sales';
+              await logOrderOperation(db, {
+                orderId: order._id,
+                orderNumber: order.orderNumber,
+                openid: order._openid,
+                action,
+                fromStatus: order.status,
+                toStatus: 'refund',
+                operatorType: 'system',
+                operatorId: '',
+                operatorName: '',
+                reason: '系统自动处理售后',
+                remark: '',
+                detail: { caseId: caseRecord._id, jobId: instanceId }
+              });
+            } catch (logError) {
+              console.error('记录自动处理售后日志失败:', order._id, logError);
+            }
           });
         }
 

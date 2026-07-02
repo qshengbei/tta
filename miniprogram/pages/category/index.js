@@ -2077,26 +2077,33 @@ Page({
           .get();
         const newServerMaxTime = newTimeRes.data?.[0]?.updatedAtTs || 0;
         
-        // 保留已加载的后续页面数据，只替换第一页
-        let mergedData = newData;
-        if (cache.data && cache.data.length > newData.length) {
-          // 缓存有更多数据，保留后续页
-          const remainingData = cache.data.slice(newData.length);
-          mergedData = [...newData, ...remainingData];
-          console.log('[宝贝页面] 时间戳校验：保留后续页面数据，原缓存', cache.data.length, '条，合并后', mergedData.length, '条');
-        }
+        console.log('[宝贝页面] 时间戳校验：只保留第一页', newData.length, '条，丢弃旧后续页', cache.data ? (cache.data.length - newData.length) : 0, '条');
         
-        this.setData({ originalProducts: mergedData });
-        this.setCachedProducts(mergedData);
-        productCacheStore.set(this._sortCacheKey || 'category_products', {
-          data: mergedData,
-          cacheIndex: mergedData.length,
-          cursor: mergedData[mergedData.length - 1]?._id || null,
+        const sortCacheKey = this._sortCacheKey || 'category_products';
+        let cursorField = '_id';
+        if (sortCacheKey === 'category_products_new') {
+          cursorField = 'createdAtTs';
+        } else if (sortCacheKey === 'category_products_price_asc' || sortCacheKey === 'category_products_price_desc') {
+          cursorField = 'price';
+        }
+        const lastItem = newData[newData.length - 1];
+        const cursorValue = lastItem ? lastItem[cursorField] : null;
+        
+        this.setData({ 
+          originalProducts: newData,
+          hasMore: this.productPaginator.hasNext(),
+          loadingMore: false
+        });
+        this.setCachedProducts(newData);
+        productCacheStore.set(sortCacheKey, {
+          data: newData,
+          cacheIndex: newData.length,
+          cursor: cursorValue,
           hasMore: this.productPaginator.hasNext(),
           stale: false,
           serverMaxUpdateTime: newServerMaxTime
         });
-        this.__cacheIndex = mergedData.length;
+        this.__cacheIndex = newData.length;
         this.applySearchAndFilter();
       } else {
         console.log('[宝贝页面] 时间戳对比无差异，缓存有效');

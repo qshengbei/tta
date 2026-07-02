@@ -1290,7 +1290,8 @@ Page({
       const updateData = {
         address: saveAddress,
         remark: editingOrder.remark || '',
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        updatedAtTs: Date.now()
       };
       
       // 待支付订单允许修改商品和金额

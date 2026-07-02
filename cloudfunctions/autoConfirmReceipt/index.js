@@ -7,6 +7,8 @@ const DEFAULT_AUTO_CONFIRM_DAYS = 3;
 const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
 const BATCH_SIZE = 100;
 
+const { logOrderOperation } = require('./common/orderLogHelper');
+
 async function getTimePolicyConfig() {
   try {
     const res = await db.collection('settings').limit(1).get();
@@ -215,7 +217,8 @@ async function releaseLock(orderId, now) {
       data: {
         autoConfirmProcessing: false,
         autoConfirmLockAt: now,
-        updatedAt: now
+        updatedAt: now,
+        updatedAtTs: now.getTime()
       }
     });
   } catch (e) {
@@ -294,7 +297,8 @@ async function processAutoConfirmReceipt(deliveredOrders, now, autoConfirmMs, in
         data: {
           autoConfirmProcessing: true,
           autoConfirmLockAt: now,
-          updatedAt: now
+          updatedAt: now,
+          updatedAtTs: now.getTime()
         }
       });
 
@@ -330,12 +334,35 @@ async function processAutoConfirmReceipt(deliveredOrders, now, autoConfirmMs, in
           },
           autoConfirmProcessing: false,
           autoConfirmLockAt: now,
-          updatedAt: now
+          updatedAt: now,
+          updatedAtTs: now.getTime()
         }
       });
 
       processedCount += 1;
       await sendAutoConfirmNotification(latestOrder);
+      
+      // 异步记录订单操作日志，不影响主流程
+      setImmediate(async () => {
+        try {
+          await logOrderOperation(db, {
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            openid: order._openid,
+            action: 'auto_confirm_receipt',
+            fromStatus: 'delivered',
+            toStatus: 'completed',
+            operatorType: 'system',
+            operatorId: '',
+            operatorName: '',
+            reason: '自动确认收货',
+            remark: '',
+            detail: { jobId: instanceId }
+          });
+        } catch (logError) {
+          console.error('记录自动确认收货日志失败:', order._id, logError);
+        }
+      });
     } catch (error) {
       failedCount += 1;
       console.error('自动确认收货失败:', order._id, error);
@@ -374,7 +401,8 @@ exports.main = async (event, context) => {
           await db.collection('orders').doc(order._id).update({
             data: {
               autoConfirmProcessing: false,
-              updatedAt: now
+              updatedAt: now,
+              updatedAtTs: now.getTime()
             }
           });
           unlockedStaleLocks += 1;

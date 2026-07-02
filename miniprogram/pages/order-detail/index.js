@@ -60,6 +60,7 @@ Page({
     remainingQualityAfterSalesDays: 15, // 剩余质量售后时限（15天）
     maxRefundAmount: 0, // 最大退款金额
     needProof: false, // 是否需要上传凭证
+    operationLogs: [], // 订单操作日志
     goodsStatusOptions: [ // 货物状态选项
       { value: 'not_received', label: '未收到货' },
       { value: 'received', label: '已收到货' }
@@ -840,6 +841,9 @@ Page({
             loading: false
           });
           
+          // 获取订单操作日志
+          await this.fetchOperationLogs(orderId);
+          
           // 设置后检查
           console.log('=== 设置 order 数据后 ===');
           console.log('this.data.order.productHasAfterSales:', JSON.stringify(this.data.order.productHasAfterSales));
@@ -900,6 +904,73 @@ Page({
         error: true,
         errorMessage: "获取订单详情失败"
       });
+    }
+  },
+
+  async fetchOperationLogs(orderId) {
+    try {
+      const logsRes = await db.collection('order_operation_logs')
+        .where({ orderId })
+        .orderBy('operatedAtTs', 'desc')
+        .get();
+      
+      const logs = (logsRes.data || []).map(log => {
+        let actionText = '';
+        let operatorText = '';
+        
+        const actionMap = {
+          'create_order': '创建订单',
+          'pay': '支付订单',
+          'ship': '发货',
+          'deliver': '送达',
+          'confirm_receipt': '确认收货',
+          'cancel': '取消订单',
+          'auto_cancel': '系统自动取消',
+          'auto_confirm_receipt': '系统自动确认收货',
+          'apply_after_sales': '申请售后',
+          'process_after_sales': '处理售后',
+          'cancel_after_sales': '取消售后',
+          'start_intercepting': '开始拦截快递',
+          'complete_intercepting': '完成拦截快递',
+          'auto_start_intercepting': '系统自动拦截快递',
+          'auto_process_after_sales': '系统自动处理售后'
+        };
+        
+        actionText = actionMap[log.action] || log.action;
+        
+        if (log.operatorType === 'admin') {
+          operatorText = log.operatorName ? `管理员(${log.operatorName})` : '管理员';
+        } else if (log.operatorType === 'system') {
+          operatorText = '系统';
+        } else {
+          operatorText = '用户';
+        }
+        
+        let operatedAtText = '';
+        if (log.operatedAt) {
+          const date = new Date(log.operatedAt);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            operatedAtText = `${year}-${month}-${day} ${hours}:${minutes}`;
+          }
+        }
+        
+        return {
+          ...log,
+          actionText,
+          operatorText,
+          operatedAtText
+        };
+      });
+      
+      this.setData({ operationLogs: logs });
+    } catch (error) {
+      console.error('获取订单操作日志失败:', error);
+      this.setData({ operationLogs: [] });
     }
   },
 
@@ -2662,5 +2733,150 @@ Page({
       return false;
     }
     return productAfterSales.some(item => item.statusType === 'cancelled' || item.statusType === 'rejected');
+  },
+
+  // 加入购物车
+  addToCart(e) {
+    const productId = e.currentTarget.dataset.productId;
+    if (!productId) {
+      wx.showToast({
+        title: '商品ID为空',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const { order } = this.data;
+    if (!order || !order.products) {
+      wx.showToast({
+        title: '订单数据异常',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const product = order.products.find(item => item.productId === productId);
+    if (!product) {
+      wx.showToast({
+        title: '商品不存在',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const db = wx.cloud.database();
+    const openid = wx.getStorageSync('openid') || '';
+
+    wx.showLoading({ title: '处理中...' });
+
+    db.collection('products').doc(productId).get()
+      .then((productRes) => {
+        if (!productRes.data || productRes.data.isDeleted) {
+          wx.hideLoading();
+          wx.showToast({
+            title: '商品已下架',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const currentProduct = productRes.data;
+        if (currentProduct.status === 'off') {
+          wx.hideLoading();
+          wx.showToast({
+            title: '商品已下架',
+            icon: 'none'
+          });
+          return;
+        }
+
+        if (!currentProduct.stock || currentProduct.stock <= 0) {
+          wx.hideLoading();
+          wx.showToast({
+            title: '商品库存不足',
+            icon: 'none'
+          });
+          return;
+        }
+
+        const cart = db.collection("cart");
+        const productSnapshot = {
+          productId: product.productId,
+          name: product.name,
+          coverImage: product.coverImage,
+          price: product.price,
+          category: product.category
+        };
+
+        return cart
+          .where({
+            _openid: openid,
+            productId: productId,
+            isDelete: false
+          })
+          .get()
+          .then((res) => {
+            if (res.data && res.data.length > 0) {
+              const docId = res.data[0]._id;
+              const currentCartStock = res.data[0].quantity || 0;
+              if (currentCartStock >= currentProduct.stock) {
+                wx.hideLoading();
+                wx.showToast({
+                  title: '购物车已有足够库存',
+                  icon: 'none'
+                });
+                return;
+              }
+              return cart.doc(docId).update({
+                data: {
+                  quantity: currentCartStock + 1,
+                  message: '',
+                  updatedAt: new Date(),
+                  updatedAtTs: Date.now()
+                }
+              });
+            } else {
+              return cart.where({ _openid: openid, isDelete: false }).orderBy('sort', 'desc').limit(1).get().then(sortRes => {
+                let sort = 1;
+                if (sortRes.data && sortRes.data.length > 0) {
+                  sort = sortRes.data[0].sort + 1;
+                }
+                return cart.add({
+                  data: {
+                    productId: productId,
+                    quantity: 1,
+                    message: '',
+                    checked: true,
+                    productSnapshot,
+                    isDelete: false,
+                    sort: sort,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    updatedAtTs: Date.now()
+                  }
+                });
+              });
+            }
+          })
+          .then((addRes) => {
+            if (!addRes) return;
+            console.log('加入购物车成功:', addRes);
+            wx.hideLoading();
+            wx.showToast({
+              title: "已加入购物车",
+              icon: "success"
+            });
+            const app = getApp();
+            app.globalData.cartDirty = true;
+          });
+      })
+      .catch((err) => {
+        console.error("加入购物车失败", err);
+        wx.hideLoading();
+        wx.showToast({
+          title: "加入购物车失败",
+          icon: "none"
+        });
+      });
   }
 });

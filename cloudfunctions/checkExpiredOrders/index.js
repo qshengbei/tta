@@ -6,6 +6,8 @@ const _ = db.command;
 const LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 const EXPIRE_GRACE_MS = 1000;
 
+const { logOrderOperation } = require('./common/orderLogHelper');
+
 function normalizeDate(value) {
   if (!value) {
     return null;
@@ -188,7 +190,8 @@ exports.main = async (event, context) => {
           await db.collection('orders').doc(order._id).update({
             data: {
               processing: false,
-              updatedAt: now
+              updatedAt: now,
+              updatedAtTs: now.getTime()
             }
           });
           unlockedStaleLocks += 1;
@@ -231,7 +234,8 @@ exports.main = async (event, context) => {
         await db.collection('orders').doc(order._id).update({
           data: {
             processing: true,
-            updatedAt: now
+            updatedAt: now,
+            updatedAtTs: now.getTime()
           }
         });
 
@@ -243,7 +247,8 @@ exports.main = async (event, context) => {
           await db.collection('orders').doc(order._id).update({
             data: {
               processing: false,
-              updatedAt: now
+              updatedAt: now,
+              updatedAtTs: now.getTime()
             }
           });
           continue;
@@ -259,12 +264,35 @@ exports.main = async (event, context) => {
             cancelTime: now,
             cancelReason: '支付超时自动取消',
             processing: false,
-            updatedAt: now
+            updatedAt: now,
+            updatedAtTs: now.getTime()
           }
         });
 
         await sendExpiredNotification(latestOrder);
         processedCount += 1;
+        
+        // 异步记录订单操作日志，不影响主流程
+        setImmediate(async () => {
+          try {
+            await logOrderOperation(db, {
+              orderId: order._id,
+              orderNumber: order.orderNumber,
+              openid: order._openid,
+              action: 'auto_cancel',
+              fromStatus: 'pending',
+              toStatus: 'cancelled',
+              operatorType: 'system',
+              operatorId: '',
+              operatorName: '',
+              reason: '支付超时自动取消',
+              remark: '',
+              detail: {}
+            });
+          } catch (logError) {
+            console.error('记录过期订单日志失败:', order._id, logError);
+          }
+        });
       } catch (error) {
         failedCount += 1;
         console.error('处理过期订单失败:', order._id, error);
@@ -272,7 +300,8 @@ exports.main = async (event, context) => {
           await db.collection('orders').doc(order._id).update({
             data: {
               processing: false,
-              updatedAt: now
+              updatedAt: now,
+              updatedAtTs: now.getTime()
             }
           });
         } catch (clearError) {

@@ -1,0 +1,9 @@
+{
+  "name": "queryOrders",
+  "version": "1.0.0",
+  "description": "查询订单列表（支持搜索筛选和游标分页）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

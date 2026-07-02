@@ -3,6 +3,8 @@ cloud.init();
 const db = cloud.database();
 const _ = db.command;
 
+const { logOrderOperation } = require('./common/orderLogHelper');
+
 function formatDateTimeString(date) {
   const d = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(d.getTime())) {
@@ -929,6 +931,58 @@ exports.main = async (event, context) => {
     }
 
     console.log('=== 订单状态更新完成 ===');
+    
+    // 异步记录订单操作日志，不影响主流程
+    if (updateResult && updateResult.newStatus) {
+      setImmediate(async () => {
+        try {
+          const fromStatus = order.status;
+          const toStatus = updateResult.newStatus;
+          const { OPENID } = cloud.getWXContext();
+          const operatorType = params?.operatorType || (await isAdmin(OPENID)) ? 'admin' : 'user';
+          const operatorId = OPENID;
+          const operatorName = operatorType === 'admin' ? await getAdminNickName(OPENID) : '';
+          
+          const actionMap = {
+            'pay': 'pay',
+            'ship': 'ship',
+            'deliver': 'deliver',
+            'confirm': 'confirm_receipt',
+            'cancel': 'cancel',
+            'applyAfterSales': 'apply_after_sales',
+            'processAfterSales': 'process_after_sales',
+            'cancelAfterSales': 'cancel_after_sales',
+            'startIntercepting': 'start_intercepting',
+            'completeIntercepting': 'complete_intercepting'
+          };
+          
+          const action = actionMap[operation] || operation;
+          
+          const detail = {
+            ...params,
+            jobId: updateResult.jobId || ''
+          };
+          
+          await logOrderOperation(db, {
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            openid: order._openid,
+            action,
+            fromStatus,
+            toStatus,
+            operatorType,
+            operatorId,
+            operatorName,
+            reason: params?.reason || params?.cancelReason || '',
+            remark: params?.remark || '',
+            detail
+          });
+        } catch (logError) {
+          console.error('记录订单操作日志失败:', logError);
+        }
+      });
+    }
+    
     return {
       success: true,
       message: '订单状态更新成功',
@@ -960,7 +1014,8 @@ async function handlePayOperation(order, params) {
   const updateData = {
     status: 'paid',
     payTime: now,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -989,7 +1044,8 @@ async function handleShipOperation(order, params) {
   const updateData = {
     status: 'shipping',
     shippingTime: now,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   // 如果有物流单号，记录物流信息
@@ -1133,7 +1189,8 @@ async function handleDeliverOperation(order, params) {
   const updateData = {
     status: 'delivered',
     deliveryTime: now,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1185,7 +1242,8 @@ async function handleConfirmOperation(order, params) {
     status: 'completed',
     receiptTime: now,
     receiptConfirm,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1229,7 +1287,8 @@ async function handleCancelOperation(order, params) {
     status: 'cancelled',
     cancelTime: now,
     cancelReason: params.cancelReason || '用户主动取消',
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1487,7 +1546,8 @@ async function handleApplyAfterSalesOperation(order, params) {
     status: 'refund',
     // 记录订单原状态，以便售后取消或完成后恢复
     originalStatusBeforeRefund: order.status !== 'refund' ? order.status : (order.originalStatusBeforeRefund || ''),
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1705,7 +1765,8 @@ async function handleProcessAfterSalesOperation(order, params) {
     afterSalesStatus: 'completed',
     afterSalesResult: params.result || '',
     afterSalesProcessTime: now,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1810,7 +1871,8 @@ async function handleCancelAfterSalesOperation(order, params) {
     afterSalesStatus: 'cancelled',
     afterSalesResult: params.result || '售后申请已取消',
     afterSalesProcessTime: now,
-    updatedAt: now
+    updatedAt: now,
+    updatedAtTs: now.getTime()
   };
 
   await db.collection('orders').doc(order._id).update({
@@ -1843,6 +1905,24 @@ async function getAdminOpenids() {
     console.error('获取管理员openid失败:', error);
   }
   return [];
+}
+
+async function isAdmin(openid) {
+  if (!openid) return false;
+  const adminOpenids = await getAdminOpenids();
+  return adminOpenids.includes(openid);
+}
+
+async function getAdminNickName(openid) {
+  try {
+    const userRes = await db.collection('users').where({ _openid: openid }).limit(1).get();
+    if (userRes.data && userRes.data[0]) {
+      return userRes.data[0].nickName || userRes.data[0].nickname || '';
+    }
+  } catch (error) {
+    console.error('获取管理员昵称失败:', error);
+  }
+  return '';
 }
 
 /**

@@ -4,10 +4,7 @@ Component({
   properties: {
       orders: {
         type: Array,
-        value: [],
-        observer(newVal) {
-          console.log('搜索筛选组件接收到的订单数据:', newVal);
-        }
+        value: []
       },
     loading: {
       type: Boolean,

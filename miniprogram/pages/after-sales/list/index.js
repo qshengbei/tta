@@ -468,7 +468,8 @@ Page({
         data: {
           status: 'completed',
           afterSalesStatus: 'cancelled',
-          updatedAt: new Date()
+          updatedAt: new Date(),
+          updatedAtTs: Date.now()
         }
       }));
   },

@@ -1995,3 +1995,80 @@
   font-size: 32rpx;
   border: none;
 }
+
+.operation-logs {
+  padding-left: 20rpx;
+}
+
+.operation-log-item {
+  display: flex;
+  position: relative;
+  padding-bottom: 32rpx;
+}
+
+.operation-log-item:last-child {
+  padding-bottom: 0;
+}
+
+.operation-log-item:last-child .operation-log-item__line {
+  display: none;
+}
+
+.operation-log-item__line {
+  position: absolute;
+  left: 15rpx;
+  top: 24rpx;
+  bottom: 0;
+  width: 2rpx;
+  background-color: #e0e0e0;
+}
+
+.operation-log-item__dot {
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background-color: #FF6B6B;
+  flex-shrink: 0;
+  margin-right: 20rpx;
+  margin-top: 4rpx;
+}
+
+.operation-log-item__content {
+  flex: 1;
+  padding-top: 4rpx;
+}
+
+.operation-log-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.operation-log-item__action {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.operation-log-item__operator {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.operation-log-item__reason,
+.operation-log-item__remark {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 4rpx;
+}
+
+.operation-log-item__reason-label,
+.operation-log-item__remark-label {
+  color: #999;
+}
+
+.operation-log-item__time {
+  font-size: 24rpx;
+  color: #999;
+}

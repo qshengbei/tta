@@ -163,7 +163,7 @@
         <view class="loading-more__spinner"></view>
         <text class="loading-more__text">加载中...</text>
       </view>
-      <view wx:elif="!hasMore && orders.length > 0" class="no-more">
+      <view wx:elif="{{!hasMore && orders.length > 0}}" class="no-more">
         <text class="no-more__text">以上是全部订单</text>
       </view>
     </scroll-view>

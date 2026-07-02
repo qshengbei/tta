@@ -1,28 +1,49 @@
 import { getCollection } from "../../utils/cloud";
+import { getGlobalOrderWatcher } from "../../utils/globalOrderWatcher";
+import orderCacheStore from "../../utils/orderCacheStore";
 const db = wx.cloud.database();
 const _ = db.command;
 
 Page({
+  _isFirstEntry: true,
+  _isUnloaded: false,
+
   data: {
     orders: [],
-    originalOrders: [], // 存储原始订单数据
+    originalOrders: [],
     loading: true,
     error: false,
     errorMessage: "",
-    selectedStatus: "all", // 默认显示所有订单
-    deliveryType: null, // 配送方式，null表示所有配送方式
-    scrollTop: 0, // 滚动位置
-    isFirstLoad: true, // 是否首次加载
-    processingExpired: false, // 是否正在处理过期订单
-    fromDetail: false, // 是否从详情页返回
-    isSwitchingStatus: false, // 是否正在切换标签
+    selectedStatus: "all",
+    deliveryType: null,
+    scrollTop: 0,
+    isFirstLoad: true,
+    processingExpired: false,
+    fromDetail: false,
+    isSwitchingStatus: false,
+    
+    // 游标分页相关字段
+    pageSize: 18,
+    lastUpdatedAtTs: null,
+    lastId: null,
+    hasMore: true,
+    loadingMore: false,
+    
+    // 搜索筛选列表专用字段
+    isSearchFilterMode: false,
+    searchFilterLastUpdatedAtTs: null,
+    searchFilterLastId: null,
+    searchFilterHasMore: true,
+    searchFilterLoadingMore: false,
+    searchFilterCacheIndex: 0,
     
     // 搜索和筛选相关
     searchKeyword: '',
     filterOptions: {
       status: null,
       deliveryType: null,
-      timeRange: null
+      timeRange: null,
+      category: []
     },
     showLogistics: false,
     logisticsData: null,
@@ -34,6 +55,12 @@ Page({
     isMapFullScreen: false,
     mapHeight: 300,
 
+    // 页面可见性与缓存相关
+    pageVisible: false,
+    pendingRefresh: false,
+    cacheVersion: 0,
+    hasNavigatedAway: false,
+
   },
 
   onLoad(options) {
@@ -44,13 +71,67 @@ Page({
     if (options && options.deliveryType) {
       this.setData({ deliveryType: options.deliveryType });
     }
-    // 首次加载时获取数据
-    if (this.data.isFirstLoad) {
-      this.fetchOrders();
-      this.setData({ isFirstLoad: false });
-    }
 
+    this.__pageId = "order_list_page";
+    
     this.initLogisticsStateData();
+  },
+
+  getCacheKey(status) {
+    const app = getApp();
+    const openid = app.globalData.openid;
+    return `order_cache_${openid}_${status}`;
+  },
+
+  getCachedOrders(status) {
+    try {
+      const cacheKey = this.getCacheKey(status);
+      const cached = wx.getStorageSync(cacheKey);
+      if (cached && cached.data && cached.timestamp) {
+        const now = Date.now();
+        const cacheAge = now - cached.timestamp;
+        const cacheValidity = 5 * 60 * 1000;
+        if (cacheAge < cacheValidity) {
+          console.log(`[订单列表] 缓存命中，状态: ${status}, 缓存年龄: ${Math.round(cacheAge/1000)}秒, 有效期: 5分钟`);
+          return {
+            data: cached.data,
+            lastUpdatedAtTs: cached.lastUpdatedAtTs,
+            lastId: cached.lastId,
+            hasMore: cached.hasMore
+          };
+        } else {
+          console.log(`[订单列表] 缓存过期，状态: ${status}, 缓存年龄: ${Math.round(cacheAge/1000)}秒`);
+        }
+      }
+    } catch (e) {
+      console.error('[订单列表] 读取订单缓存失败:', e);
+    }
+    return null;
+  },
+
+  setCachedOrders(status, orders, lastUpdatedAtTs = null, lastId = null, hasMore = false) {
+    try {
+      const cacheKey = this.getCacheKey(status);
+      wx.setStorageSync(cacheKey, {
+        data: orders,
+        timestamp: Date.now(),
+        version: this.data.cacheVersion + 1,
+        lastUpdatedAtTs,
+        lastId,
+        hasMore
+      });
+    } catch (e) {
+      console.error('[订单列表] 保存订单缓存失败:', e);
+    }
+  },
+
+  clearCachedOrders(status) {
+    try {
+      const cacheKey = this.getCacheKey(status);
+      wx.removeStorageSync(cacheKey);
+    } catch (e) {
+      console.error('[订单列表] 清除订单缓存失败:', e);
+    }
   },
 
   async initLogisticsStateData() {
@@ -62,7 +143,7 @@ Page({
         }
       });
     } catch (error) {
-      console.error('初始化物流状态数据失败:', error);
+      // 静默处理初始化错误
     }
   },
 
@@ -81,7 +162,7 @@ Page({
         });
       }
     } catch (error) {
-      console.error('获取物流状态映射失败:', error);
+      // 静默处理
     }
   },
   
@@ -89,87 +170,266 @@ Page({
    * 生命周期函数--监听页面显示
    */
   onShow() {
-    console.log('=== onShow 被调用 ===');
-    console.log('fromDetail:', this.data.fromDetail);
-    console.log('selectedStatus:', this.data.selectedStatus);
-    console.log('deliveryType:', this.data.deliveryType);
-    console.log('savedScrollTop:', this.data.savedScrollTop);
-    
-    // 检查全局变量，恢复可能丢失的状态
-    const globalData = getApp().globalData;
-    if (globalData.fromOrderDetail) {
-      // 从全局变量恢复状态
-      console.log('从全局变量恢复状态:', globalData.savedOrderListStatus);
-      this.setData({
-        selectedStatus: globalData.savedOrderListStatus,
-        deliveryType: globalData.savedOrderListDeliveryType,
-        savedScrollTop: globalData.savedOrderListScrollTop,
-        fromDetail: true
-      });
-      // 重置全局标志
-      globalData.fromOrderDetail = false;
+    const startTime = Date.now();
+    const isFirstEntry = this._isFirstEntry;
+    if (this._isFirstEntry) {
+      this._isFirstEntry = false;
     }
+
+    const wasHidden = !this.data.pageVisible;
     
-    // 当页面显示时，检查是否从详情页返回
-    if (this.data.fromDetail) {
-      this.setData({ fromDetail: false });
-      const savedScrollPosition = this.data.savedScrollTop;
-      const savedStatus = this.data.selectedStatus;
-      
-      // 检查是否需要刷新订单列表（如取消售后后）
-      if (getApp().globalData.needRefreshOrderList) {
-        console.log('从详情页返回，需要刷新订单列表');
-        getApp().globalData.needRefreshOrderList = false;
-        
-        // 刷新订单列表
-        this.fetchOrdersWithCallback(() => {
-          // 刷新完成后恢复滚动位置
-          if (savedScrollPosition && this.data.selectedStatus === savedStatus) {
-            wx.pageScrollTo({
-              scrollTop: savedScrollPosition,
-              duration: 0
-            });
-          }
-        });
-      } else {
-        console.log('从详情页返回，保持滚动位置，不刷新');
-        // 恢复滚动位置
-        if (savedScrollPosition) {
-          wx.pageScrollTo({
-            scrollTop: savedScrollPosition,
-            duration: 0
-          });
-        }
-      }
+    this.setData({ pageVisible: true });
+
+    const watcher = getGlobalOrderWatcher();
+    watcher.setPageVisible(this.__pageId, true);
+
+    const hasSearch = this.data.searchKeyword && this.data.searchKeyword.trim() !== '';
+    const hasTimeRange = this.data.filterOptions.timeRange !== null;
+    const hasFilters = hasSearch || hasTimeRange;
+
+    if (this.data.hasNavigatedAway) {
+      this.setData({ hasNavigatedAway: false });
+      console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
       return;
     }
-    // 检查是否正在切换标签，如果是则不重复调用fetchOrders()
+
     if (this.data.isSwitchingStatus) {
-      console.log('正在切换标签，跳过onShow的fetchOrders()');
       this.setData({ isSwitchingStatus: false });
       return;
     }
-    // 检查是否需要刷新订单列表（例如订单过期后返回列表）
+
     if (getApp().globalData.needRefreshOrderList) {
-      console.log('需要刷新订单列表');
       getApp().globalData.needRefreshOrderList = false;
+      console.log('[订单列表] 强制刷新，从数据库加载');
       this.fetchOrders();
-    }
-    // 只有首次加载时才自动获取订单数据
-    // 标签切换时已经在switchStatus方法中调用了fetchOrders()
-    if (this.data.isFirstLoad) {
-      this.fetchOrders();
-      this.setData({ isFirstLoad: false });
+      this.checkAndRefreshExpiredLogistics();
+      return;
     }
 
-    // 检查并后台刷新过期物流状态
+    if (hasFilters) {
+      if (this.data.orders.length > 0) {
+        console.log('[订单列表] 搜索筛选模式已有数据，保持不变');
+      } else {
+        console.log('[订单列表] 搜索筛选模式无数据，查询数据库');
+        this.fetchSearchFilterOrders();
+      }
+    } else if (this.data.orders.length > 0) {
+      console.log('[订单列表] 普通列表已有数据，直接显示');
+    } else {
+      console.log('[订单列表] 页面无数据，快速显示缓存');
+      this._quickShowFromCache();
+    }
+    
+    this._asyncCheckAndUpdate(isFirstEntry);
+
+    if (wasHidden) {
+      console.log('[订单列表] 页面之前隐藏，重新连接监听器');
+      this.startOrderWatch();
+    } else {
+      console.log('[订单列表] 页面未隐藏，检查监听器状态');
+      if (!this._unsubOrderWatcher) {
+        console.log('[订单列表] 监听器未启动，启动监听器');
+        this.startOrderWatch();
+      } else {
+        console.log('[订单列表] 监听器已启动，无需重复启动');
+      }
+    }
+
     this.checkAndRefreshExpiredLogistics();
+
+    console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
+  },
+
+  _quickShowFromCache() {
+    const cacheKey = this.getCacheKey(this.data.selectedStatus);
+    const cached = orderCacheStore.get(cacheKey);
+    
+    if (cached && cached.data && cached.data.length > 0) {
+      console.log('[订单列表] 快速显示缓存数据:', cacheKey, '数量:', cached.data.length);
+      
+      const cursor = cached.cursor || {};
+      this.setData({
+        lastUpdatedAtTs: cursor.updatedAtTs || null,
+        lastId: cursor._id || null,
+        hasMore: cached.hasMore !== false,
+        originalOrders: cached.data
+      });
+      
+      this.processOrders(cached.data);
+    } else {
+      console.log('[订单列表] 无缓存数据，从数据库加载');
+      this.fetchOrders();
+    }
+  },
+
+  async _asyncCheckAndUpdate(isFirstEntry = false) {
+    try {
+      if (this._isUnloaded) return;
+
+      const watcher = getGlobalOrderWatcher();
+
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const updateMark = watcher.getAndClearUpdateMark(cacheKey);
+      if (updateMark) {
+        console.log('[订单列表] 监听器检测到缓存更新:', cacheKey);
+        this._syncDataFromCache();
+      }
+
+      const healthCheck = watcher.checkNeedsRefresh();
+      if (healthCheck.needsRefresh) {
+        console.log('[订单列表] 监听器不健康，刷新数据:', healthCheck.reason);
+        this.fetchOrders();
+        return;
+      }
+
+      if (isFirstEntry) {
+        console.log('[订单列表] 首次进入，跳过时间戳对比');
+        return;
+      }
+
+      if (this.data.orders.length > 0) {
+        console.log('[订单列表] 返回页面，执行时间戳对比');
+        await this._validateOrderCacheAsync();
+      } else {
+        console.log('[订单列表] 返回页面但无数据，跳过时间戳对比');
+      }
+    } catch (error) {
+      console.error('[订单列表] _asyncCheckAndUpdate 失败:', error);
+    }
+  },
+
+  _syncDataFromCache() {
+    const cacheKey = this.getCacheKey(this.data.selectedStatus);
+    const cached = orderCacheStore.get(cacheKey);
+    
+    if (!cached || !cached.data || cached.data.length === 0) return;
+    
+    const currentLoaded = this.data.orders.length;
+    if (currentLoaded > cached.data.length) {
+      console.log(`[订单列表] 当前已加载 ${currentLoaded} 条 > 缓存 ${cached.data.length} 条，保持原数据`);
+      return;
+    }
+    
+    const cursor = cached.cursor || {};
+    this.setData({
+      originalOrders: cached.data,
+      lastUpdatedAtTs: cursor.updatedAtTs || null,
+      lastId: cursor._id || null,
+      hasMore: cached.hasMore !== false
+    });
+    
+    this.processOrders(cached.data);
+  },
+
+  async _validateOrderCacheAsync() {
+    try {
+      const app = getApp();
+      const openid = app.globalData.openid;
+      if (!openid) return;
+
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cache = orderCacheStore.get(cacheKey);
+      if (!cache || !cache.data || cache.data.length === 0) return;
+
+      const selectedStatus = this.data.selectedStatus;
+      const orders = getCollection("orders");
+
+      let baseQuery = { _openid: openid, isDeleted: db.command.neq(true) };
+      if (this.data.deliveryType) {
+        baseQuery.deliveryType = this.data.deliveryType;
+      }
+
+      let query;
+      if (selectedStatus === "all") {
+        query = orders.where(baseQuery);
+      } else if (selectedStatus === "shipping") {
+        query = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
+      } else if (selectedStatus === "refund") {
+        query = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+      } else if (selectedStatus === "completed") {
+        query = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
+      } else {
+        query = orders.where({ ...baseQuery, status: selectedStatus });
+      }
+
+      const timeRes = await query.orderBy('updatedAtTs', 'desc').limit(1).get();
+      const serverMaxTime = timeRes.data?.[0]?.updatedAtTs || 0;
+      const cachedMaxTime = cache.serverMaxUpdateTime || 0;
+
+      console.log(`[订单列表] 时间戳对比: 缓存=${cachedMaxTime}, 数据库=${serverMaxTime}, 状态=${selectedStatus}`);
+
+      if (serverMaxTime !== cachedMaxTime) {
+        console.log(`[订单列表] 时间戳对比发现差异，更新第一页数据 (缓存=${cachedMaxTime}, 数据库=${serverMaxTime})`);
+
+        const pageSize = this.data.pageSize;
+        const fetchLimit = Math.min(pageSize + 1, 20);
+
+        let firstPageQuery;
+        if (selectedStatus === "all") {
+          firstPageQuery = orders.where(baseQuery);
+        } else if (selectedStatus === "shipping") {
+          firstPageQuery = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
+        } else if (selectedStatus === "refund") {
+          firstPageQuery = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+        } else if (selectedStatus === "completed") {
+          firstPageQuery = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
+        } else {
+          firstPageQuery = orders.where({ ...baseQuery, status: selectedStatus });
+        }
+
+        const firstPageRes = await firstPageQuery.orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+        const rawOrders = firstPageRes.data || [];
+        const hasMore = rawOrders.length > pageSize;
+        const newOrders = hasMore ? rawOrders.slice(0, pageSize) : rawOrders;
+
+        let newLastUpdatedAtTs = null;
+        let newLastId = null;
+        if (newOrders.length > 0) {
+          const lastItem = newOrders[newOrders.length - 1];
+          newLastUpdatedAtTs = lastItem.updatedAtTs;
+          newLastId = lastItem._id;
+        }
+
+        const newServerMaxTime = newOrders[0]?.updatedAtTs || serverMaxTime;
+        const newCursor = newLastId ? { updatedAtTs: newLastUpdatedAtTs, _id: newLastId } : null;
+
+        console.log(`[订单列表] 时间戳校验：只保留第一页${newOrders.length}条，丢弃旧后续页${cache.data.length - newOrders.length}条`);
+
+        this.setData({
+          originalOrders: newOrders,
+          lastUpdatedAtTs: newLastUpdatedAtTs,
+          lastId: newLastId,
+          hasMore: hasMore,
+          loadingMore: false
+        });
+
+        this.processOrders(newOrders);
+
+        console.log(`[订单列表] 写入缓存(校验更新) - key: ${cacheKey}, 数据条数: ${newOrders.length}, serverMaxUpdateTime: ${newServerMaxTime}, hasMore: ${hasMore}`);
+        orderCacheStore.set(cacheKey, {
+          data: newOrders,
+          cacheIndex: newOrders.length,
+          cursor: newCursor,
+          hasMore: hasMore,
+          stale: false,
+          serverMaxUpdateTime: newServerMaxTime
+        });
+      } else {
+        console.log(`[订单列表] 时间戳对比无差异，缓存有效 (缓存时间戳=${cachedMaxTime}, 数据库时间戳=${serverMaxTime})`);
+      }
+    } catch (error) {
+      console.error('[订单列表] _validateOrderCacheAsync 失败:', error);
+    }
   },
 
   /**
    * 检查并后台刷新超过30分钟的物流状态
    */
   async checkAndRefreshExpiredLogistics() {
+    if (!this.data.pageVisible) {
+      return;
+    }
+
     try {
       const orders = this.data.originalOrders || [];
       const now = Date.now();
@@ -187,14 +447,13 @@ Page({
           const age = now - (Number.isFinite(lastGetTimeMs) ? lastGetTimeMs : 0);
 
           if (age > CACHE_DURATION) {
-            console.log(`订单 ${order.orderNumber} 物流状态超期，准备后台刷新`);
             // 异步后台刷新，不阻塞UI
             this.refreshLogisticsInBackground(order);
           }
         }
       }
     } catch (error) {
-      console.error('检查物流状态失败:', error);
+      // 静默处理物流检查错误
     }
   },
 
@@ -251,11 +510,9 @@ Page({
 
         // 刷新当前显示的订单列表
         this.processOrders(updatedOrders);
-
-        console.log(`订单 ${order.orderNumber} 物流状态已后台刷新`);
       }
     } catch (error) {
-      console.error(`后台刷新订单 ${order.orderNumber} 物流状态失败:`, error);
+      // 静默处理物流刷新错误
     }
   },
 
@@ -294,13 +551,27 @@ Page({
   },
 
   fetchOrders() {
-    // 只重置搜索关键词，保留筛选条件
-    this.setData({ 
-      loading: true, 
-      error: false, 
-      errorMessage: ""
+    // 重置游标分页状态
+    this.setData({
+      loading: true,
+      error: false,
+      errorMessage: "",
+      lastUpdatedAtTs: null,
+      lastId: null,
+      hasMore: true,
+      loadingMore: false,
+      orders: [],
+      originalOrders: [],
+      isSearchFilterMode: false,
+      searchFilterLastUpdatedAtTs: null,
+      searchFilterLastId: null,
+      searchFilterHasMore: true,
+      searchFilterLoadingMore: false
     });
-    // 获取当前用户的openid
+    this.fetchOrdersPage(true);
+  },
+
+  async fetchOrdersPage(isFirstPage = true) {
     const app = getApp();
     const openid = app.globalData.openid;
     
@@ -313,126 +584,294 @@ Page({
       return;
     }
     
-    const orders = getCollection("orders");
+    if (this.data.loadingMore || !this.data.hasMore) return;
     
-    // 构建基础查询条件
+    this.setData({ loadingMore: true });
+    
+    const orders = getCollection("orders");
+    const { pageSize, lastUpdatedAtTs, lastId } = this.data;
+    const fetchLimit = Math.min(pageSize + 1, 20);
+    
+    // 游标分页日志：查询参数
+    console.log(`[订单列表] 游标分页查询 - isFirstPage: ${isFirstPage}, pageSize: ${pageSize}, fetchLimit: ${fetchLimit}, lastUpdatedAtTs: ${lastUpdatedAtTs}, lastId: ${lastId}`);
+    
     let baseQuery = { _openid: openid, isDeleted: db.command.neq(true) };
     
-    // 调试日志
-    console.log('fetchOrders - 当前状态:', this.data.selectedStatus, '配送方式:', this.data.deliveryType);
-    
-    // 添加配送方式筛选
     if (this.data.deliveryType) {
       baseQuery.deliveryType = this.data.deliveryType;
     }
     
-    // 添加搜索关键词筛选
-    const searchKeyword = this.data.searchKeyword;
-    if (searchKeyword) {
-      // 由于云数据库不支持复杂的模糊查询，我们先获取所有符合条件的订单，然后在前端进行搜索
+    const status = this.data.selectedStatus;
+    
+    let cursorCondition = null;
+    if (!isFirstPage && lastUpdatedAtTs && lastId) {
+      cursorCondition = _.or([
+        { updatedAtTs: _.lt(lastUpdatedAtTs) },
+        { updatedAtTs: _.eq(lastUpdatedAtTs), _id: _.lt(lastId) }
+      ]);
     }
     
-    // 根据selectedStatus执行不同的查询
-    if (this.data.selectedStatus === "all") {
-      // 查询所有订单（排除已删除的订单）
-      orders.where(baseQuery).orderBy('updatedAt', 'desc').get()
-        .then((res) => {
-          console.log('云数据库查询返回的订单数据:', res.data);
-          this.processOrders(res.data);
-        })
-        .catch((err) => {
-          console.error("获取订单列表失败", err);
-          this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
-        });
-    } else if (this.data.selectedStatus === "paid") {
-      // 待发货/待自提/待配送：查询 status 为 paid 的订单
-      let paidQuery = { _openid: openid, isDeleted: db.command.neq(true), status: 'paid' };
-      // 如果有配送方式筛选，添加到查询条件中
-      if (this.data.deliveryType) {
-        paidQuery.deliveryType = this.data.deliveryType;
+    let queryPromise;
+    
+    if (status === "all") {
+      let query = baseQuery;
+      if (cursorCondition) {
+        query = _.and([baseQuery, cursorCondition]);
       }
-      orders.where(paidQuery).orderBy('updatedAt', 'desc').get()
-        .then((res) => {
-          console.log('云数据库查询返回的订单数据 (paid):', res.data);
-          this.processOrders(res.data);
-        })
-        .catch((err) => {
-          console.error("获取订单列表失败", err);
-          this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
-        });
-    } else if (this.data.selectedStatus === "shipping") {
-      // 待收货：查询 status 为 shipping 或 delivered 的订单
-      let shippingQuery = { 
-        _openid: openid, 
-        isDeleted: db.command.neq(true), 
-        status: db.command.in(['shipping', 'delivered']) 
-      };
-      // 如果有配送方式筛选，添加到查询条件中
-      if (this.data.deliveryType) {
-        shippingQuery.deliveryType = this.data.deliveryType;
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+    } else if (status === "paid") {
+      let query = { ...baseQuery, status: 'paid' };
+      if (cursorCondition) {
+        query = _.and([query, cursorCondition]);
       }
-      orders.where(shippingQuery).orderBy('updatedAt', 'desc').get()
-        .then((res) => {
-          console.log('云数据库查询返回的订单数据 (shipping):', res.data);
-          this.processOrders(res.data);
-        })
-        .catch((err) => {
-          console.error("获取订单列表失败", err);
-          this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
-        });
-
-    } else if (this.data.selectedStatus === "refund") {
-      // 售后：查询 status 为 refund 和 refund_completed 的订单
-      Promise.all([
-        orders.where({ ...baseQuery, status: 'refund' }).orderBy('updatedAt', 'desc').get(),
-        orders.where({ ...baseQuery, status: 'refund_completed' }).orderBy('updatedAt', 'desc').get()
-      ]).then(([refundRes, refundCompletedRes]) => {
-        let allOrders = [...refundRes.data, ...refundCompletedRes.data];
-        console.log('云数据库查询返回的订单数据 (refund):', allOrders);
-        // 按更新时间排序
-        allOrders.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        this.processOrders(allOrders);
-      }).catch((err) => {
-        console.error("获取订单列表失败", err);
-        this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
-      });
-    } else if (this.data.selectedStatus === "completed") {
-      // 已完成：同时查询 completed 和 refund_completed 的订单（与淘宝逻辑一致）
-      Promise.all([
-        orders.where({ ...baseQuery, status: 'completed' }).orderBy('updatedAt', 'desc').get(),
-        orders.where({ ...baseQuery, status: 'refund_completed' }).orderBy('updatedAt', 'desc').get()
-      ]).then(([completedRes, refundCompletedRes]) => {
-        let allOrders = [...completedRes.data, ...refundCompletedRes.data];
-        console.log('云数据库查询返回的订单数据 (completed):', allOrders);
-        // 按更新时间排序
-        allOrders.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-        this.processOrders(allOrders);
-      }).catch((err) => {
-        console.error("获取订单列表失败", err);
-        this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
-      });
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+    } else if (status === "shipping") {
+      let query = { ...baseQuery, status: _.in(['shipping', 'delivered']) };
+      if (cursorCondition) {
+        query = _.and([query, cursorCondition]);
+      }
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+    } else if (status === "refund") {
+      let query = { ...baseQuery, status: _.in(['refund', 'refund_completed']) };
+      if (cursorCondition) {
+        query = _.and([query, cursorCondition]);
+      }
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+    } else if (status === "completed") {
+      let query = { ...baseQuery, status: _.in(['completed', 'refund_completed']) };
+      if (cursorCondition) {
+        query = _.and([query, cursorCondition]);
+      }
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
     } else {
-      // 其他状态：只查询对应状态的订单（排除已删除的订单）
-      let query = { ...baseQuery, status: this.data.selectedStatus };
-      orders.where(query).orderBy('updatedAt', 'desc').get()
-        .then((res) => {
-          console.log('云数据库查询返回的订单数据 (other):', res.data);
-          this.processOrders(res.data);
-        })
-        .catch((err) => {
-          console.error("获取订单列表失败", err);
-          this.setData({ loading: false, error: true, errorMessage: "获取订单列表失败" });
+      let query = { ...baseQuery, status: status };
+      if (cursorCondition) {
+        query = _.and([query, cursorCondition]);
+      }
+      queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
+    }
+    
+    try {
+      const res = await queryPromise;
+      const rawOrders = res.data || [];
+      const hasMore = rawOrders.length > pageSize;
+      const newOrders = hasMore ? rawOrders.slice(0, pageSize) : rawOrders;
+      
+      let newLastUpdatedAtTs = null;
+      let newLastId = null;
+      if (newOrders.length > 0) {
+        const lastItem = newOrders[newOrders.length - 1];
+        newLastUpdatedAtTs = lastItem.updatedAtTs;
+        newLastId = lastItem._id;
+      }
+      
+      // 游标分页日志：查询结果
+      console.log(`[订单列表] 游标分页结果 - 查询返回: ${rawOrders.length}条, 实际返回: ${newOrders.length}条, hasMore: ${hasMore}, 新游标: updatedAtTs=${newLastUpdatedAtTs}, _id=${newLastId}`);
+      
+      let allOrders;
+      if (isFirstPage) {
+        allOrders = newOrders;
+      } else {
+        allOrders = [...this.data.originalOrders, ...newOrders];
+      }
+      
+      this.setData({
+        originalOrders: allOrders,
+        lastUpdatedAtTs: newLastUpdatedAtTs,
+        lastId: newLastId,
+        hasMore: hasMore,
+        loadingMore: false,
+        loading: isFirstPage ? false : this.data.loading
+      });
+      
+      this.processOrders(allOrders);
+      
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const newCursor = newLastId ? { updatedAtTs: newLastUpdatedAtTs, _id: newLastId } : null;
+      
+      let serverMaxUpdateTime = newOrders[0]?.updatedAtTs || 0;
+      if (newOrders.length === 0) {
+        try {
+          let latestQuery;
+          if (status === "all") {
+            latestQuery = orders.where(baseQuery);
+          } else if (status === "shipping") {
+            latestQuery = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
+          } else if (status === "refund") {
+            latestQuery = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+          } else if (status === "completed") {
+            latestQuery = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
+          } else {
+            latestQuery = orders.where({ ...baseQuery, status: status });
+          }
+          const latestRes = await latestQuery.orderBy('updatedAtTs', 'desc').limit(1).get();
+          serverMaxUpdateTime = latestRes.data?.[0]?.updatedAtTs || 0;
+          console.log(`[订单列表] 写入时间戳 - 0条数据，查询数据库最新时间戳: ${serverMaxUpdateTime}, 状态: ${status}`);
+        } catch (e) {
+          console.log(`[订单列表] 写入时间戳 - 0条数据，查询最新时间戳失败: ${e.message || e}, 状态: ${status}`);
+        }
+      } else {
+        console.log(`[订单列表] 写入时间戳 - 取首条数据时间戳: ${serverMaxUpdateTime}, 订单数: ${newOrders.length}, 状态: ${status}`);
+      }
+
+      if (isFirstPage) {
+        console.log(`[订单列表] 写入缓存(set) - key: ${cacheKey}, 数据条数: ${allOrders.length}, serverMaxUpdateTime: ${serverMaxUpdateTime}, hasMore: ${hasMore}`);
+        orderCacheStore.set(cacheKey, {
+          data: allOrders,
+          cacheIndex: allOrders.length,
+          cursor: newCursor,
+          hasMore,
+          stale: false,
+          serverMaxUpdateTime
         });
+      } else {
+        orderCacheStore.append(cacheKey, newOrders, newCursor, hasMore);
+      }
+      
+      if (isFirstPage && this._fetchCallback) {
+        this._fetchCallback();
+        this._fetchCallback = null;
+      }
+    } catch (err) {
+      console.error("获取订单列表失败", err);
+      this.setData({ 
+        loading: false, 
+        loadingMore: false,
+        error: true, 
+        errorMessage: '获取订单列表失败' 
+      });
+      throw err;
+    }
+  },
+
+  // 加载更多订单
+  loadMoreOrders() {
+    if (this.data.loadingMore || !this.data.hasMore || this.data.loading) return;
+    
+    if (this.data.isSearchFilterMode) {
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cached = orderCacheStore.get(cacheKey);
+      const cacheIndex = this.data.searchFilterCacheIndex || 0;
+      
+      if (cached && cached.data && cached.data.length > cacheIndex && cached.hasMore === false) {
+        const pageSize = this.data.pageSize;
+        const pageData = cached.data.slice(cacheIndex, cacheIndex + pageSize);
+        
+        if (pageData.length > 0) {
+          console.log(`[订单列表] 搜索筛选模式从缓存加载更多，索引: ${cacheIndex}, 数量: ${pageData.length}`);
+          
+          this.setData({
+            originalOrders: [...this.data.originalOrders, ...pageData],
+            searchFilterCacheIndex: cacheIndex + pageSize,
+            hasMore: cached.data.length > cacheIndex + pageSize,
+            loadingMore: false
+          });
+          
+          this.filterOrdersLocally();
+          return;
+        }
+      }
+      
+      this.fetchSearchFilterOrdersPage(false);
+    } else {
+      this.fetchOrdersPage(false);
+    }
+  },
+
+  // 搜索筛选列表：获取第一页
+  fetchSearchFilterOrders() {
+    this.setData({
+      loading: true,
+      isSearchFilterMode: true,
+      searchFilterLastUpdatedAtTs: null,
+      searchFilterLastId: null,
+      searchFilterHasMore: true,
+      searchFilterLoadingMore: false,
+      orders: [],
+      originalOrders: []
+    });
+    this.fetchSearchFilterOrdersPage(true);
+  },
+
+  // 搜索筛选列表：获取分页数据
+  async fetchSearchFilterOrdersPage(isFirstPage = true) {
+    const app = getApp();
+    const openid = app.globalData.openid;
+
+    if (!openid) {
+      wx.showToast({ title: '获取用户信息失败', icon: 'none' });
+      this.setData({ loading: false, error: true, errorMessage: '获取用户信息失败' });
+      return;
+    }
+
+    const { pageSize, searchFilterLastUpdatedAtTs, searchFilterLastId, searchFilterHasMore, searchFilterLoadingMore } = this.data;
+
+    if (searchFilterLoadingMore || !searchFilterHasMore) return;
+
+    this.setData({ searchFilterLoadingMore: true });
+
+    const { searchKeyword, filterOptions, selectedStatus } = this.data;
+
+    console.log(`[订单列表] 搜索筛选查询 - isFirstPage: ${isFirstPage}, keyword: "${searchKeyword}", filterOptions:`, filterOptions);
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'queryOrders',
+        data: {
+          status: selectedStatus,
+          searchKeyword,
+          timeRange: filterOptions.timeRange,
+          category: filterOptions.category.length > 0 ? filterOptions.category : undefined,
+          pageSize,
+          lastUpdatedAtTs: isFirstPage ? null : searchFilterLastUpdatedAtTs,
+          lastId: isFirstPage ? null : searchFilterLastId,
+          isFirstPage
+        }
+      });
+
+      if (!res.result || !res.result.success) {
+        throw new Error(res.result?.error || '查询失败');
+      }
+
+      const { data: newOrders, hasMore, lastUpdatedAtTs, lastId } = res.result;
+
+      console.log(`[订单列表] 搜索筛选结果 - 本次获取: ${newOrders.length}条, hasMore: ${hasMore}`);
+
+      let allOrders;
+      if (isFirstPage) {
+        allOrders = newOrders;
+      } else {
+        allOrders = [...this.data.originalOrders, ...newOrders];
+      }
+
+      this.setData({
+        originalOrders: allOrders,
+        searchFilterLastUpdatedAtTs: lastUpdatedAtTs,
+        searchFilterLastId: lastId,
+        searchFilterHasMore: hasMore,
+        searchFilterLoadingMore: false,
+        loading: isFirstPage ? false : this.data.loading,
+        hasMore: hasMore,
+        loadingMore: false
+      });
+
+      this.processOrders(allOrders);
+    } catch (err) {
+      console.error('[订单列表] 搜索筛选查询失败:', err);
+      this.setData({
+        loading: false,
+        searchFilterLoadingMore: false,
+        loadingMore: false,
+        error: true,
+        errorMessage: '查询订单失败'
+      });
     }
   },
 
   // 处理订单数据
   processOrders(ordersList) {
-    console.log('=== 开始处理订单数据 ===');
-    console.log('原始订单数据:', ordersList);
     // 处理订单状态文本
     let processedOrders = ordersList.map(order => {
-      console.log('订单处理前:', order);
       // 处理订单状态文本
       const deliveryType = order.deliveryType || 'express'; // 默认快递运输
       let statusText = "";
@@ -507,10 +946,6 @@ Page({
           statusText = "未知状态";
       }
       
-      console.log('计算的statusText:', statusText);
-      console.log('订单status:', order.status);
-      console.log('订单deliveryType:', deliveryType);
-      
       // 确保时间字段被正确处理
       const processedOrder = {
         ...order,
@@ -522,7 +957,7 @@ Page({
       // 处理时间字段，确保它们不是空对象
       // 检查createdAt是否为空对象
       if (typeof processedOrder.createdAt === 'object' && processedOrder.createdAt !== null && !processedOrder.createdAt.toISOString) {
-        // 是普通对象，尝试获取其中的时间值
+        // 是普通对象（非Date对象），尝试获取其中的时间值
         if (processedOrder.createdAt.$date) {
           // 是MongoDB的日期格式
           processedOrder.createdAt = new Date(processedOrder.createdAt.$date).toISOString();
@@ -580,158 +1015,169 @@ Page({
         processedOrder.expireTime = null;
       }
       
-      console.log('订单处理后:', processedOrder);
       return processedOrder;
     });
     
-    console.log('处理后的订单数据:', processedOrders);
     // 保存原始订单数据
     this.setData({ originalOrders: processedOrders });
     
-    // 将selectedStatus设置到filterOptions中，确保搜索和筛选考虑当前标签状态
-    const updatedFilterOptions = { ...this.data.filterOptions };
-    if (this.data.selectedStatus !== "all") {
-      // 直接使用selectedStatus作为filterOptions.status
-      updatedFilterOptions.status = this.data.selectedStatus;
-    } else {
-      updatedFilterOptions.status = null;
-    }
-    this.setData({ filterOptions: updatedFilterOptions });
-    
-    // 应用搜索和筛选，直接使用更新后的filterOptions
-    let filteredOrders = [...processedOrders];
-    
-    // 应用搜索
     const searchKeyword = this.data.searchKeyword;
-    if (searchKeyword) {
-      filteredOrders = filteredOrders.filter(order => {
-        // 搜索订单编号
-        if (order.orderNumber && order.orderNumber.includes(searchKeyword)) {
-          return true;
-        }
-        // 搜索商品名称
-        if (order.products) {
-          return order.products.some(product => 
-            product.name && product.name.includes(searchKeyword)
-          );
-        }
-        if (order.productsList) {
-          return order.productsList.some(product => 
-            product.name && product.name.includes(searchKeyword)
-          );
-        }
-        return false;
-      });
-    }
+    const updatedFilterOptions = { ...this.data.filterOptions };
     
-    // 应用筛选
-    
-    // 订单状态筛选 - 只有在selectedStatus为"all"时才进行状态筛选
-    // 因为其他状态已经在fetchOrders方法中进行了查询
-    if (updatedFilterOptions.status !== null && this.data.selectedStatus === "all") {
-      const statusFilter = updatedFilterOptions.status;
-      // 如果筛选的是待收货，需要同时匹配 shipping 和 delivered 状态
-      if (statusFilter === 'shipping') {
-        filteredOrders = filteredOrders.filter(order => ['shipping', 'delivered'].includes(order.status));
+    // 如果是搜索筛选模式，数据已经在云端过滤过，不需要再进行前端过滤
+    if (this.data.isSearchFilterMode) {
+      processedOrders = processedOrders;
+    } else {
+      // 将selectedStatus设置到filterOptions中，确保搜索和筛选考虑当前标签状态
+      if (this.data.selectedStatus !== "all") {
+        updatedFilterOptions.status = this.data.selectedStatus;
       } else {
-        filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
+        updatedFilterOptions.status = null;
       }
-    }
-    
-    // 时间范围筛选
-    if (updatedFilterOptions.timeRange !== null) {
-      const now = new Date();
-      let startTime;
+      this.setData({ filterOptions: updatedFilterOptions });
+
+      // 应用搜索和筛选，直接使用更新后的filterOptions
+      let filteredOrders = [...processedOrders];
       
-      switch (updatedFilterOptions.timeRange) {
-        case '7days':
-          startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30days':
-          startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90days':
-          startTime = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        default:
-          startTime = null;
-      }
-      
-      if (startTime) {
+      // 应用搜索
+      if (searchKeyword) {
         filteredOrders = filteredOrders.filter(order => {
-          let orderTime;
-          try {
-            // 尝试转换createdAt或updatedAt
-            let timeValue = order.createdAt || order.updatedAt;
-            
-            // 检查timeValue的类型
-            if (typeof timeValue === 'object' && timeValue !== null) {
-              // 如果是对象，尝试转换为字符串
-              if (timeValue.toISOString) {
-                // 是Date对象
-                orderTime = timeValue;
-              } else {
-                // 是普通对象，尝试获取其中的时间值
-                if (timeValue.$date) {
-                  // 是MongoDB的日期格式
-                  orderTime = new Date(timeValue.$date);
-                } else {
-                  // 其他类型的对象，使用7天前的时间
-                  orderTime = new Date(startTime.getTime() - 1);
-                }
-              }
-            } else if (timeValue) {
-              // 是字符串或其他类型
-              orderTime = new Date(timeValue);
-            } else {
-              // 时间值为空，使用7天前的时间
-              orderTime = new Date(startTime.getTime() - 1);
-            }
-            
-            // 如果转换结果是Invalid Date，使用7天前的时间
-            if (isNaN(orderTime.getTime())) {
-              orderTime = new Date(startTime.getTime() - 1);
-            }
-          } catch (error) {
-            // 如果转换出错，使用7天前的时间
-            orderTime = new Date(startTime.getTime() - 1);
+          if (order.orderNumber && order.orderNumber.includes(searchKeyword)) {
+            return true;
           }
-          return orderTime > startTime;
+          if (order.productsNames && order.productsNames.includes(searchKeyword)) {
+            return true;
+          }
+          return false;
         });
       }
+      
+      // 应用筛选
+      
+      // 订单状态筛选 - 只有在selectedStatus为"all"时才进行状态筛选
+      if (updatedFilterOptions.status !== null && this.data.selectedStatus === "all") {
+        const statusFilter = updatedFilterOptions.status;
+        if (statusFilter === 'shipping') {
+          filteredOrders = filteredOrders.filter(order => ['shipping', 'delivered'].includes(order.status));
+        } else {
+          filteredOrders = filteredOrders.filter(order => order.status === statusFilter);
+        }
+      }
+      
+      // 时间范围筛选
+      if (updatedFilterOptions.timeRange !== null) {
+        const now = new Date();
+        let startTime;
+        
+        switch (updatedFilterOptions.timeRange) {
+          case '7days':
+            startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case '30days':
+            startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          case '90days':
+            startTime = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startTime = null;
+        }
+        
+        if (startTime) {
+          filteredOrders = filteredOrders.filter(order => {
+            let orderTime;
+            try {
+              let timeValue = order.createdAt || order.updatedAt;
+              
+              if (typeof timeValue === 'object' && timeValue !== null) {
+                if (timeValue.toISOString) {
+                  orderTime = timeValue;
+                } else {
+                  if (timeValue.$date) {
+                    orderTime = new Date(timeValue.$date);
+                  } else {
+                    orderTime = new Date(startTime.getTime() - 1);
+                  }
+                }
+              } else if (timeValue) {
+                orderTime = new Date(timeValue);
+              } else {
+                orderTime = new Date(startTime.getTime() - 1);
+              }
+              
+              if (isNaN(orderTime.getTime())) {
+                orderTime = new Date(startTime.getTime() - 1);
+              }
+            } catch (error) {
+              orderTime = new Date(startTime.getTime() - 1);
+            }
+            return orderTime > startTime;
+          });
+        }
+      }
+      
+      // 商品类别筛选
+      if (updatedFilterOptions.category && updatedFilterOptions.category.length > 0) {
+        filteredOrders = filteredOrders.filter(order => {
+          if (order.products) {
+            for (let i = 0; i < order.products.length; i++) {
+              const product = order.products[i];
+              if (product.typeId && updatedFilterOptions.category.includes(product.typeId)) {
+                return true;
+              }
+            }
+          }
+          if (order.productsList) {
+            for (let i = 0; i < order.productsList.length; i++) {
+              const product = order.productsList[i];
+              if (product.typeId && updatedFilterOptions.category.includes(product.typeId)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        });
+      }
+      
+      processedOrders = filteredOrders;
     }
     
-    // 商品类别筛选
-    if (updatedFilterOptions.category && updatedFilterOptions.category.length > 0) {
-      filteredOrders = filteredOrders.filter(order => {
-        // 检查products字段
-        if (order.products) {
-          for (let i = 0; i < order.products.length; i++) {
-            const product = order.products[i];
-            if (product.typeId && updatedFilterOptions.category.includes(product.typeId)) {
-              return true;
-            }
-          }
-        }
-        // 检查productsList字段
-        if (order.productsList) {
-          for (let i = 0; i < order.productsList.length; i++) {
-            const product = order.productsList[i];
-            if (product.typeId && updatedFilterOptions.category.includes(product.typeId)) {
-              return true;
-            }
-          }
-        }
-        return false;
+    const hasSearch = searchKeyword && searchKeyword.trim();
+    const hasTimeRange = updatedFilterOptions.timeRange !== null;
+    const hasCategory = updatedFilterOptions.category && updatedFilterOptions.category.length > 0;
+    const isSearchFilterList = hasSearch || hasTimeRange || hasCategory;
+    
+    const statusLabels = {
+      all: '全部',
+      pending: '待支付',
+      paid: '待发货',
+      shipping: '待收货',
+      completed: '已完成',
+      refund: '售后'
+    };
+    const statusLabel = statusLabels[this.data.selectedStatus] || this.data.selectedStatus;
+    
+    if (isSearchFilterList) {
+      console.log(`搜索筛选列表 - ${statusLabel}: ${processedOrders.length}条`);
+    } else {
+      console.log(`普通列表 - ${statusLabel}: ${processedOrders.length}条`);
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cursor = this.data.lastId 
+        ? { updatedAtTs: this.data.lastUpdatedAtTs, _id: this.data.lastId } 
+        : null;
+      const existingCache = orderCacheStore.get(cacheKey);
+      orderCacheStore.set(cacheKey, {
+        data: this.data.originalOrders,
+        cursor,
+        hasMore: this.data.hasMore,
+        serverMaxUpdateTime: existingCache?.serverMaxUpdateTime || 0
       });
     }
-    
-    processedOrders = filteredOrders;
     
     this.setData({
       orders: processedOrders,
       loading: false,
-      processingExpired: false  // 数据加载完成后重置，确保在 startCountdown 之前已清除
+      processingExpired: false
     });
     
     // 启动倒计时
@@ -764,6 +1210,10 @@ Page({
     
     // 每秒钟更新一次倒计时
     this.countdownTimer = setInterval(() => {
+      if (!this.data.pageVisible) {
+        return;
+      }
+
       const orders = this.data.orders.map(order => {
         if (order.status === 'pending') {
           try {
@@ -785,7 +1235,7 @@ Page({
               };
             }
           } catch (error) {
-            console.error('计算倒计时失败', error);
+            // 静默处理
           }
         }
         // 非待支付订单或计算失败时，确保remainingTime为undefined
@@ -803,47 +1253,33 @@ Page({
       if (hasExpired) {
         // 检查是否正在处理，避免重复调用
         if (this.data.processingExpired) {
-          console.log('正在处理过期订单，跳过重复调用');
           return;
         }
         
         // 检查是否刚刚从详情页返回，避免重复处理
         if (this.data.fromDetail) {
-          console.log('从详情页返回，跳过过期订单处理');
           this.setData({ fromDetail: false });
           return;
         }
-        
-        console.log('=== 发现过期订单，开始处理 ===');
-        console.log('过期订单数量:', expiredOrders.length);
-        console.log('过期订单ID:', expiredOrders.map(order => order._id));
 
         // 记录将要处理的订单 ID，防止云函数返回 0 时死循环
         expiredOrders.forEach(order => this.cancelAttempted.add(order._id));
 
         // 设置处理状态
         this.setData({ processingExpired: true });
-        console.log('设置处理状态为true');
         
         // 清除倒计时，避免重复调用
         this.clearCountdown();
-        console.log('倒计时已清除');
         
         // 调用云函数检查过期订单
-        console.log('开始调用checkExpiredOrders云函数...');
         wx.cloud.callFunction({
           name: 'checkExpiredOrders'
         }).then(res => {
-          console.log('checkExpiredOrders云函数调用成功:', res);
           // 刷新订单列表，processingExpired 将在 fetchOrders 数据加载完后、startCountdown 之前重置
-          console.log('刷新订单列表');
           this.fetchOrders();
         }).catch(err => {
-          console.error('检查过期订单失败', err);
           this.setData({ processingExpired: false });
-          console.log('重置处理状态为false');
           // 重新启动倒计时
-          console.log('重新启动倒计时');
           this.startCountdown();
         });
       } else {
@@ -994,20 +1430,9 @@ Page({
 
   viewOrderDetail(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    // 设置从详情页返回的标志（使用全局变量保存，防止页面重新加载丢失）
-    getApp().globalData.fromOrderDetail = true;
-    getApp().globalData.savedOrderListStatus = this.data.selectedStatus;
-    getApp().globalData.savedOrderListDeliveryType = this.data.deliveryType;
-    getApp().globalData.savedOrderListScrollTop = this.data.scrollTop;
     
-    this.setData({ 
-      fromDetail: true,
-      savedScrollTop: this.data.scrollTop // 保存当前滚动位置
-    });
-    console.log('=== viewOrderDetail ===');
-    console.log('保存的滚动位置:', this.data.scrollTop);
-    console.log('即将跳转，保存的状态:', this.data.selectedStatus, '配送方式:', this.data.deliveryType);
-    // 跳转到订单详情页面
+    this.setData({ hasNavigatedAway: true });
+    
     wx.navigateTo({
       url: `/pages/order-detail/index?id=${orderId}`
     });
@@ -1017,12 +1442,57 @@ Page({
     const status = e.currentTarget.dataset.status;
     const deliveryType = e.currentTarget.dataset.deliveryType;
     this.setData({ selectedStatus: status, deliveryType, isSwitchingStatus: true });
-    // 清除之前的倒计时定时器
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);
       this.countdownTimer = null;
     }
-    this.fetchOrders();
+
+    const cacheKey = this.getCacheKey(status);
+    const cached = orderCacheStore.get(cacheKey);
+    const { isSearchFilterMode, searchKeyword, filterOptions, loading } = this.data;
+    
+    if (isSearchFilterMode || searchKeyword.trim() || (filterOptions && filterOptions.timeRange)) {
+      if (cached && cached.data && cached.data.length > 0 && cached.hasMore === false) {
+        console.log(`[订单列表] 搜索筛选模式切换标签，缓存hasMore=false，前端过滤，状态: ${status}`);
+        
+        const pageSize = this.data.pageSize;
+        const pageData = cached.data.slice(0, pageSize);
+        const hasMore = cached.data.length > pageSize;
+        
+        this.setData({ 
+          isSearchFilterMode: true,
+          originalOrders: pageData,
+          searchFilterCacheIndex: pageSize,
+          hasMore
+        });
+        this.filterOrdersLocally();
+      } else {
+        console.log(`[订单列表] 搜索筛选模式切换标签，缓存无效/hasMore=true/正在加载，查询数据库，状态: ${status}`);
+        this.fetchSearchFilterOrders();
+      }
+    } else {
+      if (cached && cached.data && cached.data.length > 0 && !loading) {
+        console.log(`[订单列表] 切换标签使用缓存，状态: ${status}, 订单数: ${cached.data.length}`);
+        const cursor = cached.cursor || {};
+        this.setData({
+          loading: false,
+          orders: [],
+          originalOrders: cached.data,
+          lastUpdatedAtTs: cursor.updatedAtTs || null,
+          lastId: cursor._id || null,
+          hasMore: cached.hasMore,
+          loadingMore: false,
+          isSearchFilterMode: false
+        });
+        this.processOrders(cached.data);
+
+        if (!cached.stale) {
+          this._validateOrderCacheAsync();
+        }
+      } else {
+        this.fetchOrders();
+      }
+    }
   },
 
   goToPayment(e) {
@@ -1066,7 +1536,6 @@ Page({
             // 重新加载订单列表
             this.fetchOrders();
           } catch (err) {
-            console.error("确认收货失败", err);
             wx.showToast({
               title: '确认收货失败',
               icon: 'none'
@@ -1093,7 +1562,6 @@ Page({
             });
             this.fetchOrders();
           }).catch((err) => {
-            console.error("取消订单失败", err);
             wx.showToast({
               title: '取消订单失败',
               icon: 'none'
@@ -1125,7 +1593,6 @@ Page({
         }
       })
       .catch(err => {
-        console.error('获取订单信息失败:', err);
         wx.showToast({
           title: '获取订单信息失败',
           icon: 'none'
@@ -1145,7 +1612,8 @@ Page({
           orders.doc(orderId).update({
             data: {
               isDeleted: true,
-              updatedAt: new Date()
+              updatedAt: new Date(),
+              updatedAtTs: Date.now()
             }
           })
             .then(() => {
@@ -1153,10 +1621,10 @@ Page({
                 title: '删除成功',
                 icon: 'success'
               });
-              this.fetchOrders();
+              // 删除订单后，更新游标状态
+              this._adjustCursorAfterDelete(orderId);
             })
             .catch((err) => {
-              console.error("删除订单失败", err);
               wx.showToast({
                 title: '删除失败',
                 icon: 'none'
@@ -1165,6 +1633,48 @@ Page({
         }
       }
     });
+  },
+
+  // 删除订单后调整游标
+  _adjustCursorAfterDelete(deletedOrderId) {
+    const { originalOrders, lastId, lastUpdatedAtTs } = this.data;
+    
+    // 如果被删除的订单是当前游标指向的订单（最后一条），则前移游标
+    if (lastId === deletedOrderId) {
+      // 找到被删除订单的前一条订单
+      const deletedIndex = originalOrders.findIndex(order => order._id === deletedOrderId);
+      if (deletedIndex >= 0 && deletedIndex > 0) {
+        // 存在前一条订单，更新游标
+        const prevOrder = originalOrders[deletedIndex - 1];
+        this.setData({
+          lastId: prevOrder._id,
+          lastUpdatedAtTs: prevOrder.updatedAtTs
+        });
+      } else if (deletedIndex === 0 && originalOrders.length > 1) {
+        // 删除的是第一条，但还有其他订单，游标更新为最后一条
+        const lastOrder = originalOrders[originalOrders.length - 1];
+        if (lastOrder._id !== deletedOrderId) {
+          this.setData({
+            lastId: lastOrder._id,
+            lastUpdatedAtTs: lastOrder.updatedAtTs
+          });
+        }
+      } else {
+        // 删除的是唯一的订单，重置游标
+        this.setData({
+          lastId: null,
+          lastUpdatedAtTs: null,
+          hasMore: false
+        });
+      }
+    }
+    
+    // 从本地数据中移除被删除的订单
+    const updatedOrders = originalOrders.filter(order => order._id !== deletedOrderId);
+    this.setData({
+      originalOrders: updatedOrders
+    });
+    this.processOrders(updatedOrders);
   },
 
   // 申请售后
@@ -1335,7 +1845,6 @@ Page({
         logisticsTrackPoints: trackPoints
       });
     } catch (error) {
-      console.error('查看物流信息失败:', error);
       wx.showToast({
         title: '查看物流信息失败',
         icon: 'none'
@@ -1368,32 +1877,101 @@ Page({
     });
   },
 
-  // 处理搜索
-  handleSearch(e) {
-    const { keyword, filterOptions, filteredOrders } = e.detail;
-    this.setData({ 
-      searchKeyword: keyword,
-      filterOptions: filterOptions || {},
+  // 前端过滤已加载的订单
+  filterOrdersLocally() {
+    const { originalOrders, searchKeyword, filterOptions } = this.data;
+    let filteredOrders = [...originalOrders];
+
+    const keyword = searchKeyword.trim().toLowerCase();
+    if (keyword) {
+      filteredOrders = filteredOrders.filter(order => {
+        if (order.orderNumber && order.orderNumber.toLowerCase().includes(keyword)) {
+          return true;
+        }
+        if (order.productsNames && order.productsNames.toLowerCase().includes(keyword)) {
+          return true;
+        }
+        return false;
+      });
+    }
+
+    if (filterOptions.timeRange) {
+      const now = Date.now();
+      let startTime;
+      switch (filterOptions.timeRange) {
+        case '7days':
+          startTime = now - 7 * 24 * 60 * 60 * 1000;
+          break;
+        case '30days':
+          startTime = now - 30 * 24 * 60 * 60 * 1000;
+          break;
+        case '90days':
+          startTime = now - 90 * 24 * 60 * 60 * 1000;
+          break;
+      }
+      if (startTime) {
+        filteredOrders = filteredOrders.filter(order => 
+          (order.updatedAtTs || 0) > startTime
+        );
+      }
+    }
+
+    if (filterOptions.category && filterOptions.category.length > 0) {
+      filteredOrders = filteredOrders.filter(order => {
+        if (order.products) {
+          return order.products.some(product => 
+            product.typeId && filterOptions.category.includes(product.typeId)
+          );
+        }
+        return false;
+      });
+    }
+
+    this.setData({
+      isSearchFilterMode: true,
       orders: filteredOrders,
+      originalOrders: filteredOrders,
+      hasMore: false,
+      searchFilterHasMore: false,
       loading: false
     });
+
+    this.processOrders(filteredOrders);
+  },
+
+  // 处理搜索
+  handleSearch(e) {
+    const { keyword, filterOptions } = e.detail;
+    this.setData({
+      searchKeyword: keyword,
+      filterOptions: filterOptions || {}
+    });
+
+    const { hasMore, originalOrders } = this.data;
+    if (hasMore === false && originalOrders.length > 0) {
+      this.filterOrdersLocally();
+    } else {
+      this.fetchSearchFilterOrders();
+    }
   },
   
   // 处理清除搜索
   handleClearSearch() {
-    this.setData({ searchKeyword: '' });
-    // 重新获取当前标签的订单数据
+    this.setData({ searchKeyword: '', isSearchFilterMode: false });
     this.fetchOrders();
   },
   
   // 处理筛选
   handleFilter(e) {
-    const { filterOptions, filteredOrders } = e.detail;
-    this.setData({ 
-      filterOptions,
-      orders: filteredOrders,
-      loading: false
-    });
+    const { filterOptions } = e.detail;
+    this.setData({ filterOptions });
+
+    const { hasMore, originalOrders } = this.data;
+    if (hasMore === false && originalOrders.length > 0) {
+      this.filterOrdersLocally();
+    } else {
+      this.fetchSearchFilterOrders();
+    }
   },
 
   // 清除倒计时
@@ -1404,14 +1982,319 @@ Page({
     }
   },
 
-  // 页面隐藏时清除倒计时
-  onHide() {
-    this.clearCountdown();
-    console.log('订单列表页面隐藏，清除倒计时');
+  startOrderWatch() {
+    if (this._unsubOrderWatcher) {
+      return;
+    }
+    const watcher = getGlobalOrderWatcher();
+    const cacheKey = this.getCacheKey(this.data.selectedStatus);
+    this._unsubOrderWatcher = watcher.subscribe(
+      this.__pageId, cacheKey,
+      (change) => this._onOrderChanged(change)
+    );
   },
 
-  // 页面卸载时清除倒计时
-  onUnload() {
+  stopOrderWatch() {
+    if (this._unsubOrderWatcher) {
+      this._unsubOrderWatcher();
+      this._unsubOrderWatcher = null;
+    }
+  },
+
+  _onOrderChanged(change) {
+    try {
+      if (this._isUnloaded) {
+        console.log('[订单列表] 页面已卸载，跳过更新');
+        return;
+      }
+      if (!this.data.pageVisible) {
+        console.log('[订单列表] 页面不可见，跳过更新');
+        return;
+      }
+
+      const { type, order, docId } = change;
+      console.log('[订单列表] 监听器收到订单变化:', type, docId, order.orderNumber);
+      console.log('[订单列表] 订单状态:', order.status, '当前选中标签:', this.data.selectedStatus);
+
+      const app = getApp();
+      const openid = app.globalData.openid;
+      if (!openid || order._openid !== openid) {
+        console.log('[订单列表] 订单不属于当前用户，跳过更新');
+        return;
+      }
+
+      const hasSearch = this.data.searchKeyword && this.data.searchKeyword.trim() !== '';
+      const hasTimeRange = this.data.filterOptions.timeRange !== null;
+      const hasFilters = hasSearch || hasTimeRange;
+
+      if (type === 'modify' || type === 'update') {
+        this._handleOrderUpdate(order);
+      } else if (type === 'remove') {
+        this._handleOrderRemove(docId);
+      } else if (type === 'add') {
+        if (!hasFilters) {
+          this._handleOrderAdd(order);
+        }
+      }
+    } catch (error) {
+      console.error('[订单列表] 处理订单变化失败:', error);
+    }
+  },
+
+  _handleOrderUpdate(order) {
+    const currentOrders = this.data.originalOrders || [];
+    const index = currentOrders.findIndex(o => o._id === order._id);
+
+    console.log('[订单列表] _handleOrderUpdate - index:', index, 'originalOrders长度:', currentOrders.length);
+    console.log('[订单列表] 订单状态变化 - 新状态:', order.status, '当前标签:', this.data.selectedStatus);
+
+    if (index >= 0) {
+      const hasSearch = this.data.searchKeyword && this.data.searchKeyword.trim() !== '';
+      const hasTimeRange = this.data.filterOptions.timeRange !== null;
+
+      if (hasSearch || hasTimeRange) {
+        const updatedOrders = [...currentOrders];
+        updatedOrders[index] = { ...updatedOrders[index], ...order };
+        this.setData({ originalOrders: updatedOrders });
+        this.filterOrdersLocally();
+      } else {
+        const updatedOrders = [...currentOrders];
+        updatedOrders[index] = { ...updatedOrders[index], ...order };
+
+        const stillMatches = this._orderMatchesCurrentFilter(order);
+        console.log('[订单列表] stillMatches:', stillMatches);
+
+        if (stillMatches) {
+          this.setData({ originalOrders: updatedOrders });
+          this.processOrders(updatedOrders);
+        } else {
+          const filteredOrders = updatedOrders.filter(o => o._id !== order._id);
+          console.log('[订单列表] 订单不再匹配，从列表移除，新长度:', filteredOrders.length);
+          this.setData({ originalOrders: filteredOrders });
+          this.processOrders(filteredOrders);
+          
+          const newStatusTag = this._getStatusTagForOrder(order);
+          if (newStatusTag && newStatusTag !== this.data.selectedStatus) {
+            this.clearCache(newStatusTag);
+          }
+          this.clearCache('all');
+        }
+      }
+    } else {
+      console.log('[订单列表] 订单不在originalOrders中，从缓存获取最新数据');
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cached = orderCacheStore.get(cacheKey);
+      if (cached && cached.data) {
+        console.log('[订单列表] 从缓存获取数据，长度:', cached.data.length);
+        this.setData({ originalOrders: cached.data });
+        this.processOrders(cached.data);
+      }
+    }
+  },
+
+  _getStatusTagForOrder(order) {
+    const status = order.status;
+
+    if (status === 'pending') return 'pending';
+    if (status === 'paid') return 'paid';
+    if (['shipping', 'delivered'].includes(status)) return 'shipping';
+    if (['refund', 'refund_completed'].includes(status)) return 'refund';
+    if (['completed', 'refund_completed'].includes(status)) return 'completed';
+    if (status === 'cancelled') return 'cancelled';
+    
+    return 'all';
+  },
+
+  clearCache(status) {
+    try {
+      const cacheKey = this.getCacheKey(status);
+      orderCacheStore.clearKey(cacheKey);
+      console.log('[订单列表] 清除缓存:', cacheKey);
+    } catch (e) {
+      console.error('[订单列表] 清除缓存失败:', e);
+    }
+  },
+
+  _orderMatchesCurrentFilter(order) {
+    const selectedStatus = this.data.selectedStatus;
+    const deliveryType = order.deliveryType || 'express';
+
+    if (selectedStatus === 'all') {
+      return true;
+    }
+
+    if (selectedStatus === 'pending') {
+      return order.status === 'pending';
+    }
+
+    if (selectedStatus === 'paid') {
+      return order.status === 'paid';
+    }
+
+    if (selectedStatus === 'shipping') {
+      return ['shipping', 'delivered'].includes(order.status);
+    }
+
+    if (selectedStatus === 'refund') {
+      return ['refund', 'refund_completed'].includes(order.status);
+    }
+
+    if (selectedStatus === 'completed') {
+      return ['completed', 'refund_completed'].includes(order.status);
+    }
+
+    if (selectedStatus === 'cancelled') {
+      return order.status === 'cancelled';
+    }
+
+    return true;
+  },
+
+  _handleOrderRemove(orderId) {
+    const currentOrders = this.data.originalOrders || [];
+    const updatedOrders = currentOrders.filter(o => o._id !== orderId);
+
+    const hasSearch = this.data.searchKeyword && this.data.searchKeyword.trim() !== '';
+    const hasTimeRange = this.data.filterOptions.timeRange !== null;
+
+    if (hasSearch || hasTimeRange) {
+      this.setData({ originalOrders: updatedOrders });
+      this.filterOrdersLocally();
+    } else {
+      this.setData({ originalOrders: updatedOrders });
+      this.processOrders(updatedOrders);
+    }
+  },
+
+  _handleOrderAdd(order) {
+    const currentOrders = this.data.originalOrders || [];
+    const updatedOrders = [order, ...currentOrders];
+
+    this.setData({ originalOrders: updatedOrders });
+    this.processOrders(updatedOrders);
+  },
+
+  // 页面隐藏时清除倒计时
+  onHide() {
+    this.setData({ pageVisible: false });
     this.clearCountdown();
+
+    const watcher = getGlobalOrderWatcher();
+    watcher.setPageVisible(this.__pageId, false);
+
+    if (this.data.originalOrders && this.data.originalOrders.length > 0 && !this.data.isSearchFilterMode) {
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cursor = this.data.lastId 
+        ? { updatedAtTs: this.data.lastUpdatedAtTs, _id: this.data.lastId } 
+        : null;
+      const existingCache = orderCacheStore.get(cacheKey);
+      orderCacheStore.set(cacheKey, {
+        data: this.data.originalOrders,
+        cursor,
+        hasMore: this.data.hasMore,
+        serverMaxUpdateTime: existingCache?.serverMaxUpdateTime || 0
+      });
+    }
+  },
+
+  onUnload() {
+    this._isUnloaded = true;
+    this.clearCountdown();
+    this.stopOrderWatch();
+
+    if (this.data.originalOrders && this.data.originalOrders.length > 0 && !this.data.isSearchFilterMode) {
+      const cacheKey = this.getCacheKey(this.data.selectedStatus);
+      const cursor = this.data.lastId 
+        ? { updatedAtTs: this.data.lastUpdatedAtTs, _id: this.data.lastId } 
+        : null;
+      const existingCache = orderCacheStore.get(cacheKey);
+      orderCacheStore.set(cacheKey, {
+        data: this.data.originalOrders,
+        cursor,
+        hasMore: this.data.hasMore,
+        serverMaxUpdateTime: existingCache?.serverMaxUpdateTime || 0
+      });
+    }
+  },
+
+  // 联系客服
+  async contactService(e) {
+    const orderId = e.currentTarget.dataset.orderId;
+    if (!orderId) {
+      wx.showToast({
+        title: '订单ID不存在',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 从订单列表中找到该订单
+    const order = this.data.orders.find(item => item._id === orderId);
+    if (!order) {
+      wx.showToast({
+        title: '订单不存在',
+        icon: 'none'
+      });
+      return;
+    }
+
+    wx.showLoading({ title: '加载中...' });
+
+    try {
+      // 获取用户openid
+      const loginRes = await wx.cloud.callFunction({ name: 'login' });
+      if (!loginRes.result || !loginRes.result.openid) {
+        wx.hideLoading();
+        wx.showToast({ title: '获取用户信息失败', icon: 'none' });
+        return;
+      }
+      const OPENID = loginRes.result.openid;
+
+      // 检查是否已有客服会话
+      const db = wx.cloud.database();
+      const sessionRes = await db.collection('sessions')
+        .where({ userId: OPENID, status: 'active' })
+        .get();
+
+      let sessionId;
+      if (sessionRes.data.length > 0) {
+        sessionId = sessionRes.data[0]._id;
+      } else {
+        // 创建新会话
+        const createRes = await wx.cloud.callFunction({
+          name: 'createSession',
+          data: { userId: OPENID }
+        });
+        if (!createRes.result.success) {
+          wx.hideLoading();
+          wx.showToast({ title: '创建会话失败', icon: 'none' });
+          return;
+        }
+        sessionId = createRes.result.sessionId;
+      }
+
+      // 构建订单卡片信息
+      const orderCard = {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        coverImage: order.products && order.products[0] ? order.products[0].coverImage : '/images/icons/订单.png',
+        productName: order.products && order.products[0] ? order.products[0].name : '商品',
+        quantity: order.products ? order.products.reduce((sum, p) => sum + (p.quantity || 1), 0) : 1,
+        totalAmount: order.totalPrice || 0,
+        status: order.status,
+        statusText: order.statusText
+      };
+
+      wx.hideLoading();
+
+      // 跳转到客服聊天页面，传递订单卡片信息
+      const entryOrderCard = encodeURIComponent(JSON.stringify(orderCard));
+      wx.navigateTo({
+        url: `/pages/message/service/index?sessionId=${sessionId}&entryOrderCard=${entryOrderCard}`
+      });
+    } catch (error) {
+      wx.hideLoading();
+      wx.showToast({ title: '操作失败，请重试', icon: 'none' });
+    }
   }
 });

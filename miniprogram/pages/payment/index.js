@@ -249,7 +249,9 @@ Page({
                   data: {
                     bankType: bankType,
                     tradeNo: tradeNo,
-                    payTime: new Date()
+                    payTime: new Date(),
+                    updatedAt: new Date(),
+                    updatedAtTs: Date.now()
                   }
                 }).then(() => {
                   console.log('订单支付方式更新成功');
@@ -437,9 +439,10 @@ Page({
         address: this.data.orderData?.address,
         pickupCode: this.data.orderData?.pickupCode,
         pickupTime: this.data.orderData?.pickupTime,
-        pickupDate: this.data.orderData?.pickupDate, // 保存自提日期
-        message: this.data.orderData?.message, // 保存留言信息
+        pickupDate: this.data.orderData?.pickupDate,
+        message: this.data.orderData?.message,
         products: this.data.orderData?.products,
+        productsNames: (this.data.orderData?.products || []).map(p => p.name).join(', '),
         distance: this.data.orderData?.distance, // 直接保存确认订单页面传递的距离
         deliveryDistance: this.data.orderData?.distance, // 直接保存确认订单页面传递的距离
         pickupLatitude: this.data.orderData?.pickupLatitude, // 保存自提点纬度
@@ -466,7 +469,8 @@ Page({
         },
         createdAt: createTime,
         expireTime: expireTime,
-        updatedAt: createTime
+        updatedAt: createTime,
+        updatedAtTs: Date.now()
       };
       
       // 如果是已支付状态，添加支付时间和支付方式
@@ -617,6 +621,48 @@ Page({
       const dbOrderId = orderRes._id;
       console.log("数据库订单ID:", dbOrderId);
       
+      // 异步记录订单创建日志，不影响主流程
+      const errorLogger = require('../../utils/errorLogger');
+      wx.cloud.callFunction({
+        name: 'orderOperationLog',
+        data: {
+          orderId: dbOrderId,
+          orderNumber: orderData.orderNumber,
+          openid: orderData._openid,
+          action: 'create_order',
+          fromStatus: '',
+          toStatus: status,
+          operatorType: 'user',
+          operatorId: orderData._openid,
+          operatorName: '',
+          reason: '',
+          remark: '',
+          detail: {
+            deliveryType: orderData.deliveryType,
+            totalAmount: orderData.totalAmount,
+            productCount: orderData.products?.length || 0
+          }
+        }
+      }).catch(logError => {
+        console.error('记录订单创建日志失败:', logError);
+        errorLogger.log({
+          type: 'order_operation_log_error',
+          source: 'payment_page',
+          location: `orderId=${dbOrderId},action=create_order`,
+          message: logError.message || '记录订单创建日志失败',
+          stack: logError.stack || '',
+          code: logError.code || '',
+          functionName: 'createOrder',
+          inputParams: JSON.stringify({
+            orderId: dbOrderId,
+            orderNumber: orderData.orderNumber,
+            action: 'create_order',
+            toStatus: status
+          }),
+          pageName: 'payment'
+        }).catch(() => {});
+      });
+      
       // 隐藏加载提示
       wx.hideLoading();
       
@@ -712,7 +758,8 @@ Page({
     const updateData = {
       status: status,
       statusText: status === 'pending' ? '待支付' : '',
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      updatedAtTs: Date.now()
     };
 
     orders.doc(orderId).update({ data: updateData })

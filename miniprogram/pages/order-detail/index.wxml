@@ -282,6 +282,32 @@
 
     </view>
 
+    <!-- 订单操作日志 -->
+    <view wx:if="{{operationLogs.length > 0}}" class="order-detail__section">
+      <text class="order-detail__section-title">操作记录</text>
+      <view class="operation-logs">
+        <view wx:for="{{operationLogs}}" wx:key="_id" class="operation-log-item">
+          <view class="operation-log-item__line"></view>
+          <view class="operation-log-item__dot"></view>
+          <view class="operation-log-item__content">
+            <view class="operation-log-item__header">
+              <text class="operation-log-item__action">{{item.actionText}}</text>
+              <text class="operation-log-item__operator">{{item.operatorText}}</text>
+            </view>
+            <view wx:if="{{item.reason}}" class="operation-log-item__reason">
+              <text class="operation-log-item__reason-label">原因：</text>
+              <text class="operation-log-item__reason-value">{{item.reason}}</text>
+            </view>
+            <view wx:if="{{item.remark}}" class="operation-log-item__remark">
+              <text class="operation-log-item__remark-label">备注：</text>
+              <text class="operation-log-item__remark-value">{{item.remark}}</text>
+            </view>
+            <text class="operation-log-item__time">{{item.operatedAtText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 订单操作按钮 -->
     <view class="order-detail__footer fixed-bottom">
       <view class="order-detail__total"></view>

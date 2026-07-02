@@ -972,12 +972,14 @@ button.emoji-grid-item {
 
 .picker-panel {
   width: 100%;
+  height: 70vh;
   background: #fff;
   border-radius: 24rpx 24rpx 0 0;
-  max-height: 70vh;
   padding: 24rpx;
   padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .picker-title {
@@ -988,7 +990,9 @@ button.emoji-grid-item {
 }
 
 .picker-list {
-  max-height: 52vh;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .picker-order-item {
@@ -1148,65 +1152,80 @@ button.emoji-grid-item {
   margin-left: 8rpx;
 }
 
+.picker-item-container {
+  position: relative;
+  margin-bottom: 20rpx;
+  height: 200rpx;
+  overflow: hidden;
+  border-radius: 12rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
 .picker-item {
+  position: relative;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
-  gap: 16rpx;
-  padding: 16rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  padding: 20rpx;
+  box-sizing: border-box;
+  background-color: #fff;
   align-items: center;
 }
 
 .picker-item-image {
-  width: 88rpx;
-  height: 88rpx;
+  width: 120rpx;
+  height: 120rpx;
   border-radius: 8rpx;
+  margin-right: 24rpx;
   flex-shrink: 0;
 }
 
-.picker-item-body {
+.picker-item-info {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   min-width: 0;
 }
 
-.picker-item-head {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.picker-item-title {
-  flex: 1;
-  font-size: 26rpx;
-  color: #222;
-  white-space: nowrap;
+.picker-item-name {
+  font-size: 28rpx;
+  color: #333;
+  margin-bottom: 12rpx;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.picker-item-desc {
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  color: #777;
+.picker-item-price {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #000;
 }
 
-.picker-item-status {
-  flex-shrink: 0;
-  margin-left: 18rpx;
-  min-width: 96rpx;
-  text-align: right;
-  font-size: 22rpx;
-  color: #0f3c8f;
-  line-height: 1.4;
+.picker-item-quantity {
+  font-size: 24rpx;
+  color: #999;
+  margin-left: 24rpx;
+}
+
+.picker-loading,
+.picker-no-more {
+  text-align: center;
+  padding: 32rpx 0;
+  font-size: 24rpx;
+  color: #999;
 }
 
 .picker-empty {
+  flex: 1;
+  min-height: 0;
   padding: 36rpx 0 8rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 20rpx;
 }
 

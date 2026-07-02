@@ -75,7 +75,13 @@ Page({
     messageActionMenuMessage: null,
     messageScrollEnabled: true,
     pendingEntryProductCard: null,
-    pendingEntryProductCardVisible: false
+    pendingEntryProductCardVisible: false,
+    pendingEntryOrderCard: null,
+    pendingEntryOrderCardVisible: false,
+    cartPickerPage: 0,
+    cartPickerPageSize: 18,
+    cartPickerLoadingMore: false,
+    cartPickerHasMore: true
   },
   getMessageContentHeight() {
     return new Promise((resolve) => {
@@ -187,6 +193,27 @@ Page({
         desc: parsed.desc || parsed.description || '',
         description: parsed.description || parsed.desc || '',
         coverImage: parsed.coverImage || ''
+      };
+    } catch (e) {
+      return null;
+    }
+  },
+  parseEntryOrderCard(rawCard) {
+    if (!rawCard || typeof rawCard !== 'string') return null;
+    try {
+      const decoded = decodeURIComponent(rawCard);
+      const parsed = JSON.parse(decoded);
+      if (!parsed || !parsed.orderId) return null;
+      return {
+        orderId: parsed.orderId,
+        orderNumber: parsed.orderNumber || parsed.orderId,
+        coverImage: parsed.coverImage || '/images/icons/订单.png',
+        productName: parsed.productName || parsed.name || '商品',
+        quantity: parsed.quantity || 1,
+        totalAmount: parsed.totalAmount || parsed.amount || 0,
+        status: parsed.status || 'unknown',
+        statusText: parsed.statusText || '未知状态',
+        formattedOrderNumber: this.formatOrderNumber(parsed.orderNumber || parsed.orderId)
       };
     } catch (e) {
       return null;
@@ -427,8 +454,9 @@ Page({
     return 'bottom-anchor';
   },
   async onLoad(options) {
-    const { sessionId, entryProductCard } = options;
+    const { sessionId, entryProductCard, entryOrderCard } = options;
     const pendingEntryProductCard = this.parseEntryProductCard(entryProductCard);
+    const pendingEntryOrderCard = this.parseEntryOrderCard(entryOrderCard);
     this._historyPrefetchBuffer = [];
     this._historyPrefetching = false;
     this._historyPrefetchHasMore = true;
@@ -446,7 +474,9 @@ Page({
       entryBottomLocking: true,
       messageListReady: false,
       pendingEntryProductCard,
-      pendingEntryProductCardVisible: !!pendingEntryProductCard
+      pendingEntryProductCardVisible: !!pendingEntryProductCard,
+      pendingEntryOrderCard,
+      pendingEntryOrderCardVisible: !!pendingEntryOrderCard
     });
     this.loadCSInfo();
     await this.getOpenId();
@@ -2037,35 +2067,81 @@ Page({
   async openCartPicker() {
     const targetOpenid = this.getTargetOpenid();
     if (!targetOpenid) return;
-    const res = await db.collection('cart').where({ _openid: targetOpenid, isDelete: _.neq(true) }).limit(30).get();
-    const items = (res.data || []).map((item) => {
-      const snapshot = item.productSnapshot || {};
-      return {
-        _id: item._id,
-        productId: item.productId,
-        coverImage: snapshot.coverImage || '',
-        title: snapshot.name || '购物车商品',
-        desc: `￥${snapshot.price || 0} · x${item.quantity || 1}`,
-        payload: {
-          productId: item.productId,
-          name: snapshot.name || '商品',
-          desc: `x${item.quantity || 1}`,
-          price: snapshot.price || 0,
-          coverImage: snapshot.coverImage || ''
-        }
-      };
+    this.setData({
+      cartPickerPage: 0,
+      cartPickerLoadingMore: false,
+      cartPickerHasMore: true
     });
+    await this.fetchCartPickerItems(true);
     this.setData({
       showCardPicker: true,
       cardPickerType: 'product_card',
       cardPickerTitle: '选择购物车商品',
-      cardPickerItems: items,
       cardPickerOrderSourceItems: [],
       cardPickerOrderDeliveryTabs: [],
       cardPickerOrderStatusTabs: [],
       cardPickerOrderActiveDeliveryType: 'express',
       cardPickerOrderActiveStatus: 'all'
     });
+  },
+
+  async fetchCartPickerItems(reset = true) {
+    const targetOpenid = this.getTargetOpenid();
+    if (!targetOpenid) return;
+
+    const { cartPickerLoadingMore, cartPickerHasMore, cartPickerPage, cartPickerPageSize } = this.data;
+    if (cartPickerLoadingMore || !cartPickerHasMore) return;
+
+    this.setData({ cartPickerLoadingMore: true });
+
+    try {
+      const page = reset ? 0 : cartPickerPage;
+      const res = await db.collection('cart')
+        .where({ _openid: targetOpenid, isDelete: _.neq(true) })
+        .orderBy('updatedAt', 'desc')
+        .skip(page * cartPickerPageSize)
+        .limit(cartPickerPageSize)
+        .get();
+
+      const items = (res.data || []).map((item) => {
+        const snapshot = item.productSnapshot || {};
+        return {
+          _id: item._id,
+          productId: item.productId,
+          coverImage: snapshot.coverImage || '',
+          title: snapshot.name || '购物车商品',
+          desc: `￥${snapshot.price || 0} · x${item.quantity || 1}`,
+          price: snapshot.price || 0,
+          quantity: item.quantity || 1,
+          payload: {
+            productId: item.productId,
+            name: snapshot.name || '商品',
+            desc: `x${item.quantity || 1}`,
+            price: snapshot.price || 0,
+            coverImage: snapshot.coverImage || ''
+          }
+        };
+      });
+
+      const hasMore = items.length === cartPickerPageSize;
+      const newPage = reset ? 1 : page + 1;
+      const newItems = reset ? items : [...this.data.cardPickerItems, ...items];
+
+      this.setData({
+        cardPickerItems: newItems,
+        cartPickerPage: newPage,
+        cartPickerLoadingMore: false,
+        cartPickerHasMore: hasMore
+      });
+    } catch (err) {
+      console.error('加载购物车商品失败', err);
+      this.setData({ cartPickerLoadingMore: false });
+    }
+  },
+
+  loadMoreCartPickerItems() {
+    if (this.data.cardPickerType !== 'product_card') return;
+    this.fetchCartPickerItems(false);
   },
   normalizeOrderToken(value) {
     if (value === null || value === undefined) return '';
@@ -2590,7 +2666,7 @@ Page({
   goBrowseFromPicker() {
     this.closeCardPicker();
     wx.switchTab({
-      url: '/pages/home/index'
+      url: '/pages/category/index'
     });
   },
   closePendingEntryProductCard() {
@@ -2613,6 +2689,28 @@ Page({
     if (!payload.productId) return;
     wx.navigateTo({
       url: `/pages/product-detail/index?id=${payload.productId}`
+    });
+  },
+  closePendingEntryOrderCard() {
+    this.setData({
+      pendingEntryOrderCardVisible: false,
+      pendingEntryOrderCard: null
+    });
+  },
+  sendPendingEntryOrderCard() {
+    const payload = this.data.pendingEntryOrderCard;
+    if (!payload || !payload.orderId) {
+      this.closePendingEntryOrderCard();
+      return;
+    }
+    this.sendMessage(JSON.stringify(payload), 'order_card');
+    this.closePendingEntryOrderCard();
+  },
+  handlePendingEntryOrderCardTap() {
+    const payload = this.data.pendingEntryOrderCard || {};
+    if (!payload.orderId) return;
+    wx.navigateTo({
+      url: `/pages/order-detail/index?id=${payload.orderId}`
     });
   }
 });

@@ -1,33 +1,91 @@
-[购物车] fetchCartItems 调用 - showLoading: false, forceRefresh: true
-index.js:467 [购物车] 当前状态 - cachedCartItems数量: 18, currentCartItems数量: 0
-index.js:530 [购物车] 查询条件: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false} , lastId: null , pageSize: 18
-index.js:536 [购物车] 分页获取数据 - isFirstPage: true, 本页数量: 18
-index.js:542 [购物车] 原始数据前2条: (2) [{…}, {…}]
-cache.js:114 内存缓存命中: product_669eebf36a170e1500ef4b0c2045b09a
-cache.js:114 内存缓存命中: product_a54a659b6a170d1c00ed001d358eb220
-cache.js:114 内存缓存命中: product_bff52e9f6a170bcf00eda9bc2f13da56
-cache.js:114 内存缓存命中: product_bff52e9f6a170e3a00ede1150d7a92e9
-cache.js:114 内存缓存命中: product_c40002b26a170b3700f02cd65ceae5a6
-cache.js:114 内存缓存命中: product_c5c2a88a6a170cfb00ef0b664587c2de
-cache.js:114 内存缓存命中: product_d6a300ae6a33640801ae35a4497fd236
-cache.js:114 内存缓存命中: product_d3a457a269d54823035917cd6dcfc745
-cache.js:114 内存缓存命中: product_d6a300ae6a33a00f01bec9905f3af8dc
-cache.js:114 内存缓存命中: product_d6a300ae6a41fdbe05b6680b062dbec2
-cache.js:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08025
-cache.js:114 内存缓存命中: product_ed435bfa69aecef000ca29e619b08112
-cache.js:114 内存缓存命中: product_f0df711e69d685fc037324a41c69c9fc
-cache.js:114 内存缓存命中: product_f2dd55436a203b53001962fc428944ce
-cache.js:114 内存缓存命中: product_f9d11e1d6a170b6600ed3a3677a29d79
-cache.js:114 内存缓存命中: product_f9d11e1d6a170c1800ed5880444fbc1a
-cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0111
-cache.js:114 内存缓存命中: product_fb39ee6269aecedd00cb426d7f7d0f01
-index.js:545 [购物车] 处理后数据数量: 18
-index.js:547 [购物车] 处理后第1条数据: {_id: "84a6d7fb6a4258180001d3d425b20949", productId: "669eebf36a170e1500ef4b0c2045b09a", name: "Aura｜琥珀花语发圈", price: 29, quantity: 1, …}
-index.js:553 [购物车] 去重后新数据数量: 18
-index.js:560 [购物车] 总数量: 18, hasMore: true, lastId: 84a6d7fb6a4257a60001cdd3121dc5f0, lastUpdatedAtTs: 1782732708346
-index.js:577 [购物车] 准备调用 setData 更新UI
-index.js:589 [购物车页面] 购物车缓存已更新
-index.js:610 [购物车] 开始加载更多购物车数据
-index.js:530 [购物车] 查询条件: {_openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", isDelete: false} , lastId: 84a6d7fb6a4257a60001cdd3121dc5f0 , pageSize: 18
-index.js:536 [购物车] 分页获取数据 - isFirstPage: false, 本页数量: 0
-index.js:593 [购物车] 没有从数据库获取到数据
+管理员操作发货后的日志：
+globalOrderWatcher.js:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
+globalOrderWatcher.js:288 [GlobalOrderWatcher] hasVisible: false
+globalOrderWatcher.js:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+globalOrderWatcher.js:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: false, matchesNow: false
+globalOrderWatcher.js:306 [GlobalOrderWatcher] 没有可见页面，标记缓存已更新
+globalOrderWatcher.js:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
+globalOrderWatcher.js:288 [GlobalOrderWatcher] hasVisible: false
+globalOrderWatcher.js:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+globalOrderWatcher.js:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: false, matchesNow: false
+globalOrderWatcher.js:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: false, matchesNow: false
+globalOrderWatcher.js:306 [GlobalOrderWatcher] 没有可见页面，标记缓存已更新
+[自动热重载] 已开启代码文件保存后自动热重载
+index.js? [sm]:95 订单管理页面显示
+
+用户端在订单列表页面，管理员操作发货后的日志：
+globalOrderWatcher.js? [sm]:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
+globalOrderWatcher.js? [sm]:288 [GlobalOrderWatcher] hasVisible: true
+globalOrderWatcher.js? [sm]:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+globalOrderWatcher.js? [sm]:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: true, matchesNow: false
+orderCacheStore.js? [sm]:378 [OrderCacheStore] removeOrder - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, orderId: c40002b26a150f5600b1865f37fa7cfd, idx: 9, isLast: false
+orderCacheStore.js? [sm]:379   移除前 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1782961870591, dataLength: 11
+orderCacheStore.js? [sm]:380   移除后 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1782961870591, dataLength: 10
+orderCacheStore.js? [sm]:381   当前状态 - cacheIndex: 0, hasMore: false
+globalOrderWatcher.js? [sm]:373 [GlobalOrderWatcher] 缓存移除订单（状态变更离开）: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all c40002b26a150f5600b1865f37fa7cfd
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: true, matchesNow: false
+orderCacheStore.js? [sm]:378 [OrderCacheStore] removeOrder - key: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, orderId: c40002b26a150f5600b1865f37fa7cfd, idx: 1, isLast: false
+orderCacheStore.js? [sm]:379   移除前 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1779766091249, dataLength: 3
+orderCacheStore.js? [sm]:380   移除后 - cursor: {updatedAtTs=1779442904498, _id=f9d11e1d6a1024da0027e3a94cca1e61}, serverMaxUpdateTime: 1779766091249, dataLength: 2
+orderCacheStore.js? [sm]:381   当前状态 - cacheIndex: 0, hasMore: false
+globalOrderWatcher.js? [sm]:373 [GlobalOrderWatcher] 缓存移除订单（状态变更离开）: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid c40002b26a150f5600b1865f37fa7cfd
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:299 [GlobalOrderWatcher] 通知订阅者更新UI
+globalOrderWatcher.js? [sm]:439 [GlobalOrderWatcher] _notifySubscribers - 订阅者数量: 1
+globalOrderWatcher.js? [sm]:443 [GlobalOrderWatcher] 检查订阅者: order_list_page isVisible: true cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:451 [GlobalOrderWatcher] 调用订阅者 handler: order_list_page
+index.js? [sm]:2016 [订单列表] 监听器收到订单变化: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+index.js? [sm]:2017 [订单列表] 订单状态: shipping 当前选中标签: paid
+index.js? [sm]:2048 [订单列表] _handleOrderUpdate - index: -1 originalOrders长度: 2
+index.js? [sm]:2049 [订单列表] 订单状态变化 - 新状态: shipping 当前标签: paid
+globalOrderWatcher.js? [sm]:283 [GlobalOrderWatcher] onChange: undefined docChanges: 1
+globalOrderWatcher.js? [sm]:288 [GlobalOrderWatcher] hasVisible: true
+globalOrderWatcher.js? [sm]:294 [GlobalOrderWatcher] Change: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+globalOrderWatcher.js? [sm]:324 [GlobalOrderWatcher] _updateAllCaches - openid: o1R-w7XrgR7OHEk_SXuzYAoGIQHo, changeType: update, cacheKeys: (7) ["order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed", "order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled"]
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_pending, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_paid, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_shipping, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_refund, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_completed, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:355 [GlobalOrderWatcher] 检查缓存: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_cancelled, 存在: true, matchesNow: false
+globalOrderWatcher.js? [sm]:363 [GlobalOrderWatcher] existedBefore: false, matchesNow: false
+globalOrderWatcher.js? [sm]:299 [GlobalOrderWatcher] 通知订阅者更新UI
+globalOrderWatcher.js? [sm]:439 [GlobalOrderWatcher] _notifySubscribers - 订阅者数量: 1
+globalOrderWatcher.js? [sm]:443 [GlobalOrderWatcher] 检查订阅者: order_list_page isVisible: true cacheKey: order_cache_o1R-w7XrgR7OHEk_SXuzYAoGIQHo_all
+globalOrderWatcher.js? [sm]:451 [GlobalOrderWatcher] 调用订阅者 handler: order_list_page
+index.js? [sm]:2016 [订单列表] 监听器收到订单变化: update c40002b26a150f5600b1865f37fa7cfd 202605261111136636
+index.js? [sm]:2017 [订单列表] 订单状态: shipping 当前选中标签: paid
+index.js? [sm]:2048 [订单列表] _handleOrderUpdate - index: -1 originalOrders长度: 2
+index.js? [sm]:2049 [订单列表] 订单状态变化 - 新状态: shipping 当前标签: paid

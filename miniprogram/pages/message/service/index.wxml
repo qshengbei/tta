@@ -265,7 +265,7 @@
           </view>
         </scroll-view>
       </block>
-      <scroll-view wx:if="{{cardPickerItems.length > 0}}" class="picker-list" scroll-y="true">
+      <scroll-view wx:if="{{cardPickerItems.length > 0}}" class="picker-list" scroll-y="true" bindscrolltolower="loadMoreCartPickerItems" lower-threshold="50">
         <block wx:if="{{cardPickerType === 'order_card'}}">
           <view wx:for="{{cardPickerItems}}" wx:key="_id" class="picker-order-item" bindtap="sendCardFromPicker" data-index="{{index}}">
             <view class="picker-order-item__header">
@@ -294,14 +294,23 @@
           </view>
         </block>
         <block wx:else>
-          <view wx:for="{{cardPickerItems}}" wx:key="_id" class="picker-item" bindtap="sendCardFromPicker" data-index="{{index}}">
-            <image class="picker-item-image" src="{{item.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
-            <view class="picker-item-body">
-              <view class="picker-item-head">
-                <text class="picker-item-title">{{item.title}}</text>
+          <view wx:for="{{cardPickerItems}}" wx:key="_id" class="picker-item-container" bindtap="sendCardFromPicker" data-index="{{index}}">
+            <view class="picker-item">
+              <image class="picker-item-image" src="{{item.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
+              <view class="picker-item-info">
+                <text class="picker-item-name">{{item.title}}</text>
+                <text class="picker-item-price">¥{{item.price}}</text>
               </view>
-              <text class="picker-item-desc">{{item.desc}}</text>
+              <view class="picker-item-quantity">
+                <text>×{{item.quantity}}</text>
+              </view>
             </view>
+          </view>
+          <view wx:if="{{cartPickerLoadingMore}}" class="picker-loading">
+            <text>加载中...</text>
+          </view>
+          <view wx:elif="{{!cartPickerHasMore && cardPickerItems.length > 0}}" class="picker-no-more">
+            <text>没有更多啦</text>
           </view>
         </block>
       </scroll-view>
@@ -328,6 +337,35 @@
     <view class="entry-card-draft__actions">
       <view class="entry-card-draft__btn entry-card-draft__btn--ghost" bindtap="closePendingEntryProductCard">不发送</view>
       <view class="entry-card-draft__btn entry-card-draft__btn--primary" bindtap="sendPendingEntryProductCard">发送</view>
+    </view>
+  </view>
+
+  <view wx:if="{{pendingEntryOrderCardVisible && pendingEntryOrderCard}}" class="entry-card-draft" catchtap="stopPreviewPropagation">
+    <view class="entry-card-draft__header">
+      <text class="entry-card-draft__title">发送订单给客服</text>
+      <text class="entry-card-draft__close" bindtap="closePendingEntryOrderCard">关闭</text>
+    </view>
+    <view class="message-card message-card--order" bindtap="handlePendingEntryOrderCardTap">
+      <view class="message-card-order-header">
+        <image class="message-card-thumb" src="{{pendingEntryOrderCard.coverImage || '/images/icons/订单.png'}}" mode="aspectFill"></image>
+        <view class="message-card-order-info">
+          <view class="message-card-order-row">
+            <text class="message-card-title">订单号：{{pendingEntryOrderCard.formattedOrderNumber || pendingEntryOrderCard.orderNumber || pendingEntryOrderCard.orderId}}</text>
+          </view>
+          <view class="message-card-order-row">
+            <text class="message-card-desc">{{pendingEntryOrderCard.productName}}</text>
+            <text class="message-card-order-quantity">x{{pendingEntryOrderCard.quantity}}</text>
+          </view>
+          <view class="message-card-order-row">
+            <text class="message-card-price">合计：￥{{pendingEntryOrderCard.totalAmount}}</text>
+            <text class="message-card-order-status">{{pendingEntryOrderCard.statusText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="entry-card-draft__actions">
+      <view class="entry-card-draft__btn entry-card-draft__btn--ghost" bindtap="closePendingEntryOrderCard">不发送</view>
+      <view class="entry-card-draft__btn entry-card-draft__btn--primary" bindtap="sendPendingEntryOrderCard">发送</view>
     </view>
   </view>
 </view>

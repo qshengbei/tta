@@ -1,5 +1,6 @@
 // app.js
 import { getGlobalProductWatcher } from './utils/globalProductWatcher';
+import { getGlobalOrderWatcher } from './utils/globalOrderWatcher';
 import errorLogger from './utils/errorLogger';
 
 App({
@@ -40,12 +41,13 @@ App({
     console.log('[APP] 准备调用 getOpenid()');
     this.getOpenid();
 
-    // 登录成功后启动全局商品监听器
+    // 登录成功后启动全局商品监听器和订单监听器
     console.log('[APP] 准备注册登录成功回调');
     this.onLoginReady(() => {
       console.log('[APP] 登录成功回调被触发，启动全局商品监听器');
-      // 使用新的 GlobalProductWatcher 替代旧的独立 watcher
       getGlobalProductWatcher().init();
+      console.log('[APP] 启动全局订单监听器');
+      getGlobalOrderWatcher().init();
     });
 
     console.log('[APP] ====== onLaunch 完成 ======，总耗时:', Date.now() - startTime, 'ms');
