@@ -5,6 +5,97 @@ import PagePaginator from '../../utils/pagePaginator';
 import productCacheStore from '../../utils/productCacheStore';
 import { getGlobalProductWatcher } from '../../utils/globalProductWatcher';
 
+function _getByteSize(str) {
+  if (!str) return 0;
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode <= 0x007f) {
+      bytes += 1;
+    } else if (charCode <= 0x07ff) {
+      bytes += 2;
+    } else if (charCode <= 0xffff) {
+      bytes += 3;
+    } else {
+      bytes += 4;
+    }
+  }
+  return bytes;
+}
+
+function _analyzeProductData(products, label) {
+  if (!products || products.length === 0) {
+    console.log(`[性能分析] ${label} - 数据为空`);
+    return;
+  }
+  
+  const jsonString = JSON.stringify(products);
+  const byteSize = _getByteSize(jsonString);
+  const kbSize = (byteSize / 1024).toFixed(2);
+  const mbSize = (byteSize / 1024 / 1024).toFixed(2);
+  
+  let totalImageUrls = 0;
+  let imageUrlDetails = [];
+  
+  products.forEach((p, index) => {
+    const images = [];
+    if (p.image) images.push({ type: 'main', url: p.image, len: _getByteSize(p.image) });
+    if (p.images && Array.isArray(p.images)) {
+      p.images.forEach((img, i) => {
+        images.push({ type: `gallery[${i}]`, url: img, len: _getByteSize(img) });
+      });
+    }
+    if (p.coverImage) images.push({ type: 'cover', url: p.coverImage, len: _getByteSize(p.coverImage) });
+    if (images.length > 0) {
+      totalImageUrls += images.length;
+      if (index < 3) {
+        imageUrlDetails.push({ productId: p._id, images });
+      }
+    }
+  });
+  
+  const firstProductKeys = products[0] ? Object.keys(products[0]) : [];
+  const avgProductSize = (byteSize / products.length).toFixed(2);
+  
+  console.log(`[性能分析] ${label} ======`);
+  console.log(`[性能分析] 商品数量: ${products.length}`);
+  console.log(`[性能分析] 总数据大小: ${byteSize} bytes = ${kbSize} KB = ${mbSize} MB`);
+  console.log(`[性能分析] 平均单商品大小: ${avgProductSize} bytes`);
+  console.log(`[性能分析] 图片URL总数: ${totalImageUrls}`);
+  console.log(`[性能分析] 商品字段数量: ${firstProductKeys.length}`);
+  console.log(`[性能分析] 商品字段列表: ${firstProductKeys.join(', ')}`);
+  
+  if (imageUrlDetails.length > 0) {
+    console.log(`[性能分析] 前3个商品图片详情:`);
+    imageUrlDetails.forEach(d => {
+      console.log(`  - ${d.productId}: ${d.images.map(i => `${i.type}:${i.len}b`).join(', ')}`);
+    });
+  }
+  
+  const largeProducts = products.filter(p => {
+    const size = _getByteSize(JSON.stringify(p));
+    return size > 1024 * 2;
+  });
+  
+  if (largeProducts.length > 0) {
+    console.log(`[性能分析] 超过2KB的商品(${largeProducts.length}个):`);
+    largeProducts.slice(0, 3).forEach(p => {
+      const size = (_getByteSize(JSON.stringify(p)) / 1024).toFixed(2);
+      console.log(`  - ${p._id}: ${size} KB, name: ${p.name || p.title || 'unknown'}`);
+    });
+  }
+  
+  console.log(`[性能分析] ${label} ======`);
+}
+
+function _logSetDataTime(label, fn) {
+  const start = Date.now();
+  const result = fn();
+  const end = Date.now();
+  console.log(`[性能分析] setData ${label} 耗时: ${end - start}ms`);
+  return result;
+}
+
 Page({
 
   _isFirstEntry: true,
@@ -175,9 +266,14 @@ Page({
   // 从缓存获取商品数据（永久缓存，由实时监听更新）
   getCachedProducts() {
     try {
-      // 使用 productCacheStore 的存储前缀
+      const start = Date.now();
       const cached = wx.getStorageSync('product_cache_category_products');
+      const readTime = Date.now() - start;
+      console.log(`[性能分析] getCachedProducts - 读取耗时: ${readTime}ms`);
+      
       if (cached && cached.data) {
+        const byteSize = new Blob([JSON.stringify(cached.data)]).size;
+        console.log(`[性能分析] getCachedProducts - 缓存数据大小: ${byteSize} bytes = ${(byteSize/1024).toFixed(2)} KB`);
         return cached.data;
       }
     } catch (e) {
@@ -288,6 +384,7 @@ Page({
     
     if (cachedProducts && cachedProducts.length > 0) {
       console.log('使用商品缓存数据');
+      _analyzeProductData(cachedProducts, 'onLoad-缓存商品数据');
       this.setData({
         products: cachedProducts,
         originalProducts: [...cachedProducts],
@@ -405,10 +502,10 @@ Page({
     // 通知全局监听器页面不可见
     getGlobalProductWatcher().setPageVisible('category_page', false);
     
-    console.log('[宝贝页面] 页面隐藏，关闭监听器');
-    console.log('宝贝页面-实时监听关闭');
-    // 页面隐藏时关闭监听器，节省资源
-    this.stopWatchers();
+    console.log('[宝贝页面] 页面隐藏，保留监听器以维持缓存');
+    console.log('宝贝页面-实时监听保留');
+    // 保留监听器连接，避免缓存被清理
+    // 这样下次进入页面时可以直接使用缓存数据
   },
 
   /**
@@ -1526,7 +1623,11 @@ Page({
       pageSize: 18,
       cursorField: cursorField,
       sortOrder: sortOrder,
-      extraQuery: query
+      extraQuery: query,
+      field: {
+        description: false,
+        images: false
+      }
     });
     
     // 初始化 CursorPagination 的 collectionName 和 baseQuery
@@ -1719,15 +1820,18 @@ Page({
           
           const cacheKey = this._sortCacheKey || 'category_products';
           console.log('[宝贝页面] 使用缓存数据，', useFullCache ? '保留完整缓存' : '截取前18条', '，缓存总长度:', cache.data.length, ', hasMore:', cache.hasMore);
-          this.setData({ 
-            products: dataToUse, 
-            originalProducts: [...dataToUse], 
-            showSkeleton: false,
-            sortDataCache: {
-              ...this.data.sortDataCache,
-              [cacheKey]: { products: dataToUse, originalProducts: [...dataToUse] }
-            },
-            currentDisplaySort: cacheKey
+          _analyzeProductData(dataToUse, 'fetchProductsFromDatabase-缓存命中数据');
+          _logSetDataTime('缓存命中-初始数据', () => {
+            this.setData({ 
+              products: dataToUse, 
+              originalProducts: [...dataToUse], 
+              showSkeleton: false,
+              sortDataCache: {
+                ...this.data.sortDataCache,
+                [cacheKey]: { products: dataToUse, originalProducts: [...dataToUse] }
+              },
+              currentDisplaySort: cacheKey
+            });
           });
           this.__cacheIndex = useFullCache ? cache.data.length : 18;
           this._tabsLoaded.products = true;
@@ -1807,10 +1911,13 @@ Page({
         console.log('[宝贝页面] 数据库返回:', data ? data.length : 0, '条');
 
         if (data && data.length > 0) {
+          _analyzeProductData(data, 'fetchProductsFromDatabase-数据库返回数据');
           // 先更新 originalProducts 和 products
-          this.setData({
-            originalProducts: data,
-            products: data
+          _logSetDataTime('初始商品数据', () => {
+            this.setData({
+              originalProducts: data,
+              products: data
+            });
           });
           
           // 查询最新的 updatedAtTs 时间戳
@@ -1848,22 +1955,26 @@ Page({
           }
           const lastCursor = lastItem ? (lastItem[cursorField] || lastItem._id) : null;
           
-          this.setData({
-            sortDataCache: {
-              ...this.data.sortDataCache,
-              [cacheKey]: { products: this.data.products, originalProducts: [...this.data.originalProducts] }
-            },
-            currentDisplaySort: cacheKey,
-            // 更新当前排序的分页器状态
-            paginatorStates: {
-              ...this.data.paginatorStates,
-              [cacheKey]: this.getPaginatorStateForCacheKey(cacheKey, this.data.originalProducts, currentPaginator.hasNext())
-            }
+          _logSetDataTime('sortDataCache和paginatorStates', () => {
+            this.setData({
+              sortDataCache: {
+                ...this.data.sortDataCache,
+                [cacheKey]: { products: this.data.products, originalProducts: [...this.data.originalProducts] }
+              },
+              currentDisplaySort: cacheKey,
+              // 更新当前排序的分页器状态
+              paginatorStates: {
+                ...this.data.paginatorStates,
+                [cacheKey]: this.getPaginatorStateForCacheKey(cacheKey, this.data.originalProducts, currentPaginator.hasNext())
+              }
+            });
           });
           console.log('[宝贝页面] sortDataCache 写入完成:', cacheKey);
         }
 
-        this.setData({ showSkeleton: false });
+        _logSetDataTime('隐藏骨架屏', () => {
+          this.setData({ showSkeleton: false });
+        });
         this.applySearchAndFilter();
         console.log('[宝贝页面] 第一页加载完成，内存数据：products.length=', this.data.products.length, ', originalProducts.length=', this.data.originalProducts.length);
       } else {

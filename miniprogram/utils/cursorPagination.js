@@ -9,6 +9,7 @@ class CursorPagination {
     this.sortOrder = options.sortOrder || 'desc';
     this.secondarySortField = options.secondarySortField || '_id';  // 二次排序字段
     this.secondarySortOrder = options.secondarySortOrder || options.sortOrder;  // 二次排序顺序
+    this.field = options.field || null;  // 字段过滤
     this.hasNext = true;
     this.lastCursor = null;
     this.lastId = null;
@@ -62,9 +63,13 @@ class CursorPagination {
             : { _id: _.gt(this.lastId || this.lastCursor) };
           query = db.collection(this.collectionName).where({ ...this.baseQuery, ...cond });
         }
-        const result = await query
+        let queryBuilder = query
           .orderBy('_id', this.sortOrder)
-          .limit(fetchLimit).get();
+          .limit(fetchLimit);
+        if (this.field) {
+          queryBuilder = queryBuilder.field(this.field);
+        }
+        const result = await queryBuilder.get();
         data = result.data || [];
       } else {
         // === 非 _id 游标（如 createdAt/price）：先用游标，比较失败则回退 skip/limit ===
@@ -98,11 +103,15 @@ class CursorPagination {
             this.baseQuery,
             _.or([cond1, cond2])
           ]);
-          const cursorResult = await db.collection(this.collectionName)
+          let cursorQueryBuilder = db.collection(this.collectionName)
             .where(query)
             .orderBy(this.cursorField, this.sortOrder)
             .orderBy(this.secondarySortField, this.secondarySortOrder)
-            .limit(fetchLimit).get();
+            .limit(fetchLimit);
+        if (this.field) {
+          cursorQueryBuilder = cursorQueryBuilder.field(this.field);
+        }
+        const cursorResult = await cursorQueryBuilder.get();
 
           if (cursorResult.data && cursorResult.data.length > 0) {
             // 游标生效
@@ -119,12 +128,16 @@ class CursorPagination {
           // 第一页 或 游标回退：skip/limit
           const skipNum = this.skipCount || 0;
           console.log('[CursorPagination] skip/limit, skip:', skipNum);
-          result = await db.collection(this.collectionName)
+          let skipQueryBuilder = db.collection(this.collectionName)
             .where(this.baseQuery)
             .orderBy(this.cursorField, this.sortOrder)
             .orderBy(this.secondarySortField, this.secondarySortOrder)
             .skip(skipNum)
-            .limit(fetchLimit).get();
+            .limit(fetchLimit);
+        if (this.field) {
+          skipQueryBuilder = skipQueryBuilder.field(this.field);
+        }
+        result = await skipQueryBuilder.get();
           usedSkip = true;
         }
 

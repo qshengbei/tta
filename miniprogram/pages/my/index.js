@@ -1,5 +1,43 @@
 // pages/my/index.js
 const db = wx.cloud.database();
+
+function _getByteSize(str) {
+  if (!str) return 0;
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode <= 0x007f) bytes += 1;
+    else if (charCode <= 0x07ff) bytes += 2;
+    else if (charCode <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function _logPerformance(label, startTime) {
+  const endTime = Date.now();
+  console.log(`[性能分析][我的页] ${label}: ${endTime - startTime}ms`);
+  return endTime;
+}
+
+function _analyzeData(data, label) {
+  if (!data || data.length === 0) {
+    console.log(`[性能分析][我的页] ${label} - 数据为空`);
+    return;
+  }
+  const jsonString = JSON.stringify(data);
+  const byteSize = _getByteSize(jsonString);
+  const kbSize = (byteSize / 1024).toFixed(2);
+  console.log(`[性能分析][我的页] ${label}: ${data.length} 条, ${byteSize} bytes = ${kbSize} KB`);
+}
+
+function _logSetDataTime(label, fn) {
+  const start = Date.now();
+  fn();
+  const end = Date.now();
+  console.log(`[性能分析][我的页] setData ${label} 耗时: ${end - start}ms`);
+}
+
 Page({
 
   /**
@@ -20,12 +58,19 @@ Page({
    * 生命周期函数--监听页面加载
    */
   onLoad(options) {
+    const start = Date.now();
+    console.log('[性能分析][我的页] ====== onLoad 开始 ======');
     const that = this;
     // 从本地存储获取openid
+    const cacheStart = Date.now();
     const cachedOpenid = wx.getStorageSync('openid');
+    _logPerformance('获取openid缓存', cacheStart);
+    
     if (cachedOpenid) {
       console.log('从本地存储获取openid成功:', cachedOpenid);
-      that.setData({ openid: cachedOpenid });
+      _logSetDataTime('openid', () => {
+        that.setData({ openid: cachedOpenid });
+      });
       // 优先从数据库获取用户信息，确保使用最新数据
       that.getUserInfoFromDb(cachedOpenid);
       // 获取订单数量
@@ -54,17 +99,20 @@ Page({
         }
       });
     }
+    _logPerformance('onLoad', start);
   },
 
   /**
    * 从数据库获取用户信息
    */
   getUserInfoFromDb(openid) {
+    const start = Date.now();
     const that = this;
     db.collection('users').where({
       _openid: openid
     }).get({
       success: (res) => {
+        _logPerformance('getUserInfoFromDb', start);
         console.log('从数据库获取用户信息成功:', res);
         if (res.data && res.data.length > 0) {
           const userInfo = {
@@ -74,7 +122,9 @@ Page({
           // 保存用户信息到本地存储（使用统一缓存键）
           wx.setStorageSync(`user_${openid}`, userInfo);
           // 更新页面数据
-          that.setData({ userInfo });
+          _logSetDataTime('userInfo', () => {
+            that.setData({ userInfo });
+          });
         }
       },
       fail: (err) => {
@@ -180,10 +230,10 @@ Page({
   },
   
   /**
-   * 获取当前用户的订单数量
+   * 获取当前用户的订单数量（调用云函数批量统计）
    */
   async getOrderCounts() {
-    const db = wx.cloud.database();
+    const start = Date.now();
     const openid = this.data.openid;
     
     if (!openid) {
@@ -191,127 +241,44 @@ Page({
       return;
     }
     
-    // 获取当前用户的所有订单（分页查询）
-    const queryCondition = { _openid: openid };
-    console.log('查询条件:', queryCondition);
-    
-    let allOrders = [];
-    let hasMore = true;
-    let offset = 0;
-    const limit = 20; // 微信云开发默认限制为20条
-    
     try {
-      console.log('开始查询订单，初始offset:', offset, 'limit:', limit);
-      while (hasMore) {
-        console.log('查询订单，当前offset:', offset, 'limit:', limit);
-        const res = await db.collection('orders').where(queryCondition).skip(offset).limit(limit).get();
+      console.log('[性能分析][我的页] 调用云函数 getOrderCounts');
+      const res = await wx.cloud.callFunction({
+        name: 'getOrderCounts'
+      });
+      
+      _logPerformance('getOrderCounts', start);
+      
+      if (res.result && res.result.success) {
+        const { orderCounts, pickupCounts, localCounts, hasPickupOrders, hasLocalOrders } = res.result;
         
-        console.log('查询结果数据长度:', res.data.length);
+        console.log('[性能分析][我的页] 最终快递运输订单数量:', orderCounts);
+        console.log('[性能分析][我的页] 最终上门自提订单数量:', pickupCounts);
+        console.log('[性能分析][我的页] 最终同城配送订单数量:', localCounts);
         
-        if (res.data.length > 0) {
-          console.log('添加订单数据，当前总数:', allOrders.length, '添加数量:', res.data.length);
-          allOrders = allOrders.concat(res.data);
-          console.log('添加后总数:', allOrders.length);
-          offset += limit;
-          console.log('更新offset:', offset);
-          // 如果返回的数据少于limit，说明没有更多数据了
-          if (res.data.length < limit) {
-            console.log('返回数据少于limit，结束查询');
-            hasMore = false;
-          } else {
-            console.log('返回数据等于limit，继续查询');
-          }
-        } else {
-          console.log('没有更多数据，结束查询');
-          hasMore = false;
-        }
+        _logSetDataTime('订单数量', () => {
+          this.setData({
+            orderCounts,
+            pickupCounts,
+            localCounts,
+            hasPickupOrders,
+            hasLocalOrders
+          });
+        });
+        
+        const orderCountsCache = {
+          orderCounts,
+          pickupCounts,
+          localCounts,
+          timestamp: Date.now()
+        };
+        wx.setStorageSync('orderCounts', orderCountsCache);
+        console.log('[性能分析][我的页] 缓存订单数量到本地存储成功');
+      } else {
+        console.error('[性能分析][我的页] 获取订单数量失败:', res.result && res.result.error);
       }
-      
-      console.log('获取当前用户的订单数据总数:', allOrders.length);
-      console.log('获取当前用户的订单数据:', allOrders);
-      
-      // 初始化订单数量
-      const orderCounts = {
-        pending: 0,
-        paid: 0, // 待发货
-        shipping: 0, // 待收货
-        delivered: 0, // 待确认收货
-        completed: 0,
-        refund: 0
-      };
-      
-      const pickupCounts = {
-        pending: 0,
-        paid: 0, // 待自提
-        completed: 0
-      };
-      
-      const localCounts = {
-        pending: 0,
-        paid: 0, // 待配送
-        shipping: 0,
-        completed: 0
-      };
-      
-      const normalizeToken = (value) => String(value || '')
-        .replace(/[\s\u200B-\u200D\uFEFF]/g, '')
-        .toLowerCase();
-
-      // 统计上门自提、同城配送数量。
-      allOrders.forEach((order) => {
-        const deliveryType = normalizeToken(order.deliveryType);
-        const status = normalizeToken(order.status);
-        if (!status) return;
-
-        if (deliveryType === 'pickup') {
-          pickupCounts[status] = (pickupCounts[status] || 0) + 1;
-        } else if (deliveryType === 'local') {
-          localCounts[status] = (localCounts[status] || 0) + 1;
-        }
-      });
-
-      // 用归一化后的原始订单做快递运输二次汇总，确保 pending 统计稳定。
-      const expressOrders = allOrders.filter((order) => normalizeToken(order.deliveryType) === 'express');
-      orderCounts.pending = expressOrders.filter((order) => normalizeToken(order.status) === 'pending').length;
-      orderCounts.paid = expressOrders.filter((order) => normalizeToken(order.status) === 'paid').length;
-      orderCounts.shipping = expressOrders.filter((order) => normalizeToken(order.status) === 'shipping').length;
-      orderCounts.delivered = expressOrders.filter((order) => normalizeToken(order.status) === 'delivered').length;
-      // 已完成：包含 completed 和 refund_completed（与淘宝逻辑一致）
-      orderCounts.completed = expressOrders.filter((order) => {
-        const status = normalizeToken(order.status);
-        return status === 'completed' || status === 'refund_completed';
-      }).length;
-      // 售后：只包含进行中的售后订单（refund）
-      orderCounts.refund = expressOrders.filter((order) => normalizeToken(order.status) === 'refund').length;
-      
-      console.log('最终快递运输订单数量:', orderCounts);
-      console.log('最终上门自提订单数量:', pickupCounts);
-      console.log('最终同城配送订单数量:', localCounts);
-      
-      // 计算订单总数
-      const hasPickupOrders = Object.values(pickupCounts).reduce((sum, count) => sum + count, 0) > 0;
-      const hasLocalOrders = Object.values(localCounts).reduce((sum, count) => sum + count, 0) > 0;
-      
-      // 更新页面数据
-      this.setData({
-        orderCounts,
-        pickupCounts,
-        localCounts,
-        hasPickupOrders,
-        hasLocalOrders
-      });
-      
-      // 缓存订单数量到本地存储
-      const orderCountsCache = {
-        orderCounts,
-        pickupCounts,
-        localCounts,
-        timestamp: Date.now()
-      };
-      wx.setStorageSync('orderCounts', orderCountsCache);
-      console.log('缓存订单数量到本地存储成功:', orderCountsCache);
     } catch (err) {
-      console.error('获取订单数量失败:', err);
+      console.error('[性能分析][我的页] 获取订单数量失败:', err);
     }
   },
   

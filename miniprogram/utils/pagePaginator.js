@@ -11,6 +11,7 @@ class PagePaginator {
     this.secondarySortField = options.secondarySortField || '_id';
     this.secondarySortOrder = options.secondarySortOrder || this.sortOrder;
     this.extraQuery = options.extraQuery || {};
+    this.field = options.field || null;
     
     this.pagination = null;
     this.hasMoreKey = options.hasMoreKey || 'hasMore';
@@ -27,7 +28,8 @@ class PagePaginator {
       cursorField: this.cursorField,
       sortOrder: this.sortOrder,
       secondarySortField: this.secondarySortField,
-      secondarySortOrder: this.secondarySortOrder
+      secondarySortOrder: this.secondarySortOrder,
+      field: this.field
     });
   }
 

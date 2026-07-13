@@ -652,7 +652,7 @@ Page({
   // 加载用户信息
   async loadUserInfo() {
     try {
-      const { isCustomerService, sessionId } = this.data;
+      const { isCustomerService, sessionId, openid } = this.data;
       
       if (isCustomerService) {
         // 客服身份：获取会话对应的用户信息
@@ -669,14 +669,24 @@ Page({
             return;
           }
         }
+      } else {
+        // 普通用户身份：获取自己的用户信息
+        const userRes = await db.collection('users').where({ _openid: openid }).get();
+        if (userRes.data.length > 0) {
+          this.setData({ userInfo: {
+            nickName: userRes.data[0].nickName || '我',
+            avatarUrl: userRes.data[0].avatarImage || '/images/icons/默认头像.png'
+          }, targetUserOpenid: openid });
+          return;
+        }
       }
       
-      // 普通用户身份或获取失败时：使用默认值
-      this.setData({ userInfo: { nickName: '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: this.data.openid });
+      // 获取失败时：使用默认值
+      this.setData({ userInfo: { nickName: isCustomerService ? '用户' : '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: isCustomerService ? this.data.openid : openid });
     } catch (error) {
       console.error('获取用户信息失败', error);
       // 如果获取失败，使用默认值
-      this.setData({ userInfo: { nickName: '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: this.data.openid });
+      this.setData({ userInfo: { nickName: isCustomerService ? '用户' : '我', avatarUrl: '/images/icons/默认头像.png' }, targetUserOpenid: isCustomerService ? this.data.openid : this.data.openid });
     }
   },
   

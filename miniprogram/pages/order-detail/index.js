@@ -1364,9 +1364,6 @@ Page({
       watcherManager.destroy(`order_detail_${orderId}`);
       console.log('[订单详情页面] 关闭实时监听');
     }
-    
-    // 通知订单列表页需要刷新数据
-    getApp().globalData.needRefreshOrderList = true;
   },
 
   // 删除订单

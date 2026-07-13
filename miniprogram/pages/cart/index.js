@@ -5,6 +5,43 @@ import { getGlobalProductWatcher } from '../../utils/globalProductWatcher';
 
 const db = wx.cloud.database();
 
+function _getByteSize(str) {
+  if (!str) return 0;
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode <= 0x007f) bytes += 1;
+    else if (charCode <= 0x07ff) bytes += 2;
+    else if (charCode <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function _logPerformance(label, startTime) {
+  const endTime = Date.now();
+  console.log(`[性能分析][购物车页] ${label}: ${endTime - startTime}ms`);
+  return endTime;
+}
+
+function _analyzeData(data, label) {
+  if (!data || data.length === 0) {
+    console.log(`[性能分析][购物车页] ${label} - 数据为空`);
+    return;
+  }
+  const jsonString = JSON.stringify(data);
+  const byteSize = _getByteSize(jsonString);
+  const kbSize = (byteSize / 1024).toFixed(2);
+  console.log(`[性能分析][购物车页] ${label}: ${data.length} 条, ${byteSize} bytes = ${kbSize} KB`);
+}
+
+function _logSetDataTime(label, fn) {
+  const start = Date.now();
+  fn();
+  const end = Date.now();
+  console.log(`[性能分析][购物车页] setData ${label} 耗时: ${end - start}ms`);
+}
+
 Page({
   data: {
     cartItems: [],
@@ -37,6 +74,8 @@ Page({
   _loadingMoreSync: false, // 同步变量，防止scrolltolower重复触发
   
   onLoad(options) {
+    const start = Date.now();
+    console.log('[性能分析][购物车页] ====== onLoad 开始 ======');
     // 生成页面唯一 ID
     this.__pageId = `cart_page_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     
@@ -47,7 +86,9 @@ Page({
       (change) => this._onProductChanged(change)
     );
     
+    const cacheStart = Date.now();
     const hasCache = this.loadCachedCartItems();
+    _logPerformance('loadCachedCartItems', cacheStart);
 
     this._cartInitialized = true;
 
@@ -56,9 +97,12 @@ Page({
     } else {
       this.fetchCartItems({ showLoading: false });
     }
+    _logPerformance('onLoad', start);
   },
 
   onShow() {
+    const start = Date.now();
+    console.log('[性能分析][购物车页] ====== onShow 开始 ======');
     const app = getApp();
     const wasHidden = !this._pageVisible;
     
@@ -82,6 +126,7 @@ Page({
       // 如果购物车数据有变更，仍然需要刷新
       if (!app.globalData.cartDirty && !healthCheck.needsRefresh) {
         console.log('[购物车页面] 购物车数据无变更，保持列表不变');
+        _logPerformance('onShow-无变更', start);
         return;
       }
     }
@@ -90,6 +135,7 @@ Page({
     // 除非监听器不健康需要刷新
     if (this._cartInitialized && !app.globalData.cartDirty && !healthCheck.needsRefresh) {
       console.log('[购物车页面] 数据已初始化且无变更，保持列表不变');
+      _logPerformance('onShow-无变更', start);
       return;
     }
     
@@ -105,6 +151,7 @@ Page({
       app.globalData.cartDirty = false;
       this.fetchCartItems({ showLoading: false });
     }
+    _logPerformance('onShow', start);
   },
 
   onHide() {
@@ -477,19 +524,24 @@ Page({
 
   // 从cart collection获取购物车数据（分页加载）
   async fetchCartItems({ showLoading = false, forceRefresh = false } = {}) {
-    console.log(`[购物车] fetchCartItems 调用 - showLoading: ${showLoading}, forceRefresh: ${forceRefresh}`);
+    const start = Date.now();
+    console.log(`[性能分析][购物车页] fetchCartItems - showLoading: ${showLoading}, forceRefresh: ${forceRefresh}`);
 
     const openid = wx.getStorageSync('openid') || '';
     const cachedCartItems = wx.getStorageSync(`cart_${openid}`) || [];
     const currentCartItems = this.data.cartItems || [];
 
-    console.log(`[购物车] 当前状态 - cachedCartItems数量: ${cachedCartItems.length}, currentCartItems数量: ${currentCartItems.length}`);
+    console.log(`[性能分析][购物车页] 当前状态 - cachedCartItems: ${cachedCartItems.length}, currentCartItems: ${currentCartItems.length}`);
+    _analyzeData(cachedCartItems, 'fetchCartItems-缓存数据');
 
-    // 重置分页状态
-    this.setData({ lastId: null, lastUpdatedAtTs: null, hasMore: true });
+    _logSetDataTime('重置分页状态', () => {
+      this.setData({ lastId: null, lastUpdatedAtTs: null, hasMore: true });
+    });
 
     if (showLoading || (cachedCartItems.length === 0 && currentCartItems.length === 0)) {
-      this.setData({ loading: true });
+      _logSetDataTime('loading=true', () => {
+        this.setData({ loading: true });
+      });
     }
 
     // 非强制刷新时才使用缓存展示
@@ -501,12 +553,14 @@ Page({
       const firstPageItems = cachedCartItems.slice(0, this.data.pageSize);
       const hasMore = cachedCartItems.length > this.data.pageSize;
       
-      this.setData({ 
-        cartItems: firstPageItems, 
-        filteredCartItems: firstPageItems,
-        hasMore: hasMore,
-        lastId: firstPageItems.length > 0 ? firstPageItems[firstPageItems.length - 1]._id : null,
-        lastUpdatedAtTs: firstPageItems.length > 0 ? (firstPageItems[firstPageItems.length - 1].updatedAtTs || null) : null
+      _logSetDataTime('缓存购物车数据', () => {
+        this.setData({ 
+          cartItems: firstPageItems, 
+          filteredCartItems: firstPageItems,
+          hasMore: hasMore,
+          lastId: firstPageItems.length > 0 ? firstPageItems[firstPageItems.length - 1]._id : null,
+          lastUpdatedAtTs: firstPageItems.length > 0 ? (firstPageItems[firstPageItems.length - 1].updatedAtTs || null) : null
+        });
       });
       this.updateSelectionStatus();
       this.calculateTotalPrice();
@@ -521,6 +575,8 @@ Page({
 
     // 后台自动加载剩余全部数据
     this._loadRemainingCartItems();
+    
+    _logPerformance('fetchCartItems', start);
   },
 
   async _loadRemainingCartItems() {

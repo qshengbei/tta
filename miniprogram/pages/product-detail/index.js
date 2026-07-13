@@ -11,6 +11,43 @@ import { getProductDetail, isProductSoldOut, formatPrice, buildPreviewImages } f
 const productTypeCache = new Map();
 const _command = wx.cloud.database().command;
 
+function _getByteSize(str) {
+  if (!str) return 0;
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode <= 0x007f) bytes += 1;
+    else if (charCode <= 0x07ff) bytes += 2;
+    else if (charCode <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function _logPerformance(label, startTime) {
+  const endTime = Date.now();
+  console.log(`[性能分析][商品详情页] ${label}: ${endTime - startTime}ms`);
+  return endTime;
+}
+
+function _analyzeData(data, label) {
+  if (!data) {
+    console.log(`[性能分析][商品详情页] ${label} - 数据为空`);
+    return;
+  }
+  const jsonString = JSON.stringify(data);
+  const byteSize = _getByteSize(jsonString);
+  const kbSize = (byteSize / 1024).toFixed(2);
+  console.log(`[性能分析][商品详情页] ${label}: ${byteSize} bytes = ${kbSize} KB`);
+}
+
+function _logSetDataTime(label, fn) {
+  const start = Date.now();
+  fn();
+  const end = Date.now();
+  console.log(`[性能分析][商品详情页] setData ${label} 耗时: ${end - start}ms`);
+}
+
 async function batchFetchTypes(typeIds) {
   const uncached = typeIds.filter(id => !productTypeCache.has(id));
   if (uncached.length > 0) {
@@ -70,6 +107,9 @@ Page({
   },
 
   onLoad(options) {
+    this._pageLoadStartTime = Date.now();
+    console.log('[性能分析][商品详情页] ====== onLoad 开始 ======');
+    
     const id = options.id || "";
     this.setData({ productId: id });
 
@@ -97,44 +137,48 @@ Page({
   },
 
   onShow() {
-    const wasHidden = !this.data.pageVisible;
-    this.setData({ pageVisible: true });
+    const start = Date.now();
+    console.log('[性能分析][商品详情页] ====== onShow 开始 ======');
     
-    // 如果是从图片预览回来的，不刷新页面
+    const wasHidden = !this.data.pageVisible;
+    _logSetDataTime('pageVisible=true', () => {
+      this.setData({ pageVisible: true });
+    });
+    
     if (this.data.isPreviewingImage) {
       console.log('[商品详情页面] 从图片预览回来，不刷新');
       this.setData({ isPreviewingImage: false });
+      _logPerformance('onShow', start);
       return;
     }
     
     if (!this.data.productId) {
+      _logPerformance('onShow', start);
       return;
     }
     
-    // 监听器健康检查
     const watcher = getGlobalProductWatcher();
     const healthCheck = watcher.checkNeedsRefresh();
-    if (healthCheck.needsRefresh) {
-      console.log('[商品详情页面] 监听器健康检查不通过:', healthCheck.reason);
-    }
     
-    // 1. 先读取并同步最新数据（全局监听器可能已经更新了缓存）
     const cached = getCachedProduct(this.data.productId);
     if (cached) {
-      console.log('[商品详情页面] 使用缓存展示');
+      console.log('[性能分析][商品详情页] 使用缓存展示');
+      _analyzeData(cached, '缓存商品数据');
       this.setData({ product: cached });
       this.updateProductDisplay(cached);
     }
     
-    // 2. 然后启动页面监听器，监听未来的变化
     if (wasHidden) {
-      console.log('[商品详情页面] 页面再次显示，重新创建监听器');
       this.startProductWatch();
     }
     
-    // 后台从数据库同步最新数据（兜底）
-    // 如果监听器不健康，强制刷新
-    this.fetchProduct(!healthCheck.needsRefresh);
+    // 避免重复调用：如果 onLoad 已经加载过数据，onShow 不再调用 fetchProduct
+    // 只在需要刷新时（监听器不健康）才调用
+    if (healthCheck.needsRefresh) {
+      console.log('[性能分析][商品详情页] 监听器不健康，需要刷新数据');
+      this.fetchProduct(false);
+    }
+    _logPerformance('onShow', start);
   },
 
   onHide() {
@@ -357,11 +401,6 @@ Page({
     
     // 重新计算运费
     this.calculateShippingFee();
-
-    // 如果有同布料商品，也需要刷新一下
-    if (product.materialId) {
-      this.fetchSameMaterialProducts(product.materialId);
-    }
   },
 
   // 获取openid
@@ -675,32 +714,28 @@ Page({
   },
 
   fetchProduct(forceRefresh = false) {
-    // 如果是强制刷新，直接从数据库获取
+    const start = Date.now();
+    
     if (!forceRefresh) {
-      // 先尝试从缓存获取
       const cachedProduct = getCachedProduct(this.data.productId);
       if (cachedProduct) {
-        console.log('从缓存获取商品详情');
+        console.log('[性能分析][商品详情页] 从缓存获取商品详情');
+        _analyzeData(cachedProduct, '缓存商品数据');
         const product = cachedProduct;
         const stock = typeof product.stock === "number" ? product.stock : 99;
         let displayPrice = formatPrice(product.price);
         
-        // 确保images字段是一个数组
         if (!product.images || !Array.isArray(product.images)) {
           product.images = [];
         }
         
-        // 计算总图片数量
-        let totalImages = 1 + product.images.length; // 默认至少有一张封面图
-        
-        // 构建预览图片数组
+        let totalImages = 1 + product.images.length;
         let previewImageUrls = buildPreviewImages(product);
         
-        // 获取同布料的商品
-        if (product.materialId) {
+        if (product.materialId && !this._sameMaterialFetched) {
+          this._sameMaterialFetched = true;
           this.fetchSameMaterialProducts(product.materialId);
-        } else {
-          // 只显示当前商品
+        } else if (!product.materialId) {
           this.setData({
             groupedProducts: [{
               type: '当前商品',
@@ -709,52 +744,56 @@ Page({
           });
         }
         
-        this.setData({
-          product,
-          maxQuantity: stock > 0 ? stock : 1,
-          displayPrice,
-          totalImages,
-          previewImageUrls,
-          loading: false
+        _logSetDataTime('商品数据(缓存)', () => {
+          this.setData({
+            product,
+            maxQuantity: stock > 0 ? stock : 1,
+            displayPrice,
+            totalImages,
+            previewImageUrls,
+            loading: false
+          });
         });
         
-        // 获取商品封面图的临时URL
-        this.getCoverImageUrl(product.coverImage);
+        // 图片数据分析
+        console.log('[性能分析][商品详情页] 图片分析: 封面图=', !!product.coverImage, ', 详情图数量=', product.images.length, ', 总图片数=', totalImages);
+        console.log('[性能分析][商品详情页] 预览图片URLs:', previewImageUrls.length, '个');
         
-        // 计算运费
+        this.getCoverImageUrl(product.coverImage);
         this.calculateShippingFee();
+        _logPerformance('fetchProduct(缓存)', start);
         return;
       }
     }
 
+    console.log('[性能分析][商品详情页] 从数据库获取商品详情');
     this.setData({ loading: true, error: false, errorMessage: "" });
     const products = getCollection("products");
+    
+    const queryStart = Date.now();
     products
       .doc(this.data.productId)
       .get()
       .then((res) => {
+        _logPerformance('数据库查询', queryStart);
+        
         const product = res.data || {};
+        _analyzeData(product, '数据库返回商品数据');
+        
         const stock = typeof product.stock === "number" ? product.stock : 99;
         let displayPrice = formatPrice(product.price);
         
-        // 确保images字段是一个数组
         if (!product.images || !Array.isArray(product.images)) {
           product.images = [];
         }
         
-        // 计算总图片数量
-        let totalImages = 1 + product.images.length; // 默认至少有一张封面图
-        
-        // 构建预览图片数组
+        let totalImages = 1 + product.images.length;
         let previewImageUrls = buildPreviewImages(product);
         
-        // 不需要更新缓存！缓存由管理员负责更新
-        
-        // 获取同布料的商品
-        if (product.materialId) {
+        if (product.materialId && !this._sameMaterialFetched) {
+          this._sameMaterialFetched = true;
           this.fetchSameMaterialProducts(product.materialId);
-        } else {
-          // 只显示当前商品
+        } else if (!product.materialId) {
           this.setData({
             groupedProducts: [{
               type: '当前商品',
@@ -763,20 +802,24 @@ Page({
           });
         }
         
-        this.setData({
-          product,
-          maxQuantity: stock > 0 ? stock : 1,
-          displayPrice,
-          totalImages,
-          previewImageUrls,
-          loading: false
+        _logSetDataTime('商品数据(数据库)', () => {
+          this.setData({
+            product,
+            maxQuantity: stock > 0 ? stock : 1,
+            displayPrice,
+            totalImages,
+            previewImageUrls,
+            loading: false
+          });
         });
         
-        // 获取商品封面图的临时URL
-        this.getCoverImageUrl(product.coverImage);
+        // 图片数据分析
+        console.log('[性能分析][商品详情页] 图片分析: 封面图=', !!product.coverImage, ', 详情图数量=', product.images.length, ', 总图片数=', totalImages);
+        console.log('[性能分析][商品详情页] 预览图片URLs:', previewImageUrls.length, '个');
         
-        // 计算运费
+        this.getCoverImageUrl(product.coverImage);
         this.calculateShippingFee();
+        _logPerformance('fetchProduct(数据库)', start);
       })
       .catch((err) => {
         console.error("加载商品详情失败", err);
@@ -1112,21 +1155,40 @@ Page({
 
   // 获取商品封面图的临时URL
   getCoverImageUrl(coverImage) {
-    if (coverImage) {
-      wx.cloud.getTempFileURL({
-        fileList: [coverImage],
-        success: (res) => {
-          if (res.fileList && res.fileList.length > 0) {
-            this.setData({
-              coverImageUrl: res.fileList[0].tempFileURL
-            });
-          }
-        },
-        fail: (err) => {
-          console.error('获取临时文件URL失败', err);
-        }
-      });
+    if (!coverImage) {
+      console.log('[性能分析][商品详情页] getCoverImageUrl: 封面图为空');
+      return;
     }
+    
+    // 避免重复调用
+    if (this._coverImageUrlFetched) {
+      console.log('[性能分析][商品详情页] getCoverImageUrl: 已获取过，跳过');
+      return;
+    }
+    this._coverImageUrlFetched = true;
+    
+    const start = Date.now();
+    console.log('[性能分析][商品详情页] getCoverImageUrl 开始, coverImage:', coverImage);
+    
+    wx.cloud.getTempFileURL({
+      fileList: [coverImage],
+      success: (res) => {
+        const duration = Date.now() - start;
+        console.log('[性能分析][商品详情页] getCoverImageUrl 成功, 耗时:', duration, 'ms');
+        
+        if (res.fileList && res.fileList.length > 0) {
+          const tempUrl = res.fileList[0].tempFileURL;
+          console.log('[性能分析][商品详情页] 临时URL:', tempUrl ? tempUrl.substring(0, 50) + '...' : '空');
+          
+          this.setData({
+            coverImageUrl: tempUrl
+          });
+        }
+      },
+      fail: (err) => {
+        console.error('[性能分析][商品详情页] getCoverImageUrl 失败:', err);
+      }
+    });
   },
 
   // 补货提醒
@@ -1299,6 +1361,22 @@ Page({
       });
   },
 
+  // 处理图片加载完成
+  handleImageLoad(e) {
+    const { index, type } = e.currentTarget.dataset;
+    const detail = e.detail;
+    
+    const width = detail.width || 0;
+    const height = detail.height || 0;
+    const size = detail.width && detail.height ? (detail.width * detail.height) : 0;
+    
+    console.log('[性能分析][商品详情页] 图片加载完成:', 
+      '类型=', type, 
+      '索引=', index, 
+      '尺寸=', width + 'x' + height, 
+      '像素数=', size.toLocaleString());
+  },
+
   // 处理图片点击，显示预览
   handleImageTap(e) {
     this.setData({ isPreviewingImage: true });
@@ -1393,7 +1471,19 @@ Page({
 
   // 获取同布料的商品
   async fetchSameMaterialProducts(materialId) {
-    console.log('开始获取同布料商品，materialId:', materialId);
+    const start = Date.now();
+    console.log('[性能分析][商品详情页] 开始获取同布料商品，materialId:', materialId);
+    
+    // 检查缓存（30分钟有效）
+    const cacheKey = `same_material_${materialId}`;
+    const cachedData = wx.getStorageSync(cacheKey);
+    if (cachedData && cachedData.timestamp && (Date.now() - cachedData.timestamp < 30 * 60 * 1000)) {
+      console.log('[性能分析][商品详情页] 同布料商品命中缓存');
+      this.setData({ groupedProducts: cachedData.data });
+      _logPerformance('fetchSameMaterialProducts(缓存)', start);
+      return;
+    }
+    
     try {
       // 递归分页加载全部，每次取 20 条（免费版单次上限）
       const sameMaterialProducts = await this._fetchAllByMaterial(materialId);
@@ -1448,8 +1538,21 @@ Page({
         groupedProducts.push({ type: '布料同款', subGroups });
       }
 
-      console.log('分组结果:', groupedProducts);
-      this.setData({ groupedProducts });
+      console.log('[性能分析][商品详情页] 分组结果:', groupedProducts);
+      _analyzeData(groupedProducts, '同布料商品分组数据');
+      _logSetDataTime('同布料商品分组', () => {
+        this.setData({ groupedProducts });
+      });
+      
+      // 缓存同布料商品（30分钟有效）
+      const cacheKey = `same_material_${materialId}`;
+      wx.setStorageSync(cacheKey, {
+        data: groupedProducts,
+        timestamp: Date.now()
+      });
+      console.log('[性能分析][商品详情页] 同布料商品已缓存');
+      
+      _logPerformance('fetchSameMaterialProducts', start);
 
     } catch (err) {
       console.error("获取同布料商品失败", err);

@@ -2,6 +2,44 @@ const DEBUG_LOG = false;
 const debugLog = (...args) => {
   if (DEBUG_LOG) console.log(...args);
 };
+
+function _getByteSize(str) {
+  if (!str) return 0;
+  let bytes = 0;
+  for (let i = 0; i < str.length; i++) {
+    const charCode = str.charCodeAt(i);
+    if (charCode <= 0x007f) bytes += 1;
+    else if (charCode <= 0x07ff) bytes += 2;
+    else if (charCode <= 0xffff) bytes += 3;
+    else bytes += 4;
+  }
+  return bytes;
+}
+
+function _logPerformance(label, startTime) {
+  const endTime = Date.now();
+  console.log(`[性能分析][消息页] ${label}: ${endTime - startTime}ms`);
+  return endTime;
+}
+
+function _analyzeData(data, label) {
+  if (!data || data.length === 0) {
+    console.log(`[性能分析][消息页] ${label} - 数据为空`);
+    return;
+  }
+  const jsonString = JSON.stringify(data);
+  const byteSize = _getByteSize(jsonString);
+  const kbSize = (byteSize / 1024).toFixed(2);
+  console.log(`[性能分析][消息页] ${label}: ${data.length} 条, ${byteSize} bytes = ${kbSize} KB`);
+}
+
+function _logSetDataTime(label, fn) {
+  const start = Date.now();
+  fn();
+  const end = Date.now();
+  console.log(`[性能分析][消息页] setData ${label} 耗时: ${end - start}ms`);
+}
+
 const NOTIFICATION_CATEGORY_CONFIGS = [
   { label: '订单状态变更', rawTypes: ['orderStatusChange'], priority: 1 },
   { label: '商品补货', rawTypes: ['restock'], priority: 2 },
@@ -23,6 +61,8 @@ Page({
   },
 
   onLoad() {
+    this._pageLoadStartTime = Date.now();
+    console.log('[性能分析][消息页] ====== onLoad 开始 ======');
     this.notificationTouchStartX = 0;
     this.notificationTouchStartY = 0;
     this.getOpenId();
@@ -93,14 +133,14 @@ Page({
 
   // 根据用户身份加载消息数据
   async loadMessages() {
+    const start = Date.now();
     const { isCustomerService } = this.data;
     if (isCustomerService) {
-      // 先保证会话列表可用，再延后通知统计，避免阻塞首屏和会话交互。
       await this.loadAllSessions();
     } else {
-      // 先保证会话列表可用，再延后通知统计，避免阻塞首屏和会话交互。
       await this.loadSessions();
     }
+    _logPerformance(`loadMessages (${isCustomerService ? '客服' : '用户'})`, start);
     setTimeout(() => {
       if (this.data.pageVisible) {
         this.loadNotifications();
@@ -118,16 +158,19 @@ Page({
   },
 
   onShow() {
-    this.setData({ pageVisible: true });
-    // 页面可见后先恢复会话数据，再异步补通知统计。
+    const start = Date.now();
+    console.log('[性能分析][消息页] ====== onShow 开始 ======');
+    _logSetDataTime('pageVisible=true', () => {
+      this.setData({ pageVisible: true });
+    });
     this.loadMessages();
-    // 重新初始化会话监听
     if (this.sessionListener) {
       this.sessionListener.close();
       console.log('关闭旧的会话监听');
     }
     console.log('重新初始化会话监听');
     this.listenSessions();
+    _logPerformance('onShow', start);
   },
 
   onHide() {
@@ -255,6 +298,7 @@ Page({
   },
 
   async loadAllSessions() {
+    const start = Date.now();
     try {
       const db = wx.cloud.database();
       const res = await db.collection('sessions')
@@ -263,43 +307,27 @@ Page({
       
       console.log('原始会话数据:', res.data);
       
-      // 处理会话数据，使用 formatTimeByRule 函数格式化时间
-      const sessions = await Promise.all(res.data.map(async session => {
+      const sessions = res.data.map(session => {
         if (session.lastMessageTime) {
           try {
-            // 使用 formatTimeByRule 函数格式化时间
             session.lastMessageTime = this.formatTimeByRule(session.lastMessageTime);
           } catch (error) {
-            // 处理错误，使用当前时间
             session.lastMessageTime = this.formatTimeByRule(new Date());
           }
         } else {
-          // 如果没有时间，使用当前时间
           session.lastMessageTime = this.formatTimeByRule(new Date());
         }
         
-        // 根据身份获取正确的未读数量
         const isCustomerService = this.data.isCustomerService;
         if (isCustomerService) {
-          // 客服身份：检查unreadCountCustomerService字段
           if (session.unreadCountCustomerService !== undefined) {
             session.unreadCount = session.unreadCountCustomerService;
           } else {
-            // 如果unreadCountCustomerService字段不存在，尝试从其他字段获取
             session.unreadCount = session.unreadCount || 0;
-            console.warn('会话缺少unreadCountCustomerService字段:', session._id);
           }
         } else {
-          // 普通用户身份：使用unreadCountUser字段
           session.unreadCount = session.unreadCountUser || 0;
         }
-        console.log('会话未读数量:', {
-          sessionId: session._id,
-          isCustomerService,
-          unreadCount: session.unreadCount,
-          unreadCountCustomerService: session.unreadCountCustomerService,
-          unreadCountUser: session.unreadCountUser
-        });
 
         const lm = session.lastMessage || {};
         console.log('客服消息卡片(lastMessage)状态:', {
@@ -311,39 +339,83 @@ Page({
 
         session.lastMessagePreview = this.getSessionPreviewText(session.lastMessage);
         
-        // 获取用户信息
-        if (session.userId) {
-          try {
-            const userRes = await db.collection('users').where({ _openid: session.userId }).get();
-            if (userRes.data.length > 0) {
-              session.userInfo = userRes.data[0];
-            }
-          } catch (error) {
-            console.error('获取用户信息失败', error);
-          }
-        }
-        
         return session;
-      }));
+      });
       
+      const userIds = sessions.map(s => s.userId).filter(Boolean);
+      if (userIds.length > 0) {
+        const userInfoStart = Date.now();
+        const userMap = await this._batchGetUserInfo(userIds);
+        sessions.forEach(session => {
+          if (session.userId && userMap[session.userId]) {
+            session.userInfo = userMap[session.userId];
+          }
+        });
+        _logPerformance('批量获取用户信息', userInfoStart);
+      }
+      
+      _analyzeData(sessions, 'loadAllSessions-会话数据');
       console.log('处理后的所有会话数据:', sessions);
-      console.warn('客服消息卡片状态汇总(loadAllSessions):', sessions.map((s) => ({
-        sessionId: s && s._id,
-        type: s && s.lastMessage && s.lastMessage.type,
-        status: s && s.lastMessage && s.lastMessage.status
-      })));
-      console.error('客服消息卡片状态汇总(loadAllSessions-json):', JSON.stringify(
-        sessions.map((s) => ({
-          sessionId: s && s._id,
-          type: s && s.lastMessage && s.lastMessage.type,
-          status: s && s.lastMessage && s.lastMessage.status
-        }))
-      ));
-      this.setData({ sessions });
+      _logSetDataTime('会话数据', () => {
+        this.setData({ sessions });
+      });
       this.preloadSessionBatch(sessions);
+      _logPerformance('loadAllSessions', start);
     } catch (error) {
       console.error('加载所有会话失败', error);
     }
+  },
+
+  async _batchGetUserInfo(userIds) {
+    const userMap = {};
+    const cacheKey = 'user_info_cache';
+    const cachedData = wx.getStorageSync(cacheKey);
+    
+    if (cachedData && cachedData.timestamp && (Date.now() - cachedData.timestamp < 5 * 60 * 1000)) {
+      const cachedUsers = cachedData.users || {};
+      const uncachedIds = [];
+      
+      userIds.forEach(userId => {
+        if (cachedUsers[userId]) {
+          userMap[userId] = cachedUsers[userId];
+        } else {
+          uncachedIds.push(userId);
+        }
+      });
+      
+      if (uncachedIds.length === 0) {
+        console.log('[性能分析][消息页] 用户信息全部命中缓存');
+        return userMap;
+      }
+      
+      userIds = uncachedIds;
+    }
+    
+    try {
+      const db = wx.cloud.database();
+      const res = await db.collection('users')
+        .where({ _openid: db.command.in(userIds) })
+        .get();
+      
+      const newUsers = {};
+      res.data.forEach(user => {
+        newUsers[user._openid] = user;
+        userMap[user._openid] = user;
+      });
+      
+      const currentCache = wx.getStorageSync(cacheKey) || {};
+      const updatedUsers = { ...(currentCache.users || {}), ...newUsers };
+      wx.setStorageSync(cacheKey, {
+        users: updatedUsers,
+        timestamp: Date.now()
+      });
+      
+      console.log(`[性能分析][消息页] 批量获取用户信息：查询${userIds.length}个，获取${res.data.length}个`);
+    } catch (error) {
+      console.error('批量获取用户信息失败:', error);
+    }
+    
+    return userMap;
   },
 
   // 加载通知消息
@@ -627,6 +699,7 @@ Page({
         return session;
       });
       
+      _analyzeData(sessions, 'loadSessions-会话数据');
       console.log('处理后的会话数据:', sessions);
       console.warn('客服消息卡片状态汇总(loadSessions):', sessions.map((s) => ({
         sessionId: s && s._id,
@@ -640,7 +713,9 @@ Page({
           status: s && s.lastMessage && s.lastMessage.status
         }))
       ));
-      this.setData({ sessions });
+      _logSetDataTime('会话数据', () => {
+        this.setData({ sessions });
+      });
       this.preloadSessionBatch(sessions);
     } catch (error) {
       console.error('加载会话失败', error);
