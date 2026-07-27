@@ -34,7 +34,8 @@ const STATUS_TEXT_MAP = {
   reviewing: '审核中',
   waiting_buyer_return: '待买家寄回',
   waiting_seller_receive: '待商家收货',
-  processing: '处理中',
+  seller_received: '商家验货中',
+  pending_refund: '待退款',
   rejected: '已拒绝',
   completed: '已完成',
   cancelled: '已取消',
@@ -42,6 +43,7 @@ const STATUS_TEXT_MAP = {
   approved: '已通过',
   seller_reviewing: '商家验货中',
   seller_returning: '商家寄回中',
+  buyer_receiving: '待买家收货',
   intercepting: '正在拦截快递'
 };
 
@@ -50,7 +52,7 @@ const STATUS_DESC_MAP = {
   reviewing: '售后单正在审核中，请继续关注',
   waiting_buyer_return: '已通过审核，等待买家寄回商品',
   waiting_seller_receive: '商品寄回中，请留意物流信息并及时确认收货',
-  processing: '售后处理中，请留意后续进度',
+  pending_refund: '待退款，请留意退款进度',
   rejected: '售后申请已拒绝',
   completed: '售后申请已完成',
   cancelled: '售后申请已取消',
@@ -58,6 +60,7 @@ const STATUS_DESC_MAP = {
   approved: '售后申请已通过，请继续处理后续流程',
   seller_reviewing: '正在验货，请及时完成验货',
   seller_returning: '正在将商品寄回，请留意物流信息',
+  buyer_receiving: '商品已寄回，等待买家确认收货',
   intercepting: '正在拦截快递，请根据拦截结果进行后续处理'
 };
 
@@ -66,17 +69,19 @@ const STATUS_CLASS_MAP = {
   reviewing: 'status-section__status--pending',
   waiting_buyer_return: 'status-section__status--pending',
   waiting_seller_receive: 'status-section__status--pending',
-  processing: 'status-section__status--approved',
+  pending_refund: 'status-section__status--approved',
   rejected: 'status-section__status--rejected',
   completed: 'status-section__status--completed',
   cancelled: 'status-section__status--cancelled',
   pending: 'status-section__status--pending',
   approved: 'status-section__status--approved',
   seller_reviewing: 'status-section__status--pending',
-  seller_returning: 'status-section__status--processing'
+  seller_returning: 'status-section__status--processing',
+  buyer_receiving: 'status-section__status--processing',
+  intercepting: 'status-section__status--pending'
 };
 
-const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'processing', 'approved'];
+const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'pending_refund', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
 
 function parseDate(value) {
@@ -138,13 +143,25 @@ Page({
     autoProcessCountdown: '',
     combinedMediaList: [],
     processing: false,
-    showInterceptOptions: false
+    showInterceptOptions: false,
+    showLogistics: false,
+    logisticsData: null,
+    logisticsMapData: null,
+    logisticsModalTitle: '',
+    showInspectFailModal: false,
+    inspectFailReason: '',
+    inspectImages: [],
+    inspectVideos: [],
+    inspectVideoThumbs: [],
+    operationLogs: []
   },
 
   onLoad(options) {
     const id = options.id;
+    const itemId = options.itemId;
     if (id) {
       this.caseId = id;
+      this.itemId = itemId;
       this.cancelAttempted = new Set();
       this.fetchAfterSalesDetail(id);
     }
@@ -163,26 +180,185 @@ Page({
           return this.fetchLegacyAfterSalesDetail(id);
         }
 
+        console.log('[管理员售后详情] 数据库原始记录 proofImages:', res.data.proofImages);
+        console.log('[管理员售后详情] 数据库原始记录 proofVideos:', res.data.proofVideos);
+        console.log('[管理员售后详情] 数据库原始记录 proofVideoThumbs:', res.data.proofVideoThumbs);
+
         return getCollection('after_sales_case_items').where({ caseId: id }).orderBy('createdAt', 'asc').get()
-          .then((itemsRes) => {
+          .then(async (itemsRes) => {
             wx.hideLoading();
             const items = (itemsRes.data || []).map((item) => this.normalizeCaseItem(item));
-            const totalItemAmount = items.reduce((sum, item) => sum + (item.unitPrice * item.applyQty), 0);
+            
+            console.log('[管理员售后详情] 所有明细:', items.map(item => ({ _id: item._id, itemStatus: item.itemStatus })));
+            
+            let selectedItems = items;
+            if (this.itemId) {
+              selectedItems = items.filter(item => item._id === this.itemId);
+              console.log('[管理员售后详情] 筛选后明细:', selectedItems.map(item => ({ _id: item._id, itemStatus: item.itemStatus })));
+            }
+            
+            console.log('[管理员售后详情] 案件状态:', this.normalizeCaseRecord(res.data).status);
+            console.log('[管理员售后详情] itemId:', this.itemId);
+            
+            const afterSalesRecord = this.normalizeCaseRecord(res.data);
+            console.log('[管理员售后详情] 完整案件数据:', afterSalesRecord);
+            
+            const totalItemAmount = selectedItems.reduce((sum, item) => sum + (item.unitPrice * item.applyQty), 0);
             const afterSales = {
               ...this.normalizeCaseRecord(res.data),
-              items: items,
+              items: selectedItems,
               totalItemAmount: totalItemAmount
             };
+
+            console.log('[管理员售后详情] normalizeCaseRecord后 proofImages:', afterSales.proofImages);
+
+            await this._convertCloudUrls(afterSales);
+
+            console.log('[管理员售后详情] _convertCloudUrls后 proofImages:', afterSales.proofImages);
+
+            const combinedMediaList = this.generateCombinedMediaList(afterSales.proofImages, afterSales.proofVideos, afterSales.proofVideoThumbs);
+            console.log('[管理员售后详情] combinedMediaList:', combinedMediaList);
+
             this.setData({
               afterSales: afterSales,
               afterSalesItems: items,
               isLegacy: false,
-              combinedMediaList: this.generateCombinedMediaList(afterSales.proofImages, afterSales.proofVideos, afterSales.proofVideoThumbs)
+              combinedMediaList: combinedMediaList
             });
+            console.log('[管理员售后详情] setData完成，combinedMediaList长度:', combinedMediaList.length);
             this.startAutoProcessCountdown();
+            this.fetchOperationLogs(id);
           });
       })
       .catch(() => this.fetchLegacyAfterSalesDetail(id));
+  },
+
+  async _convertCloudUrls(afterSales) {
+    // 真机环境支持直接显示 cloud:// 格式图片，无需转换
+    const systemInfo = wx.getSystemInfoSync();
+    console.log('[管理员售后详情] 当前平台:', systemInfo.platform);
+    if (systemInfo.platform !== 'devtools') {
+      console.log('[管理员售后详情] 真机环境，跳过转换');
+      return;
+    }
+
+    // 开发者工具中 cloud:// 格式图片无法直接显示，需要转换为临时 https URL
+    const cloudUrls = [];
+
+    if (Array.isArray(afterSales.proofImages)) {
+      afterSales.proofImages.forEach(url => {
+        if (url && url.startsWith('cloud://')) {
+          cloudUrls.push(url);
+        }
+      });
+    }
+
+    if (Array.isArray(afterSales.proofVideos)) {
+      afterSales.proofVideos.forEach(url => {
+        if (url && url.startsWith('cloud://')) {
+          cloudUrls.push(url);
+        }
+      });
+    }
+
+    if (Array.isArray(afterSales.proofVideoThumbs)) {
+      afterSales.proofVideoThumbs.forEach(url => {
+        if (url && url.startsWith('cloud://')) {
+          cloudUrls.push(url);
+        }
+      });
+    }
+
+    // 验货凭证（验货不通过时上传的图片/视频）
+    if (afterSales.inspectEvidence && typeof afterSales.inspectEvidence === 'object') {
+      if (Array.isArray(afterSales.inspectEvidence.images)) {
+        afterSales.inspectEvidence.images.forEach(url => {
+          if (url && url.startsWith('cloud://')) {
+            cloudUrls.push(url);
+          }
+        });
+      }
+      if (Array.isArray(afterSales.inspectEvidence.videos)) {
+        afterSales.inspectEvidence.videos.forEach(url => {
+          if (url && url.startsWith('cloud://')) {
+            cloudUrls.push(url);
+          }
+        });
+      }
+      if (Array.isArray(afterSales.inspectEvidence.videoThumbs)) {
+        afterSales.inspectEvidence.videoThumbs.forEach(url => {
+          if (url && url.startsWith('cloud://')) {
+            cloudUrls.push(url);
+          }
+        });
+      }
+    }
+
+    console.log('[管理员售后详情] 需要转换的 cloud:// URL:', cloudUrls);
+
+    if (cloudUrls.length === 0) {
+      console.log('[管理员售后详情] 没有需要转换的 cloud:// URL，proofImages:', afterSales.proofImages);
+      return;
+    }
+
+    console.log(`[管理员售后详情] 开发者工具环境，开始转换 ${cloudUrls.length} 个 cloud:// URL`);
+
+    try {
+      const res = await wx.cloud.getTempFileURL({ fileList: cloudUrls });
+      console.log('[管理员售后详情] getTempFileURL 返回:', res);
+
+      const urlMap = {};
+      (res.fileList || []).forEach(item => {
+        console.log('[管理员售后详情] fileList项:', item);
+        if (item.tempFileURL) {
+          urlMap[item.fileID] = item.tempFileURL;
+          // 同时存储带 cloud:// 前缀和不带前缀的两种格式，兼容返回值差异
+          const withPrefix = item.fileID.startsWith('cloud://') ? item.fileID : 'cloud://' + item.fileID;
+          urlMap[withPrefix] = item.tempFileURL;
+          console.log(`[管理员售后详情] 映射成功: ${item.fileID} -> ${item.tempFileURL}`);
+        } else {
+          console.warn(`[管理员售后详情] 映射失败，fileID: ${item.fileID}, errMsg: ${item.errMsg}, status: ${item.status}`);
+        }
+      });
+
+      const getMappedUrl = (url) => {
+        if (!url) return url;
+        const mapped = urlMap[url];
+        if (mapped) {
+          console.log(`[管理员售后详情] URL转换成功: ${url} -> ${mapped}`);
+          return mapped;
+        }
+        console.warn(`[管理员售后详情] URL转换失败，未找到映射: ${url}`);
+        return url;
+      };
+
+      if (Array.isArray(afterSales.proofImages)) {
+        afterSales.proofImages = afterSales.proofImages.map(getMappedUrl);
+      }
+      if (Array.isArray(afterSales.proofVideos)) {
+        afterSales.proofVideos = afterSales.proofVideos.map(getMappedUrl);
+      }
+      if (Array.isArray(afterSales.proofVideoThumbs)) {
+        afterSales.proofVideoThumbs = afterSales.proofVideoThumbs.map(getMappedUrl);
+      }
+
+      // 验货凭证 URL 转换
+      if (afterSales.inspectEvidence && typeof afterSales.inspectEvidence === 'object') {
+        if (Array.isArray(afterSales.inspectEvidence.images)) {
+          afterSales.inspectEvidence.images = afterSales.inspectEvidence.images.map(getMappedUrl);
+        }
+        if (Array.isArray(afterSales.inspectEvidence.videos)) {
+          afterSales.inspectEvidence.videos = afterSales.inspectEvidence.videos.map(getMappedUrl);
+        }
+        if (Array.isArray(afterSales.inspectEvidence.videoThumbs)) {
+          afterSales.inspectEvidence.videoThumbs = afterSales.inspectEvidence.videoThumbs.map(getMappedUrl);
+        }
+      }
+
+      console.log('[管理员售后详情] 转换完成，最终proofImages:', afterSales.proofImages);
+    } catch (error) {
+      console.error('[管理员售后详情] 转换 cloud:// URL 失败:', error);
+    }
   },
 
   fetchLegacyAfterSalesDetail(id) {
@@ -237,7 +413,7 @@ Page({
       contactPhone: record.contactPhone || '',
       createdAtText: formatTime(record.createdAt),
       updatedAtText: formatTime(record.updatedAt),
-      processInfo: record.processSummary
+      processInfo: record.processSummary && record.processSummary.result
         ? {
             opinion: record.processSummary.result || '',
             processTimeText: formatTime(record.processSummary.processTime || null)
@@ -247,7 +423,13 @@ Page({
       totalApplyQty: Number(record.totalApplyQty || 0) || 0,
       reasonCode: record.applyReasonCode || record.reasonCode || '',
       shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode)),
-      isNotReceivedRefund: isNotReceivedRefund
+      isNotReceivedRefund: isNotReceivedRefund,
+      returnTrackingNumber: record.returnLogisticsInfo?.trackingNumber || '',
+      returnCompanyCode: record.returnLogisticsInfo?.companyCode || '',
+      returnCompanyName: record.returnLogisticsInfo?.companyName || '',
+      returnLogisticsInfo: record.returnLogisticsInfo || null,
+      sellerReturnLogistics: record.sellerReturnLogistics || null,
+      inspectEvidence: record.inspectEvidence || null
     };
   },
 
@@ -287,6 +469,7 @@ Page({
     const status = item.itemStatus || 'submitted';
     return {
       _id: item._id,
+      itemStatus: status,
       name: item.productNameSnapshot || '商品',
       skuName: item.skuNameSnapshot || '',
       image: item.coverImageSnapshot || '',
@@ -462,8 +645,370 @@ Page({
     }
   },
 
+  previewInspectEvidenceImage(e) {
+    const index = Number(e.currentTarget.dataset.index || 0);
+    const evidence = this.data.afterSales.inspectEvidence;
+    const images = evidence && Array.isArray(evidence.images) ? evidence.images : [];
+    if (images.length > 0) {
+      wx.previewImage({
+        current: images[index],
+        urls: images
+      });
+    }
+  },
+
+  previewInspectEvidenceVideo() {
+    const evidence = this.data.afterSales.inspectEvidence;
+    const videos = evidence && Array.isArray(evidence.videos) ? evidence.videos : [];
+    if (videos.length > 0) {
+      wx.previewMedia({
+        sources: videos.map(item => ({ url: item, type: 'video' })),
+        current: 0,
+        showmenu: true,
+        fail: (err) => {
+          console.error('[管理员售后详情] 验货视频预览失败:', err);
+          wx.showToast({ title: '视频预览失败，请稍后重试', icon: 'none' });
+        }
+      });
+    }
+  },
+
   goBack() {
     wx.navigateBack();
+  },
+
+  async showReturnLogistics() {
+    const returnLogisticsInfo = this.data.afterSales.returnLogisticsInfo || {};
+    const { trackingNumber, companyCode, companyName } = returnLogisticsInfo;
+    
+    if (!trackingNumber || !companyCode) {
+      wx.showToast({ title: '没有退货物流信息', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '查询物流中...' });
+
+    try {
+      const res = await wx.cloud.callFunction({
+        name: 'express100',
+        data: {
+          action: 'queryReturnLogisticsAndUpdateCase',
+          expressNo: trackingNumber,
+          companyCode: companyCode,
+          caseId: this.data.afterSales._id
+        }
+      });
+      wx.hideLoading();
+      
+      if (res.result?.success && res.result.data) {
+        const rawLogisticsData = res.result.data;
+        
+        const logisticsData = {
+          ...res.result,
+          data: rawLogisticsData.data || [],
+          nu: rawLogisticsData.nu || trackingNumber,
+          com: rawLogisticsData.com || companyCode,
+          status: rawLogisticsData.status || '',
+          state: rawLogisticsData.state || ''
+        };
+
+        this.setData({
+          logisticsData: logisticsData,
+          logisticsMapData: {
+            companyName: companyName,
+            trackingNumber: trackingNumber
+          },
+          logisticsModalTitle: '退货物流信息',
+          showLogistics: true
+        });
+      } else {
+        wx.showToast({ title: '查询物流失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('查询退货物流失败:', error);
+      wx.showToast({ title: '查询物流失败', icon: 'none' });
+    }
+  },
+
+  closeLogistics() {
+    this.setData({ showLogistics: false });
+  },
+
+  // 查看商家寄回物流（管理员端）
+  async showSellerReturnLogistics() {
+    const sellerReturnLogistics = this.data.afterSales.sellerReturnLogistics || {};
+    const { trackingNumber, companyCode, companyName } = sellerReturnLogistics;
+
+    if (!trackingNumber || !companyCode) {
+      wx.showToast({ title: '没有寄回物流信息', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '查询物流中...' });
+
+    try {
+      console.log('[寄回物流-管理员] 调用云函数参数:', {
+        action: 'queryReturnLogisticsAndUpdateCase',
+        expressNo: trackingNumber,
+        companyCode: companyCode,
+        caseId: this.data.afterSales._id
+      });
+
+      const res = await wx.cloud.callFunction({
+        name: 'express100',
+        data: {
+          action: 'queryReturnLogisticsAndUpdateCase',
+          expressNo: trackingNumber,
+          companyCode: companyCode,
+          caseId: this.data.afterSales._id,
+          logisticsType: 'seller_return'
+        }
+      });
+      wx.hideLoading();
+      console.log('[寄回物流-管理员] 物流查询返回结果:', res);
+
+      if (res.result?.success && res.result.data) {
+        const rawLogisticsData = res.result.data;
+        const logisticsData = {
+          ...res.result,
+          data: rawLogisticsData.data || [],
+          nu: rawLogisticsData.nu || trackingNumber,
+          com: rawLogisticsData.com || companyCode,
+          status: rawLogisticsData.status || '',
+          state: rawLogisticsData.state || ''
+        };
+
+        this.setData({
+          logisticsData: logisticsData,
+          logisticsMapData: {
+            companyName: companyName,
+            trackingNumber: trackingNumber
+          },
+          logisticsModalTitle: '商家寄回物流信息',
+          showLogistics: true
+        });
+      } else {
+        wx.showToast({ title: '查询物流失败', icon: 'none' });
+      }
+    } catch (error) {
+      wx.hideLoading();
+      console.error('查询寄回物流失败:', error);
+      wx.showToast({ title: '查询物流失败', icon: 'none' });
+    }
+  },
+
+  preventTouchMove() {
+    // 阻止弹窗滚动穿透
+  },
+
+  handleConfirmReceipt(e) {
+    const itemId = e.currentTarget.dataset.itemId;
+    wx.showModal({
+      title: '确认收货',
+      content: '确认已收到买家退回的商品？确认后将进入验货环节。',
+      confirmColor: '#1890ff',
+      success: (res) => {
+        if (res.confirm) {
+          this.processAfterSales('confirm_receipt', '确认收货', {}, itemId);
+        }
+      }
+    });
+  },
+
+  goToFillReturnTracking(e) {
+    const itemId = e.currentTarget.dataset.itemId || '';
+    wx.navigateTo({
+      url: `/pages/admin/after-sales/return-tracking/index?caseId=${this.caseId}&itemId=${itemId}&orderId=${this.data.afterSales.orderId}`
+    });
+  },
+
+  handleInspectPass() {
+    wx.showModal({
+      title: '验货通过',
+      content: '确认商品完好，同意退款？',
+      confirmColor: '#52c41a',
+      success: (res) => {
+        if (res.confirm) {
+          this.processAfterSales('inspect_pass', '验货通过');
+        }
+      }
+    });
+  },
+
+  handleInspectFail() {
+    this.setData({
+      showInspectFailModal: true,
+      inspectFailReason: '',
+      inspectImages: [],
+      inspectVideos: [],
+      inspectVideoThumbs: []
+    });
+  },
+
+  hideInspectFailModal() {
+    this.setData({ showInspectFailModal: false });
+  },
+
+  onInspectFailReasonInput(e) {
+    this.setData({ inspectFailReason: e.detail.value });
+  },
+
+  chooseInspectImages() {
+    const remaining = 9 - this.data.inspectImages.length;
+    wx.chooseMedia({
+      count: remaining,
+      mediaType: ['image'],
+      sourceType: ['album', 'camera'],
+      success: (res) => {
+        const files = Array.isArray(res.tempFiles) ? res.tempFiles : [];
+        const newImages = files.map(file => file.tempFilePath);
+        this.setData({
+          inspectImages: [...this.data.inspectImages, ...newImages]
+        });
+      }
+    });
+  },
+
+  deleteInspectImage(e) {
+    const index = Number(e.currentTarget.dataset.index || 0);
+    const inspectImages = [...this.data.inspectImages];
+    inspectImages.splice(index, 1);
+    this.setData({ inspectImages });
+  },
+
+  previewInspectImage(e) {
+    const index = Number(e.currentTarget.dataset.index || 0);
+    wx.previewImage({
+      current: this.data.inspectImages[index],
+      urls: this.data.inspectImages
+    });
+  },
+
+  chooseInspectVideo() {
+    wx.chooseMedia({
+      count: 1,
+      mediaType: ['video'],
+      sourceType: ['album', 'camera'],
+      maxDuration: 60,
+      success: (res) => {
+        const files = Array.isArray(res.tempFiles) ? res.tempFiles : [];
+        if (files.length) {
+          const file = files[0];
+          console.log('[验货视频] 选择视频:', {
+            tempFilePath: file.tempFilePath,
+            thumbTempFilePath: file.thumbTempFilePath,
+            size: file.size,
+            duration: file.duration
+          });
+          this.setData({
+            inspectVideos: [file.tempFilePath],
+            inspectVideoThumbs: [file.thumbTempFilePath || '']
+          });
+        }
+      },
+      fail: (err) => {
+        console.error('[验货视频] 选择失败:', err);
+      }
+    });
+  },
+
+  deleteInspectVideo(e) {
+    this.setData({
+      inspectVideos: [],
+      inspectVideoThumbs: []
+    });
+  },
+
+  previewInspectVideo() {
+    const videoSrc = this.data.inspectVideos[0];
+    if (!videoSrc) {
+      wx.showToast({ title: '视频不存在', icon: 'none' });
+      return;
+    }
+
+    // 使用 wx.previewMedia 全屏预览视频
+    wx.previewMedia({
+      sources: [{
+        url: videoSrc,
+        type: 'video'
+      }],
+      current: 0,
+      showmenu: true,
+      fail: (err) => {
+        console.error('[验货视频] 全屏预览失败:', err);
+        // 降级方案：提示用户长按视频保存后查看
+        wx.showToast({ title: '视频预览失败，请稍后重试', icon: 'none' });
+      }
+    });
+  },
+
+  async submitInspectFail() {
+    const { inspectFailReason, inspectImages, inspectVideos } = this.data;
+    
+    if (!inspectFailReason.trim()) {
+      wx.showToast({ title: '请输入验货不通过的原因', icon: 'none' });
+      return;
+    }
+    
+    if (inspectImages.length === 0 && inspectVideos.length === 0) {
+      wx.showToast({ title: '请至少上传一张图片或一个视频作为凭证', icon: 'none' });
+      return;
+    }
+    
+    wx.showLoading({ title: '提交中...' });
+    
+    try {
+      let uploadedImages = [];
+      let uploadedVideos = [];
+      let uploadedThumbs = [];
+      
+      if (inspectImages.length > 0) {
+        const imageUploadPromises = inspectImages.map((image, index) => wx.cloud.uploadFile({
+          cloudPath: `after-sales/inspect/images/${Date.now()}_${index}.png`,
+          filePath: image
+        }));
+        const imageResults = await Promise.all(imageUploadPromises);
+        uploadedImages = imageResults.map(res => res.fileID);
+      }
+      
+      if (inspectVideos.length > 0) {
+        const videoRes = await wx.cloud.uploadFile({
+          cloudPath: `after-sales/inspect/videos/${Date.now()}.mp4`,
+          filePath: inspectVideos[0]
+        });
+        uploadedVideos.push(videoRes.fileID);
+        
+        if (this.data.inspectVideoThumbs[0]) {
+          const thumbRes = await wx.cloud.uploadFile({
+            cloudPath: `after-sales/inspect/thumbs/${Date.now()}.png`,
+            filePath: this.data.inspectVideoThumbs[0]
+          });
+          uploadedThumbs.push(thumbRes.fileID);
+        } else {
+          uploadedThumbs.push('');
+        }
+      }
+      
+      this.setData({
+        inspectImages: uploadedImages,
+        inspectVideos: uploadedVideos,
+        inspectVideoThumbs: uploadedThumbs
+      });
+      
+      this.processAfterSales('inspect_fail', inspectFailReason, {
+        images: uploadedImages,
+        videos: uploadedVideos,
+        thumbs: uploadedThumbs
+      });
+      
+      this.hideInspectFailModal();
+      wx.hideLoading();
+    } catch (error) {
+      wx.hideLoading();
+      console.error('提交验货不通过失败:', error);
+      wx.showToast({ title: '提交失败，请重试', icon: 'none' });
+    }
   },
 
   shouldAutoApproveImmediately() {
@@ -642,32 +1187,48 @@ Page({
     });
   },
 
-  processAfterSales(action, opinion) {
+  processAfterSales(action, opinion, inspectEvidence = {}, itemId = null) {
     if (this.data.processing) return;
+
+    const targetItemId = itemId || this.data.afterSalesItems[0]?._id;
 
     console.log('开始处理售后:', {
       caseId: this.caseId,
       orderId: this.data.afterSales.orderId,
-      itemId: this.data.afterSalesItems[0]?._id,
+      itemId: targetItemId,
       action: action,
-      opinion: opinion
+      opinion: opinion,
+      inspectEvidence: inspectEvidence
     });
 
     this.setData({ processing: true });
     wx.showLoading({ title: '处理中...' });
 
+    // 构造云函数参数
+    const params = {
+      caseId: this.caseId,
+      itemId: targetItemId,
+      itemAction: action,
+      result: opinion,
+      operatorType: 'admin',
+      inspectImages: inspectEvidence.images || [],
+      inspectVideos: inspectEvidence.videos || [],
+      inspectVideoThumbs: inspectEvidence.thumbs || []
+    };
+
+    // 寄回物流信息
+    if (inspectEvidence.trackingNumber) {
+      params.trackingNumber = inspectEvidence.trackingNumber;
+      params.companyCode = inspectEvidence.companyCode || '';
+      params.companyName = inspectEvidence.companyName || '';
+    }
+
     wx.cloud.callFunction({
       name: 'updateOrderStatus',
       data: {
-        operation: 'processAfterSales',  // 修复：用 operation，不是 action
+        operation: 'processAfterSales',
         orderId: this.data.afterSales.orderId,
-        params: {  // 修复：所有参数放在 params 对象里
-          caseId: this.caseId,
-          itemId: this.data.afterSalesItems[0]?._id,
-          itemAction: action,
-          result: opinion,
-          operatorType: 'admin'
-        }
+        params: params
       }
     }).then((res) => {
       wx.hideLoading();
@@ -675,13 +1236,16 @@ Page({
       console.log('云函数返回结果:', res);
 
       if (res.result?.success) {
-        wx.showToast({ title: action === 'approve' ? '同意成功' : '拒绝成功', icon: 'success' });
+        const successMsg = action === 'approve' ? '同意成功'
+          : action === 'reject' ? '拒绝成功'
+          : '处理成功';
+        wx.showToast({ title: successMsg, icon: 'success' });
         setTimeout(() => this.fetchAfterSalesDetail(this.caseId), 1000);
       } else {
         const errorMsg = res.result?.error || res.result?.message || '处理失败';
         console.error('处理失败，错误信息:', errorMsg);
-        wx.showToast({ 
-          title: errorMsg, 
+        wx.showToast({
+          title: errorMsg,
           icon: 'none',
           duration: 3000
         });
@@ -690,16 +1254,16 @@ Page({
       wx.hideLoading();
       this.setData({ processing: false });
       console.error('处理售后异常:', err);
-      
+
       let errorMsg = '处理失败';
       if (err.errMsg) {
         errorMsg = err.errMsg;
       } else if (err.message) {
         errorMsg = err.message;
       }
-      
-      wx.showToast({ 
-        title: errorMsg, 
+
+      wx.showToast({
+        title: errorMsg,
         icon: 'none',
         duration: 3000
       });
@@ -819,5 +1383,88 @@ Page({
         }
       }
     });
+  },
+
+  fetchOperationLogs(caseId) {
+    if (!caseId) return;
+
+    const db = wx.cloud.database();
+    db.collection('after_sales_logs')
+      .where({ caseId })
+      .orderBy('createdAt', 'desc')
+      .get()
+      .then(res => {
+        const actionMap = {
+          'create_case': '提交售后申请',
+          'approve_refund': '同意退款申请',
+          'approve_exchange': '同意换货申请',
+          'reject_refund': '拒绝退款申请',
+          'reject_exchange': '拒绝换货申请',
+          'complete_refund': '完成退款',
+          'complete_exchange': '完成换货',
+          'complete_case_refund': '完成退款',
+          'complete_case_exchange': '完成换货',
+          'complete_case_after_sales': '售后完成',
+          'cancel_case': '取消申请',
+          'start_intercepting': '开始拦截快递',
+          'approve_intercepting': '拦截成功',
+          'reject_intercepting': '拦截失败',
+          'submit_return_tracking': '填写退货单号',
+          'modify_return_tracking': '修改退货单号',
+          'confirm_receipt_refund': '确认收货',
+          'confirm_receipt_exchange': '确认收货',
+          'inspect_pass_refund': '验货通过',
+          'inspect_pass_exchange': '验货通过',
+          'inspect_fail_refund': '验货不通过',
+          'inspect_fail_exchange': '验货不通过',
+          'fill_return_tracking_refund': '填写寄回单号',
+          'fill_return_tracking_exchange': '填写寄回单号',
+          'confirm_return_received_refund': '确认收到寄回商品',
+          'confirm_return_received_exchange': '确认收到寄回商品',
+          'auto_confirm_return_received_refund': '系统自动确认寄回收货',
+          'auto_confirm_return_received_exchange': '系统自动确认寄回收货'
+        };
+
+        const logs = (res.data || []).map(log => {
+          let actionText = '';
+          let operatorText = '';
+
+          actionText = actionMap[log.action] || log.action;
+
+          if (log.operatorType === 'admin') {
+            operatorText = '管理员';
+          } else if (log.operatorType === 'system') {
+            operatorText = '系统';
+          } else {
+            operatorText = '用户';
+          }
+
+          let createdAtText = '';
+          if (log.createdAt) {
+            const date = new Date(log.createdAt);
+            if (!isNaN(date.getTime())) {
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hours = String(date.getHours()).padStart(2, '0');
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              createdAtText = `${year}-${month}-${day} ${hours}:${minutes}`;
+            }
+          }
+
+          return {
+            ...log,
+            actionText,
+            operatorText,
+            createdAtText
+          };
+        });
+
+        this.setData({ operationLogs: logs });
+      })
+      .catch(err => {
+        console.error('[管理员售后详情] 获取操作记录失败:', err);
+        this.setData({ operationLogs: [] });
+      });
   }
 });

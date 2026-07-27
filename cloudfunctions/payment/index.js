@@ -56,8 +56,6 @@ async function handleUnifiedOrder({ orderId, amount, body, openid }) {
   const tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`
   const now = new Date()
   
-  // 模拟支付方式：随机选择零钱或银行卡
-  // CFT表示微信零钱，其他表示银行卡
   const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB']
   const bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)]
   
@@ -83,36 +81,32 @@ async function handleUnifiedOrder({ orderId, amount, body, openid }) {
     }
   }
   
-  await db.collection('payment_records').add({
-    data: {
-      _id: tradeNo,
-      orderId,
-      amount: Number(amount),
-      body: body || '商品订单',
-      status: 'success',
-      tradeNo,
-      transactionId: `TRANS${Date.now()}`,
-      createTime: now,
-      payTime: now,
-      openid: openid || '',
-      bankType: bankType
-    }
-  })
-  
-  // 同时更新订单表，保存支付方式
-  try {
-    await db.collection('orders').doc(orderId).update({
+  await db.runTransaction(async (transaction) => {
+    await transaction.collection('payment_records').add({
+      data: {
+        _id: tradeNo,
+        orderId,
+        amount: Number(amount),
+        body: body || '商品订单',
+        status: 'success',
+        tradeNo,
+        transactionId: `TRANS${Date.now()}`,
+        createTime: now,
+        payTime: now,
+        openid: openid || '',
+        bankType: bankType
+      }
+    })
+    
+    await transaction.collection('orders').doc(orderId).update({
       data: {
         bankType: bankType,
         tradeNo: tradeNo
       }
     })
-    console.log('订单支付方式更新成功')
-  } catch (err) {
-    console.error('更新订单支付方式失败:', err)
-  }
+  })
   
-  console.log('=== 支付记录创建成功 ===')
+  console.log('=== 支付记录创建成功（事务已提交）===')
   console.log('tradeNo:', tradeNo)
   
   return paymentResult
@@ -168,20 +162,37 @@ async function handleRefund({ orderId, tradeNo, amount, reason }) {
   const refundId = `RF${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`
   const now = new Date()
   
-  await db.collection('payment_records').add({
-    data: {
-      _id: refundId,
-      orderId: orderId || '',
-      tradeNo: tradeNo || '',
-      amount: -Math.abs(Number(amount)),
-      body: '退款',
-      status: 'refunded',
-      refundId,
-      reason: reason || '用户申请退款',
-      createTime: now,
-      refundTime: now
+  await db.runTransaction(async (transaction) => {
+    await transaction.collection('payment_records').add({
+      data: {
+        _id: refundId,
+        orderId: orderId || '',
+        tradeNo: tradeNo || '',
+        amount: -Math.abs(Number(amount)),
+        body: '退款',
+        status: 'refunded',
+        refundId,
+        reason: reason || '用户申请退款',
+        createTime: now,
+        refundTime: now
+      }
+    })
+    
+    if (orderId) {
+      await transaction.collection('orders').doc(orderId).update({
+        data: {
+          refundAmount: Number(amount),
+          refundStatus: 'refunded',
+          refundTime: now,
+          refundReason: reason || '用户申请退款',
+          updatedAt: now,
+          updatedAtTs: now.getTime()
+        }
+      })
     }
   })
+  
+  console.log('=== 退款完成（事务已提交）===')
   
   return {
     success: true,

@@ -115,7 +115,7 @@ Page({
   },
 
   async getActiveAfterSalesCases(orderId) {
-    const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'intercepting'];
+    const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'seller_reviewing', 'seller_returning', 'buyer_receiving', 'pending_refund', 'intercepting'];
     const caseRes = await db.collection('after_sales_cases').where({
       orderId,
       caseStatus: db.command.in(activeStatuses)
@@ -192,8 +192,11 @@ Page({
       cancelled: '已取消',
       waiting_buyer_return: '待买家寄回',
       waiting_seller_receive: '待商家收货',
+      seller_received: '商家验货中',
       seller_reviewing: '商家验货中',
       seller_returning: '商家寄回中',
+      buyer_receiving: '待买家收货',
+      pending_refund: '待退款',
       intercepting: '拦截中'
     };
     return statusMap[status] || status || '待处理';
@@ -228,9 +231,14 @@ Page({
 
   viewAfterSalesDetail(e) {
     const caseId = e.currentTarget.dataset.caseId;
+    const itemId = e.currentTarget.dataset.itemId;
     this.closeAfterSalesPanel();
+    let url = `/pages/admin/after-sales/detail/index?id=${caseId}`;
+    if (itemId) {
+      url += `&itemId=${itemId}`;
+    }
     wx.navigateTo({
-      url: `/pages/admin/after-sales/detail/index?id=${caseId}`
+      url: url
     });
   },
 
@@ -430,6 +438,7 @@ Page({
             if (order.afterSalesStatus === 'pending' || order.afterSalesStatus === 'processing') {
               statusText = '售后中';
             } else {
+              // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
               statusText = '已完成';
             }
             break;
@@ -437,10 +446,18 @@ Page({
             statusText = '已取消';
             break;
           case 'refund':
-            statusText = '售后中';
+            statusText = '售后处理中';
             break;
           case 'refund_completed':
-            statusText = '退款完成';
+            if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
+              statusText = '部分退款';
+            } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
+              statusText = '换货完成';
+            } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
+              statusText = '退款完成';
+            } else {
+              statusText = '售后完成';
+            }
             break;
           default:
             statusText = '未知状态';

@@ -37,9 +37,11 @@
     "pages/admin/banner-manage/edit/index",
     "pages/admin/ship-order/index",
     "pages/admin/after-sales/detail/index",
+    "pages/admin/after-sales/return-tracking/index",
     "pages/after-sales/apply/index",
     "pages/after-sales/list/index",
-    "pages/after-sales/detail/index"
+    "pages/after-sales/detail/index",
+    "pages/after-sales/return-tracking/index"
   ],
   "window": {
     "backgroundColor": "#F5F5F5",

@@ -9,6 +9,7 @@ const EXPIRED_CHECK_COOLDOWN_MS = 15000;
 Page({
   data: {
     order: null,
+    originalOrderStatus: '',
     loading: true,
     error: false,
     errorMessage: "",
@@ -33,6 +34,8 @@ Page({
     logisticsTrackPoints: [], // 物流轨迹点
     // 售后类型选择弹窗
     showAfterSalesTypeModal: false, // 是否显示售后类型选择弹窗
+    showAfterSalesRulesModal: false, // 是否显示售后时限规则弹窗
+    scrollTop: 0, // 记录弹窗打开前的滚动位置
     selectedProductIndex: -1, // 当前选择的商品索引
     selectedAfterSalesType: '', // 当前选择的售后类型
     afterSalesStep: 1, // 售后步骤：1-选择类型，2-选择原因，3-上传凭证，4-填写信息
@@ -49,6 +52,7 @@ Page({
     afterSalesVideos: [], // 售后凭证视频
     afterSalesDescription: '', // 售后描述
     refundAmount: '', // 退款金额
+    applyQty: 1, // 申请售后数量
     amountInputWidth: 0, // 退款金额输入框宽度
     contactName: '', // 联系人
     contactPhone: '', // 联系电话
@@ -177,6 +181,15 @@ Page({
       // 初始化物流状态数据
       this.initLogisticsStateData();
       this.fetchOrderDetail(orderIdValue);
+      
+      wx.onWindowResize(() => {
+        if (this.data.isScrollLocked) {
+          wx.pageScrollTo({
+            scrollTop: this.data.scrollTop,
+            duration: 0
+          });
+        }
+      });
     } else {
       this.setData({
         loading: false,
@@ -455,6 +468,7 @@ Page({
               }
               break;
             case "completed":
+              // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
               statusText = "已完成";
               break;
             case "refund":
@@ -585,7 +599,7 @@ Page({
             
             if (allCaseRes.data && allCaseRes.data.length > 0) {
               // 查找进行中的售后案件
-              const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'intercepting'];
+              const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'seller_reviewing', 'seller_returning', 'buyer_receiving', 'pending_refund', 'intercepting'];
               afterSalesCase = allCaseRes.data.find(c => activeStatuses.includes(c.caseStatus));
               
               // 查询所有售后案件明细
@@ -619,51 +633,16 @@ Page({
                   let statusText = '';
                   if (activeStatuses.includes(caseStatus)) {
                     statusType = 'active'; // 售后中
-                    // 根据子状态显示更详细的状态
-                    // 优先使用案件级别状态，然后是明细级别状态
-                    const caseLevelStatus = caseInfo?.caseStatus || caseInfo?.status;
-                    const itemLevelStatus = item.itemStatus || item.status;
-                    
-                    if (caseLevelStatus === 'processing' || itemLevelStatus === 'processing') {
-                      statusText = '处理中';
-                    } else if (caseLevelStatus === 'pending' || itemLevelStatus === 'pending') {
-                      statusText = '待处理';
-                    } else if (caseLevelStatus === 'waiting_buyer_return' || itemLevelStatus === 'waiting_buyer_return') {
-                      statusText = '待买家寄回';
-                    } else if (caseLevelStatus === 'waiting_seller_receive' || itemLevelStatus === 'waiting_seller_receive') {
-                      statusText = '待商家收货';
-                    } else if (caseLevelStatus === 'reviewing' || itemLevelStatus === 'reviewing') {
-                      statusText = '审核中';
-                    } else if (caseLevelStatus === 'seller_reviewing' || itemLevelStatus === 'seller_reviewing') {
-                      statusText = '验货中';
-                    } else if (caseLevelStatus === 'seller_returning' || itemLevelStatus === 'seller_returning') {
-                      statusText = '寄回中';
-                    } else if (caseLevelStatus === 'intercepting' || itemLevelStatus === 'intercepting') {
-                      statusText = '拦截中';
-                    } else if (caseLevelStatus === 'submitted' || itemLevelStatus === 'submitted') {
-                      // 根据售后类型显示提交后的状态
-                      if (item.afterSalesType === 'exchange' || item.afterSalesType === 'quality_exchange') {
-                        statusText = '换货申请中';
-                      } else if (item.afterSalesType === 'return_refund' || item.afterSalesType === 'quality_return_refund') {
-                        statusText = '退货退款申请中';
-                      } else if (item.afterSalesType === 'refund_received') {
-                        statusText = '退款申请中(已收货)';
-                      } else if (item.afterSalesType === 'refund_not_received') {
-                        statusText = '退款申请中(未收货)';
-                      } else if (item.afterSalesType === 'refund' || item.afterSalesType === 'quality_refund') {
-                        statusText = '退款申请中';
-                      } else {
-                        statusText = '售后申请中';
-                      }
-                    } else if (item.afterSalesType === 'exchange' || item.afterSalesType === 'quality_exchange') {
+                    // 对齐淘宝：按售后类型显示概括状态，不显示具体环节
+                    // 退款类：退款中 / 退货退款中；换货类：换货中
+                    const afterSalesTypeForText = item.afterSalesType || caseInfo?.primaryAfterSalesType || '';
+                    if (afterSalesTypeForText === 'exchange' || afterSalesTypeForText === 'quality_exchange') {
                       statusText = '换货中';
-                    } else if (item.afterSalesType === 'refund' || item.afterSalesType === 'quality_refund') {
-                      statusText = '退款中';
-                    } else if (caseLevelStatus === 'intercepting' || itemLevelStatus === 'intercepting') {
-                      // 确保拦截中状态有正确的状态文本
-                      statusText = '拦截中';
+                    } else if (afterSalesTypeForText === 'return_refund' || afterSalesTypeForText === 'quality_return_refund') {
+                      statusText = '退货退款中';
                     } else {
-                      statusText = '售后中';
+                      // refund、quality_refund、refund_received、refund_not_received 等
+                      statusText = '退款中';
                     }
                   } else if (caseStatus === 'completed' || caseStatus === 'refund_completed' || caseStatus === 'exchange_completed') {
                     statusType = 'completed'; // 已完成
@@ -671,8 +650,10 @@ Page({
                     const afterSalesType = item.afterSalesType;
                     if (afterSalesType === 'exchange' || afterSalesType === 'quality_exchange') {
                       statusText = '换货完成';
-                    } else if (afterSalesType === 'quality_refund' || afterSalesType === 'refund') {
-                      statusText = '退款成功';
+                    } else if (afterSalesType === 'quality_refund' || afterSalesType === 'refund' || afterSalesType === 'return_refund' || afterSalesType === 'quality_return_refund') {
+                      // 验货不通过导致商家寄回商品：无退款金额，显示"售后完成"
+                      const approvedAmount = Number(item.approvedRefundAmount || 0) || 0;
+                      statusText = approvedAmount > 0 ? '退款成功' : '售后完成';
                     } else {
                       statusText = '售后完成';
                     }
@@ -823,6 +804,9 @@ Page({
             }
           }
           
+          const currentStatus = order.status;
+          const originalStatus = this.data.originalOrderStatus;
+          
           this.setData({
             order: {
               ...order,
@@ -838,8 +822,14 @@ Page({
               isLogisticsSigned,
               blockOtherAfterSales
             },
+            originalOrderStatus: originalStatus || currentStatus,
             loading: false
           });
+          
+          if (originalStatus && originalStatus !== currentStatus) {
+            console.log(`[订单详情] 订单状态变化: ${originalStatus} -> ${currentStatus}`);
+            getApp().globalData.needRefreshOrderList = true;
+          }
           
           // 获取订单操作日志
           await this.fetchOperationLogs(orderId);
@@ -928,12 +918,9 @@ Page({
           'auto_cancel': '系统自动取消',
           'auto_confirm_receipt': '系统自动确认收货',
           'apply_after_sales': '申请售后',
-          'process_after_sales': '处理售后',
-          'cancel_after_sales': '取消售后',
-          'start_intercepting': '开始拦截快递',
-          'complete_intercepting': '完成拦截快递',
-          'auto_start_intercepting': '系统自动拦截快递',
-          'auto_process_after_sales': '系统自动处理售后'
+          'complete_refund': '完成退款',
+          'complete_exchange': '完成换货',
+          'complete_after_sales': '售后完成'
         };
         
         actionText = actionMap[log.action] || log.action;
@@ -1577,7 +1564,7 @@ Page({
         }
 
         // 显示美观的物流信息弹窗
-        this.setData({
+        this.setData({ 
           showLogistics: true,
           logisticsData: logisticsData,
           logisticsMapData: {
@@ -1588,11 +1575,11 @@ Page({
           logisticsMapCenter: {
             latitude: centerLatitude,
             longitude: centerLongitude
-          },
-          logisticsMapScale: 10,
-          logisticsTrackPoints: trackPoints
-        });
-      } else {
+        },
+        logisticsMapScale: 10,
+        logisticsTrackPoints: trackPoints
+      });
+    } else {
         wx.showToast({
           title: '获取物流信息失败',
           icon: 'none'
@@ -1759,7 +1746,6 @@ Page({
   // 申请售后
   afterSales(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    // 显示售后类型选择弹窗（整单申请时，根据订单中是否有支持7天无理由的商品来显示）
     const products = this.data.order?.products || [];
     const supportNoReason = products.some(p => p.supportNoReasonReturn);
     
@@ -1815,6 +1801,41 @@ Page({
     });
   },
 
+  preventTouchMove(e) {
+    e.stopPropagation();
+    return false;
+  },
+
+  onModalScroll(e) {
+    const { scrollTop, scrollHeight, windowHeight } = e.detail;
+    const isAtTop = scrollTop <= 0;
+    const isAtBottom = scrollTop + windowHeight >= scrollHeight;
+    this.setData({
+      modalScrollAtTop: isAtTop,
+      modalScrollAtBottom: isAtBottom
+    });
+  },
+
+  onModalTouchMove(e) {
+    const { deltaY } = e.touches[0];
+    const { modalScrollAtTop, modalScrollAtBottom } = this.data;
+    
+    if (modalScrollAtTop && deltaY > 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+    
+    if (modalScrollAtBottom && deltaY < 0) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  },
+
+  onPageScroll(e) {
+  },
+
   // 关闭售后类型选择弹窗
   closeAfterSalesTypeModal() {
     this.setData({
@@ -1837,6 +1858,7 @@ Page({
       afterSalesVideos: [],
       afterSalesDescription: '',
       refundAmount: '',
+      applyQty: this.data.order.products && this.data.order.products[this.data.selectedProductIndex] ? (this.data.order.products[this.data.selectedProductIndex].quantity || 1) : 1,
       contactName: '',
       contactPhone: '',
       contactAddress: '',
@@ -1845,8 +1867,17 @@ Page({
       remainingNormalAfterSalesDays: 7,
       remainingQualityAfterSalesDays: 15,
       maxRefundAmount: 0,
-      needProof: false
+      needProof: false,
+      showAfterSalesRulesModal: false
     });
+  },
+
+  showAfterSalesRules() {
+    this.setData({ showAfterSalesRulesModal: true });
+  },
+
+  closeAfterSalesRulesModal() {
+    this.setData({ showAfterSalesRulesModal: false });
   },
 
   // 设置售后类型
@@ -2015,7 +2046,7 @@ Page({
       }
     }
     
-    this.setData({
+    this.setData({ 
       showUploadInfoModal: true,
       combinedMediaList: combinedMediaList
     });
@@ -2079,16 +2110,28 @@ Page({
   calculateRemainingAfterSalesDays() {
     const { order } = this.data;
     
-    let remainingNormalDays = 7;
+    // 判断是否已确认收货（交易成功）
+    const isTransactionCompleted = ['completed', 'refund'].includes(order.status);
+    
+    let remainingNormalDays = isTransactionCompleted ? 7 : 10;
     let remainingQualityDays = 15;
     
-    // 优先使用checkTime，缺失时回退到receiptTime（和后端保持一致）
-    const signTime = order?.logisticsState?.checkTime || order?.receiptTime;
+    let signTime;
+    if (isTransactionCompleted) {
+      // 交易成功后：优先使用签收时间，回退到确认收货时间
+      signTime = order?.logisticsState?.checkTime || order?.receiptTime;
+    } else {
+      // 交易成功前：使用发货时间
+      signTime = order?.shippingTime;
+    }
     
     console.log('=== 售后时效计算调试 ===');
     console.log('order:', JSON.stringify(order, null, 2));
+    console.log('order.status:', order.status);
+    console.log('isTransactionCompleted:', isTransactionCompleted);
     console.log('checkTime:', order?.logisticsState?.checkTime);
     console.log('receiptTime:', order?.receiptTime);
+    console.log('shippingTime:', order?.shippingTime);
     console.log('signTime:', signTime);
     
     if (signTime) {
@@ -2113,7 +2156,7 @@ Page({
       console.log('diff (ms):', diff);
       console.log('daysPassed:', daysPassed);
       
-      remainingNormalDays = Math.max(0, 7 - daysPassed);
+      remainingNormalDays = Math.max(0, remainingNormalDays - daysPassed);
       remainingQualityDays = Math.max(0, 15 - daysPassed);
     }
     
@@ -2497,6 +2540,43 @@ Page({
     });
   },
   
+  // 减少售后数量
+  decreaseApplyQty() {
+    const { applyQty, selectedProductIndex, order } = this.data;
+    const maxQty = order.products && order.products[selectedProductIndex] ? (order.products[selectedProductIndex].quantity || 1) : 1;
+    if (applyQty > 1) {
+      this.setData({
+        applyQty: applyQty - 1
+      });
+      this.updateRefundAmount();
+    }
+  },
+
+  // 增加售后数量
+  increaseApplyQty() {
+    const { applyQty, selectedProductIndex, order } = this.data;
+    const maxQty = order.products && order.products[selectedProductIndex] ? (order.products[selectedProductIndex].quantity || 1) : 1;
+    if (applyQty < maxQty) {
+      this.setData({
+        applyQty: applyQty + 1
+      });
+      this.updateRefundAmount();
+    }
+  },
+
+  // 根据售后数量更新退款金额
+  updateRefundAmount() {
+    const { applyQty, selectedProductIndex, order } = this.data;
+    if (selectedProductIndex >= 0 && order.products[selectedProductIndex]) {
+      const product = order.products[selectedProductIndex];
+      const unitPrice = product.price || 0;
+      const maxAmount = (unitPrice * applyQty).toFixed(2);
+      this.setData({
+        refundAmount: maxAmount
+      });
+    }
+  },
+
   // 设置换货原因
   setExchangeReason(e) {
     const value = e.currentTarget.dataset.value;
@@ -2572,14 +2652,52 @@ Page({
         afterSalesType = 'refund_not_received';
       }
       
+      console.log('=== 提交售后申请日志 ===');
+      console.log('订单ID:', pendingOrderId);
+      console.log('订单状态:', order.status);
+      console.log('售后类型:', afterSalesType);
+      console.log('售后原因:', selectedAfterSalesType === 'exchange' ? selectedExchangeReasonLabel : selectedReasonLabel);
+      console.log('售后原因代码:', selectedAfterSalesType === 'exchange' ? selectedExchangeReason : selectedReason);
+      console.log('剩余常规售后天数:', this.data.remainingNormalAfterSalesDays);
+      console.log('剩余质量售后天数:', this.data.remainingQualityAfterSalesDays);
+      console.log('签收时间(checkTime):', order?.logisticsState?.checkTime);
+      console.log('确认收货时间(receiptTime):', order?.receiptTime);
+      console.log('发货时间(shippingTime):', order?.shippingTime);
+      console.log('交易是否完成:', ['completed', 'refund'].includes(order.status));
+      console.log('========================');
+      
       // 构造 orderItemId
       const orderItemId = `${pendingOrderId}_${selectedProductIndex}`;
       
-      // 获取商品数量
-      const product = order.products && order.products[selectedProductIndex];
-      const applyQty = product ? (product.quantity || 1) : 1;
-      
-      // 构造售后参数
+      // 获取申请数量
+      const selectedProduct = order?.products?.[selectedProductIndex];
+      const applyQty = selectedProduct?.quantity || 1;
+
+      // 上传文件到云存储，获取 cloud:// fileID
+      const uploadCloudFile = async (filePath, cloudFolder, ext = 'jpg') => {
+        if (!filePath || filePath.startsWith('cloud://')) return filePath;
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 10);
+        const cloudPath = `after-sales/${cloudFolder}/${timestamp}_${randomStr}.${ext}`;
+        const res = await wx.cloud.uploadFile({ cloudPath, filePath });
+        return res.fileID;
+      };
+
+      // 并行上传所有图片
+      const uploadedImages = await Promise.all(
+        afterSalesImages.map(item => uploadCloudFile(item.path, 'images', 'jpg'))
+      );
+
+      // 并行上传所有视频及其封面图
+      const uploadedVideoResults = await Promise.all(
+        afterSalesVideos.map(async (item) => {
+          const videoFileID = await uploadCloudFile(item.path, 'videos', 'mp4');
+          const thumbFileID = await uploadCloudFile(item.thumb, 'thumbs', 'jpg');
+          return { path: videoFileID, thumb: thumbFileID };
+        })
+      );
+
+      // 构造售后参数（使用上传后的 cloud:// fileID）
       const params = {
         items: [{
           orderItemId: orderItemId,
@@ -2588,9 +2706,9 @@ Page({
           afterSalesType: afterSalesType,
           applyRefundAmount: parseFloat(refundAmount)
         }],
-        proofImages: afterSalesImages.map(item => item.path) || [],
-        proofVideos: afterSalesVideos.map(item => item.path) || [],
-        proofVideoThumbs: afterSalesVideos.map(item => item.thumb) || [],
+        proofImages: uploadedImages,
+        proofVideos: uploadedVideoResults.map(item => item.path),
+        proofVideoThumbs: uploadedVideoResults.map(item => item.thumb),
         reasonCode: selectedAfterSalesType === 'exchange' ? selectedExchangeReason : selectedReason,
         reason: selectedAfterSalesType === 'exchange' ? selectedExchangeReasonLabel : selectedReasonLabel,
         description: afterSalesDescription,
@@ -2610,14 +2728,24 @@ Page({
       });
       
       if (result.result && result.result.success) {
+        const caseId = result.result.data?.caseId;
         wx.showToast({
           title: '提交成功',
           icon: 'success'
         });
-        // 设置全局标志，通知订单列表页需要刷新
+        // 设置全局标志，通知订单列表页和订单详情页需要刷新
         getApp().globalData.needRefreshOrderList = true;
-        // 关闭弹窗，监听会自动更新订单数据
+        getApp().globalData.needRefreshOrderDetail = true;
+        // 关闭弹窗
         this.closeAfterSalesTypeModal();
+        // 跳转到售后详情页，对齐淘宝交互
+        if (caseId) {
+          setTimeout(() => {
+            wx.navigateTo({
+              url: `/pages/after-sales/detail/index?id=${caseId}`
+            });
+          }, 1500);
+        }
       } else {
         wx.showToast({
           title: result.result?.error || '提交失败',

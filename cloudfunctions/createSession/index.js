@@ -62,24 +62,26 @@ exports.main = async (event, context) => {
     };
 
     console.log('创建会话数据:', session);
-    await db.collection('sessions').add({ data: session });
-    console.log('会话创建成功，会话ID:', session._id);
-
-    // 创建客服欢迎消息
-    const welcomeMessage = {
-      _id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      sessionId: session._id,
-      openid: customerServiceId,
-      role: 'customer_service',
-      content: '您好，请问有什么可以帮助您的？',
-      type: 'text',
-      createTime: new Date(),
-      status: 'sent'
-    };
-
-    console.log('创建客服欢迎消息数据:', welcomeMessage);
-    await db.collection('messages').add({ data: welcomeMessage });
-    console.log('客服欢迎消息创建成功');
+    
+    await db.runTransaction(async (transaction) => {
+      await transaction.collection('sessions').add({ data: session });
+      
+      const welcomeMessage = {
+        _id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        sessionId: session._id,
+        openid: customerServiceId,
+        role: 'customer_service',
+        content: '您好，请问有什么可以帮助您的？',
+        type: 'text',
+        createTime: new Date(),
+        status: 'sent'
+      };
+      
+      console.log('创建客服欢迎消息数据:', welcomeMessage);
+      await transaction.collection('messages').add({ data: welcomeMessage });
+    });
+    
+    console.log('创建会话完成（事务已提交），会话ID:', session._id);
 
     try {
       await cloud.callFunction({

@@ -11,8 +11,8 @@ const ADMIN_TEMPLATES = [
     targetRole: 'admin',
     title: '新订单通知',
     templateName: '管理员-新订单通知',
-    content: '有新订单 #{{orderNumber}} 等待处理',
-    variables: ['orderNumber'],
+    content: '{{userName}}的订单 #{{orderNumber}} 已创建成功，将在{{countDown}}分钟内完成支付',
+    variables: ['userName', 'orderNumber', 'countDown'],
     isTemplateMessage: false,
     status: 'active',
     createdAt: new Date(),
@@ -140,20 +140,389 @@ const ADMIN_TEMPLATES = [
   }
 ];
 
+// 售后环节通知模板（用户操作通知管理员 + 管理员/系统操作通知用户）
+const AFTER_SALES_TEMPLATES = [
+  // ===== 用户操作 → 通知用户（确认）+ 通知管理员（需处理）=====
+  {
+    _id: 'template_user_after_sales_cancel',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_cancel',
+    targetRole: 'user',
+    title: '售后申请已取消',
+    templateName: '用户-取消售后申请通知',
+    content: '您的订单 #{{orderNumber}} 售后申请已取消',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_submit_return_tracking',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_submit_return_tracking',
+    targetRole: 'user',
+    title: '退货单号已提交',
+    templateName: '用户-提交退货单号通知',
+    content: '您的订单 #{{orderNumber}} 退货单号已提交，请等待商家收货',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_modify_return_tracking',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_modify_return_tracking',
+    targetRole: 'user',
+    title: '退货单号已修改',
+    templateName: '用户-修改退货单号通知',
+    content: '您的订单 #{{orderNumber}} 退货单号已修改',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_confirm_return_received',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_confirm_return_received',
+    targetRole: 'user',
+    title: '已确认收到寄回商品',
+    templateName: '用户-确认收到寄回商品通知',
+    content: '您的订单 #{{orderNumber}} 已确认收到商家寄回商品，售后完成',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  // ===== 用户操作 → 通知管理员 =====
+  {
+    _id: 'template_admin_after_sales_apply',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_apply',
+    targetRole: 'admin',
+    title: '新售后申请通知',
+    templateName: '管理员-新售后申请通知',
+    content: '订单 #{{orderNumber}} 有新的售后申请待处理（{{afterSalesType}}）',
+    variables: ['orderNumber', 'afterSalesType'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_admin_after_sales_submit_return_tracking',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_submit_return_tracking',
+    targetRole: 'admin',
+    title: '用户已寄回商品',
+    templateName: '管理员-用户寄回退货商品通知',
+    content: '订单 #{{orderNumber}} 用户已寄回退货商品，快递单号：{{trackingNumber}}',
+    variables: ['orderNumber', 'trackingNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_admin_after_sales_modify_return_tracking',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_modify_return_tracking',
+    targetRole: 'admin',
+    title: '用户修改退货单号',
+    templateName: '管理员-用户修改退货单号通知',
+    content: '订单 #{{orderNumber}} 用户已修改退货单号为：{{trackingNumber}}',
+    variables: ['orderNumber', 'trackingNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_admin_after_sales_cancel',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_cancel',
+    targetRole: 'admin',
+    title: '售后申请已取消',
+    templateName: '管理员-用户取消售后申请通知',
+    content: '订单 #{{orderNumber}} 用户已取消售后申请',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_admin_after_sales_confirm_return_received',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_confirm_return_received',
+    targetRole: 'admin',
+    title: '用户确认收到寄回商品',
+    templateName: '管理员-用户确认收到寄回商品通知',
+    content: '订单 #{{orderNumber}} 用户已确认收到寄回商品，售后完成',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  // ===== 管理员操作 → 通知用户 =====
+  {
+    _id: 'template_user_after_sales_approve_refund',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_approve_refund',
+    targetRole: 'user',
+    title: '退款申请已通过',
+    templateName: '用户-退款申请通过通知',
+    content: '您的订单 #{{orderNumber}} 退款申请已通过，请尽快寄回商品',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_approve_exchange',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_approve_exchange',
+    targetRole: 'user',
+    title: '换货申请已通过',
+    templateName: '用户-换货申请通过通知',
+    content: '您的订单 #{{orderNumber}} 换货申请已通过，请尽快寄回商品',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_reject',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_reject',
+    targetRole: 'user',
+    title: '售后申请未通过',
+    templateName: '用户-售后申请被拒通知',
+    content: '很抱歉，您的订单 #{{orderNumber}} 售后申请未通过，原因：{{reason}}',
+    variables: ['orderNumber', 'reason'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_confirm_receipt',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_confirm_receipt',
+    targetRole: 'user',
+    title: '商家已确认收货',
+    templateName: '用户-商家确认收货通知',
+    content: '您的订单 #{{orderNumber}} 商家已确认收到退货，正在验货',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_inspect_pass_refund',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_inspect_pass_refund',
+    targetRole: 'user',
+    title: '验货通过，正在退款',
+    templateName: '用户-验货通过退款通知',
+    content: '您的订单 #{{orderNumber}} 商家验货通过，正在为您退款',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_inspect_pass_exchange',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_inspect_pass_exchange',
+    targetRole: 'user',
+    title: '验货通过，正在换货',
+    templateName: '用户-验货通过换货通知',
+    content: '您的订单 #{{orderNumber}} 商家验货通过，正在为您换货',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_inspect_fail',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_inspect_fail',
+    targetRole: 'user',
+    title: '验货不通过',
+    templateName: '用户-验货不通过通知',
+    content: '您的订单 #{{orderNumber}} 商家验货不通过，即将寄回商品',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_fill_return_tracking',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_fill_return_tracking',
+    targetRole: 'user',
+    title: '商家已寄回商品',
+    templateName: '用户-商家寄回商品通知',
+    content: '您的订单 #{{orderNumber}} 商家已寄回商品，快递单号：{{trackingNumber}}，请注意查收',
+    variables: ['orderNumber', 'trackingNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_complete_refund',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_complete_refund',
+    targetRole: 'user',
+    title: '退款已到账',
+    templateName: '用户-退款完成通知',
+    content: '您的订单 #{{orderNumber}} 退款 {{amount}} 元已到账，售后完成',
+    variables: ['orderNumber', 'amount'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_complete_exchange',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_complete_exchange',
+    targetRole: 'user',
+    title: '换货已完成',
+    templateName: '用户-换货完成通知',
+    content: '您的订单 #{{orderNumber}} 换货已完成，售后结束',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  // ===== 系统操作 → 通知用户 =====
+  {
+    _id: 'template_user_after_sales_auto_confirm_receipt',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_auto_confirm_receipt',
+    targetRole: 'user',
+    title: '系统自动确认收货',
+    templateName: '用户-系统自动确认收货通知',
+    content: '您的订单 #{{orderNumber}} 已过确认收货期，系统已自动确认收货',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_auto_confirm_return_received',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_auto_confirm_return_received',
+    targetRole: 'user',
+    title: '系统自动确认收到寄回商品',
+    templateName: '用户-系统自动确认收到寄回商品通知',
+    content: '您的订单 #{{orderNumber}} 商家寄回商品已过确认期，系统已自动确认收到',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    _id: 'template_user_after_sales_auto_approve',
+    type: 'orderStatusChange',
+    templateType: 'orderStatusChange',
+    scenario: 'after_sales_auto_approve',
+    targetRole: 'user',
+    title: '售后申请已自动通过',
+    templateName: '用户-系统自动通过售后申请通知',
+    content: '您的订单 #{{orderNumber}} 售后申请已自动通过',
+    variables: ['orderNumber'],
+    isTemplateMessage: false,
+    status: 'active',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
 async function initAdminTemplates() {
   console.log('初始化管理员通知模板...');
   const results = [];
   for (const template of ADMIN_TEMPLATES) {
     try {
       const existResult = await db.collection('notification_templates').where({ _id: template._id }).get();
+      const { _id, ...templateData } = template;
       if (existResult.data && existResult.data.length > 0) {
         await db.collection('notification_templates').doc(template._id).set({
-          ...template,
-          updatedAt: new Date()
+          data: {
+            ...templateData,
+            updatedAt: new Date()
+          }
         });
         results.push({ templateId: template._id, action: 'updated', success: true });
       } else {
-        await db.collection('notification_templates').add({ data: template });
+        await db.collection('notification_templates').add({ data: templateData });
+        results.push({ templateId: template._id, action: 'added', success: true });
+      }
+    } catch (error) {
+      results.push({ templateId: template._id, action: 'error', success: false, error: error.message });
+    }
+  }
+  const successCount = results.filter(r => r.success).length;
+  const failCount = results.filter(r => !r.success).length;
+  return { success: failCount === 0, successCount, failCount, results };
+}
+
+async function initAfterSalesTemplates() {
+  console.log('初始化售后通知模板...');
+  const results = [];
+  for (const template of AFTER_SALES_TEMPLATES) {
+    try {
+      const existResult = await db.collection('notification_templates').where({ _id: template._id }).get();
+      const { _id, ...templateData } = template;
+      if (existResult.data && existResult.data.length > 0) {
+        await db.collection('notification_templates').doc(template._id).set({
+          data: {
+            ...templateData,
+            updatedAt: new Date()
+          }
+        });
+        results.push({ templateId: template._id, action: 'updated', success: true });
+      } else {
+        await db.collection('notification_templates').add({ data: templateData });
         results.push({ templateId: template._id, action: 'added', success: true });
       }
     } catch (error) {
@@ -222,12 +591,27 @@ async function sendOrderNotificationToAdmins(data, extras) {
     return false;
   }
   
+  const adminData = { ...data };
+  
+  if (data.status === 'pending') {
+    try {
+      const userRes = await db.collection('users').where({ _openid: extras?.openid }).limit(1).get();
+      if (userRes.data && userRes.data[0]) {
+        adminData.userName = userRes.data[0].nickName || userRes.data[0].nickname || '用户';
+        console.log('获取到用户昵称:', adminData.userName);
+      }
+    } catch (error) {
+      console.error('获取用户昵称失败:', error);
+      adminData.userName = '用户';
+    }
+  }
+  
   console.log(`准备给 ${adminOpenids.length} 个管理员发送订单通知`);
   
   for (const adminOpenid of adminOpenids) {
     try {
       console.log(`正在给管理员 ${adminOpenid} 发送通知`);
-      await handleOrderStatusChangeNotification(adminOpenid, data, extras, 'admin');
+      await handleOrderStatusChangeNotification(adminOpenid, adminData, extras, 'admin');
       console.log(`给管理员 ${adminOpenid} 发送通知成功`);
     } catch (error) {
       console.error(`给管理员 ${adminOpenid} 发送通知失败:`, error);
@@ -241,7 +625,15 @@ async function sendOrderNotificationToAdmins(data, extras) {
 function needAdminNotification(notificationType, scenario) {
   if (notificationType === 'orderStatusChange') {
     const adminScenarios = ['pending', 'paid', 'shipping', 'delivered', 'completed', 'cancelled', 'refund', 'refund_completed'];
-    return adminScenarios.includes(scenario);
+    // 售后环节中，用户操作触发的场景需要通知管理员
+    const afterSalesAdminScenarios = [
+      'after_sales_apply',
+      'after_sales_submit_return_tracking',
+      'after_sales_modify_return_tracking',
+      'after_sales_cancel',
+      'after_sales_confirm_return_received'
+    ];
+    return adminScenarios.includes(scenario) || afterSalesAdminScenarios.includes(scenario);
   }
   if (notificationType === 'system') {
     return true;
@@ -267,7 +659,25 @@ async function getNotificationTemplate(templateId, notificationType, scenario, d
           cancelled: 'template_order_cancel',
           expired_cancelled: 'template_order_expire',
           refund: 'template_order_apply_after_sales',
-          refund_completed: 'template_order_process_after_sales'
+          refund_completed: 'template_order_process_after_sales',
+          // 售后环节细化通知（用户接收）
+          after_sales_cancel: 'template_user_after_sales_cancel',
+          after_sales_submit_return_tracking: 'template_user_after_sales_submit_return_tracking',
+          after_sales_modify_return_tracking: 'template_user_after_sales_modify_return_tracking',
+          after_sales_approve_refund: 'template_user_after_sales_approve_refund',
+          after_sales_approve_exchange: 'template_user_after_sales_approve_exchange',
+          after_sales_reject: 'template_user_after_sales_reject',
+          after_sales_confirm_receipt: 'template_user_after_sales_confirm_receipt',
+          after_sales_inspect_pass_refund: 'template_user_after_sales_inspect_pass_refund',
+          after_sales_inspect_pass_exchange: 'template_user_after_sales_inspect_pass_exchange',
+          after_sales_inspect_fail: 'template_user_after_sales_inspect_fail',
+          after_sales_fill_return_tracking: 'template_user_after_sales_fill_return_tracking',
+          after_sales_complete_refund: 'template_user_after_sales_complete_refund',
+          after_sales_complete_exchange: 'template_user_after_sales_complete_exchange',
+          after_sales_confirm_return_received: 'template_user_after_sales_confirm_return_received',
+          after_sales_auto_confirm_receipt: 'template_user_after_sales_auto_confirm_receipt',
+          after_sales_auto_confirm_return_received: 'template_user_after_sales_auto_confirm_return_received',
+          after_sales_auto_approve: 'template_user_after_sales_auto_approve'
         };
         
         const adminScenarioTemplateMap = {
@@ -279,7 +689,13 @@ async function getNotificationTemplate(templateId, notificationType, scenario, d
           cancelled: 'template_admin_order_cancelled',
           expired_cancelled: 'template_admin_order_expired_cancelled',
           refund: 'template_admin_order_refund',
-          refund_completed: 'template_admin_order_refund_completed'
+          refund_completed: 'template_admin_order_refund_completed',
+          // 售后环节细化通知（管理员接收）
+          after_sales_apply: 'template_admin_after_sales_apply',
+          after_sales_submit_return_tracking: 'template_admin_after_sales_submit_return_tracking',
+          after_sales_modify_return_tracking: 'template_admin_after_sales_modify_return_tracking',
+          after_sales_cancel: 'template_admin_after_sales_cancel',
+          after_sales_confirm_return_received: 'template_admin_after_sales_confirm_return_received'
         };
 
         let mappedTemplateId;
@@ -522,7 +938,7 @@ async function handleOrderStatusChangeNotification(openid, data, extras, targetR
       expired_cancelled: { title: '订单已过期', content: '您的订单 #{{orderNumber}} 因超时未支付已自动取消' },
       refund: { title: '售后申请已提交', content: '您的订单 #{{orderNumber}} 售后申请已提交，我们将尽快处理' },
       refund_completed: { title: '售后处理完成', content: '您的订单 #{{orderNumber}} 售后处理已完成，请查看处理结果' },
-      admin_pending: { title: '新订单通知', content: '有新订单 #{{orderNumber}} 等待处理' },
+      admin_pending: { title: '新订单通知', content: '{{userName}}的订单 #{{orderNumber}} 已创建成功，将在{{countDown}}分钟内完成支付' },
       admin_paid: { title: '订单支付成功', content: '订单 #{{orderNumber}} 已支付，金额 {{amount}} 元' },
       admin_shipping: { title: '订单发货提醒', content: '订单 #{{orderNumber}} 已发货' },
       admin_delivered: { title: '订单已送达', content: '订单 #{{orderNumber}} 已送达' },
@@ -530,7 +946,31 @@ async function handleOrderStatusChangeNotification(openid, data, extras, targetR
       admin_cancelled: { title: '订单已取消', content: '订单 #{{orderNumber}} 已取消' },
       admin_expired_cancelled: { title: '订单已过期', content: '订单 #{{orderNumber}} 因超时未支付已自动取消' },
       admin_refund: { title: '售后申请通知', content: '订单 #{{orderNumber}} 有售后申请待处理' },
-      admin_refund_completed: { title: '售后处理完成', content: '订单 #{{orderNumber}} 售后处理已完成' }
+      admin_refund_completed: { title: '售后处理完成', content: '订单 #{{orderNumber}} 售后处理已完成' },
+      // 售后环节细化通知兜底（用户接收）
+      after_sales_cancel: { title: '售后申请已取消', content: '您的订单 #{{orderNumber}} 售后申请已取消' },
+      after_sales_submit_return_tracking: { title: '退货单号已提交', content: '您的订单 #{{orderNumber}} 退货单号已提交，请等待商家收货' },
+      after_sales_modify_return_tracking: { title: '退货单号已修改', content: '您的订单 #{{orderNumber}} 退货单号已修改' },
+      after_sales_approve_refund: { title: '退款申请已通过', content: '您的订单 #{{orderNumber}} 退款申请已通过，请尽快寄回商品' },
+      after_sales_approve_exchange: { title: '换货申请已通过', content: '您的订单 #{{orderNumber}} 换货申请已通过，请尽快寄回商品' },
+      after_sales_reject: { title: '售后申请未通过', content: '很抱歉，您的订单 #{{orderNumber}} 售后申请未通过，原因：{{reason}}' },
+      after_sales_confirm_receipt: { title: '商家已确认收货', content: '您的订单 #{{orderNumber}} 商家已确认收到退货，正在验货' },
+      after_sales_inspect_pass_refund: { title: '验货通过，正在退款', content: '您的订单 #{{orderNumber}} 商家验货通过，正在为您退款' },
+      after_sales_inspect_pass_exchange: { title: '验货通过，正在换货', content: '您的订单 #{{orderNumber}} 商家验货通过，正在为您换货' },
+      after_sales_inspect_fail: { title: '验货不通过', content: '您的订单 #{{orderNumber}} 商家验货不通过，即将寄回商品' },
+      after_sales_fill_return_tracking: { title: '商家已寄回商品', content: '您的订单 #{{orderNumber}} 商家已寄回商品，快递单号：{{trackingNumber}}，请注意查收' },
+      after_sales_complete_refund: { title: '退款已到账', content: '您的订单 #{{orderNumber}} 退款 {{amount}} 元已到账，售后完成' },
+      after_sales_complete_exchange: { title: '换货已完成', content: '您的订单 #{{orderNumber}} 换货已完成，售后结束' },
+      after_sales_confirm_return_received: { title: '已确认收到寄回商品', content: '您的订单 #{{orderNumber}} 已确认收到商家寄回商品，售后完成' },
+      after_sales_auto_confirm_receipt: { title: '系统自动确认收货', content: '您的订单 #{{orderNumber}} 已过确认收货期，系统已自动确认收货' },
+      after_sales_auto_confirm_return_received: { title: '系统自动确认收到寄回商品', content: '您的订单 #{{orderNumber}} 商家寄回商品已过确认期，系统已自动确认收到' },
+      after_sales_auto_approve: { title: '售后申请已自动通过', content: '您的订单 #{{orderNumber}} 售后申请已自动通过' },
+      // 售后环节细化通知兜底（管理员接收）
+      admin_after_sales_apply: { title: '新售后申请通知', content: '订单 #{{orderNumber}} 有新的售后申请待处理（{{afterSalesType}}）' },
+      admin_after_sales_submit_return_tracking: { title: '用户已寄回商品', content: '订单 #{{orderNumber}} 用户已寄回退货商品，快递单号：{{trackingNumber}}' },
+      admin_after_sales_modify_return_tracking: { title: '用户修改退货单号', content: '订单 #{{orderNumber}} 用户已修改退货单号为：{{trackingNumber}}' },
+      admin_after_sales_cancel: { title: '售后申请已取消', content: '订单 #{{orderNumber}} 用户已取消售后申请' },
+      admin_after_sales_confirm_return_received: { title: '用户确认收到寄回商品', content: '订单 #{{orderNumber}} 用户已确认收到寄回商品，售后完成' }
     };
 
     const scenarioKey = targetRole === 'admin' ? `admin_${scenario}` : scenario;
@@ -605,6 +1045,10 @@ exports.main = async (event, context) => {
 
   if (notificationType === 'initAdminTemplates') {
     return await initAdminTemplates();
+  }
+
+  if (notificationType === 'initAfterSalesTemplates') {
+    return await initAfterSalesTemplates();
   }
 
   try {

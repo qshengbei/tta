@@ -165,7 +165,6 @@ async function restoreStock(order, now) {
 }
 
 exports.main = async (event, context) => {
-  context.callbackWaitsForEmptyEventLoop = false;
   const instanceId = `instance_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
   try {
@@ -227,6 +226,7 @@ exports.main = async (event, context) => {
 
     let processedCount = 0;
     let failedCount = 0;
+    const logPromises = [];
 
     for (const order of expiredOrders) {
       try {
@@ -272,27 +272,24 @@ exports.main = async (event, context) => {
         await sendExpiredNotification(latestOrder);
         processedCount += 1;
         
-        // 异步记录订单操作日志，不影响主流程
-        setImmediate(async () => {
-          try {
-            await logOrderOperation(db, {
-              orderId: order._id,
-              orderNumber: order.orderNumber,
-              openid: order._openid,
-              action: 'auto_cancel',
-              fromStatus: 'pending',
-              toStatus: 'cancelled',
-              operatorType: 'system',
-              operatorId: '',
-              operatorName: '',
-              reason: '支付超时自动取消',
-              remark: '',
-              detail: {}
-            });
-          } catch (logError) {
-            console.error('记录过期订单日志失败:', order._id, logError);
-          }
+        // 异步记录订单操作日志，不阻塞主流程
+        const logPromise = logOrderOperation(db, {
+          orderId: order._id,
+          orderNumber: order.orderNumber,
+          openid: order._openid,
+          action: 'auto_cancel',
+          fromStatus: 'pending',
+          toStatus: 'cancelled',
+          operatorType: 'system',
+          operatorId: '',
+          operatorName: '',
+          reason: '支付超时自动取消',
+          remark: '',
+          detail: {}
+        }).catch(logError => {
+          console.error('记录过期订单日志失败:', order._id, logError);
         });
+        logPromises.push(logPromise);
       } catch (error) {
         failedCount += 1;
         console.error('处理过期订单失败:', order._id, error);
@@ -308,6 +305,11 @@ exports.main = async (event, context) => {
           console.error('清除processing失败:', order._id, clearError);
         }
       }
+    }
+
+    // 等待所有日志记录完成后再返回
+    if (logPromises.length > 0) {
+      await Promise.allSettled(logPromises);
     }
 
     return {

@@ -7,6 +7,7 @@ const _ = db.command;
 Page({
   _isFirstEntry: true,
   _isUnloaded: false,
+  _ongoingLogisticsRefreshes: new Map(),
 
   data: {
     orders: [],
@@ -347,7 +348,7 @@ Page({
       } else if (selectedStatus === "shipping") {
         query = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
       } else if (selectedStatus === "refund") {
-        query = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+        query = orders.where({ ...baseQuery, status: 'refund' });
       } else if (selectedStatus === "completed") {
         query = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
       } else {
@@ -358,10 +359,31 @@ Page({
       const serverMaxTime = timeRes.data?.[0]?.updatedAtTs || 0;
       const cachedMaxTime = cache.serverMaxUpdateTime || 0;
 
-      console.log(`[订单列表] 时间戳对比: 缓存=${cachedMaxTime}, 数据库=${serverMaxTime}, 状态=${selectedStatus}`);
+      // 同时查询当前标签下的订单总数，用于检测订单离开当前标签的情况
+      // 场景：订单从"待发货"变为"已完成"，updatedAtTs更新但已不在当前标签查询范围内
+      // 此时剩余订单的最大updatedAtTs可能不变，仅靠时间戳对比无法发现差异
+      let serverCount = -1;
+      try {
+        const countRes = await query.count();
+        serverCount = countRes.total || 0;
+      } catch (e) {
+        console.warn('[订单列表] 订单数量查询失败，仅使用时间戳对比:', e);
+      }
+      const cachedCount = cache.data?.length || 0;
+      const cachedHasMore = cache.hasMore || false;
 
-      if (serverMaxTime !== cachedMaxTime) {
-        console.log(`[订单列表] 时间戳对比发现差异，更新第一页数据 (缓存=${cachedMaxTime}, 数据库=${serverMaxTime})`);
+      console.log(`[订单列表] 时间戳对比: 缓存=${cachedMaxTime}, 数据库=${serverMaxTime}, 状态=${selectedStatus}`);
+      console.log(`[订单列表] 订单数量对比: 缓存=${cachedCount}(hasMore=${cachedHasMore}), 数据库=${serverCount}`);
+
+      // 时间戳不一致 → 有订单更新或新订单加入
+      // 订单数量减少（serverCount < cachedCount）→ 有订单离开当前标签（如发货、完成等）
+      // 注意：即使hasMore=true，如果serverCount < cachedCount也说明有订单离开，需要更新
+      const hasTimestampDiff = serverMaxTime !== cachedMaxTime;
+      const hasOrderLeft = serverCount >= 0 && serverCount < cachedCount;
+      const cacheEmptyButHasData = cache.data.length > 0 && timeRes.data.length === 0;
+
+      if (hasTimestampDiff || hasOrderLeft || cacheEmptyButHasData) {
+        console.log(`[订单列表] 对比发现差异，更新数据 (时间戳差异=${hasTimestampDiff}, 订单离开=${hasOrderLeft}, 缓存有数据但数据库为空=${cacheEmptyButHasData})`);
 
         const pageSize = this.data.pageSize;
         const fetchLimit = Math.min(pageSize + 1, 20);
@@ -372,7 +394,7 @@ Page({
         } else if (selectedStatus === "shipping") {
           firstPageQuery = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
         } else if (selectedStatus === "refund") {
-          firstPageQuery = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+          firstPageQuery = orders.where({ ...baseQuery, status: 'refund' });
         } else if (selectedStatus === "completed") {
           firstPageQuery = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
         } else {
@@ -381,6 +403,21 @@ Page({
 
         const firstPageRes = await firstPageQuery.orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
         const rawOrders = firstPageRes.data || [];
+        
+        if (rawOrders.length === 0) {
+          console.log(`[订单列表] 数据库中无订单，清空缓存: ${cacheKey}`);
+          this.setData({
+            originalOrders: [],
+            orders: [],
+            lastUpdatedAtTs: null,
+            lastId: null,
+            hasMore: false,
+            loadingMore: false
+          });
+          orderCacheStore.clearKey(cacheKey);
+          return;
+        }
+
         const hasMore = rawOrders.length > pageSize;
         const newOrders = hasMore ? rawOrders.slice(0, pageSize) : rawOrders;
 
@@ -417,7 +454,7 @@ Page({
           serverMaxUpdateTime: newServerMaxTime
         });
       } else {
-        console.log(`[订单列表] 时间戳对比无差异，缓存有效 (缓存时间戳=${cachedMaxTime}, 数据库时间戳=${serverMaxTime})`);
+        console.log(`[订单列表] 对比无差异，缓存有效 (时间戳: 缓存=${cachedMaxTime}, 数据库=${serverMaxTime}; 数量: 缓存=${cachedCount}, 数据库=${serverCount})`);
       }
     } catch (error) {
       console.error('[订单列表] _validateOrderCacheAsync 失败:', error);
@@ -429,6 +466,7 @@ Page({
    */
   async checkAndRefreshExpiredLogistics() {
     if (!this.data.pageVisible) {
+      console.log('[物流刷新] 页面不可见，跳过物流检查');
       return;
     }
 
@@ -437,25 +475,53 @@ Page({
       const now = Date.now();
       const CACHE_DURATION = 30 * 60 * 1000; // 30分钟
 
-      for (const order of orders) {
-        // 仅处理非终态订单（isCheck !== '1'）
-        if (order.logisticsState && order.logisticsState.isCheck !== '1') {
-          const rawLastGetTime = order.logisticsState.lastGetTime;
-          const lastGetTimeMs = rawLastGetTime instanceof Date
-            ? rawLastGetTime.getTime()
-            : (typeof rawLastGetTime === 'number'
-              ? rawLastGetTime
-              : (rawLastGetTime ? new Date(rawLastGetTime).getTime() : 0));
-          const age = now - (Number.isFinite(lastGetTimeMs) ? lastGetTimeMs : 0);
+      console.log(`[物流刷新] 开始检查过期物流，订单总数: ${orders.length}, 当前时间: ${new Date(now).toLocaleString()}`);
 
-          if (age > CACHE_DURATION) {
-            // 异步后台刷新，不阻塞UI
-            this.refreshLogisticsInBackground(order);
+      let refreshCount = 0;
+      let skipCount = 0;
+      let skipNotExpiredCount = 0;
+
+      for (const order of orders) {
+        const orderId = order._id;
+        
+        if (!order.logisticsState) {
+          console.log(`[物流刷新] 订单 ${orderId} 无物流状态信息，跳过`);
+          continue;
+        }
+
+        if (order.logisticsState.isCheck === '1') {
+          console.log(`[物流刷新] 订单 ${orderId} 物流已签收，跳过`);
+          continue;
+        }
+
+        const rawLastGetTime = order.logisticsState.lastGetTime;
+        const lastGetTimeMs = rawLastGetTime instanceof Date
+          ? rawLastGetTime.getTime()
+          : (typeof rawLastGetTime === 'number'
+            ? rawLastGetTime
+            : (rawLastGetTime ? new Date(rawLastGetTime).getTime() : 0));
+        const age = now - (Number.isFinite(lastGetTimeMs) ? lastGetTimeMs : 0);
+
+        console.log(`[物流刷新] 订单 ${orderId} - 物流状态: ${order.logisticsState.stateName}, 上次获取时间: ${new Date(lastGetTimeMs).toLocaleString()}, 缓存时长: ${Math.round(age / 1000)}秒`);
+
+        if (age > CACHE_DURATION) {
+          if (this._ongoingLogisticsRefreshes.has(orderId)) {
+            console.log(`[物流刷新] 订单 ${orderId} 正在进行物流刷新，跳过重复请求，当前进行中数量: ${this._ongoingLogisticsRefreshes.size}`);
+            skipCount++;
+            continue;
           }
+          console.log(`[物流刷新] 订单 ${orderId} 缓存过期（>30分钟），触发后台刷新`);
+          this.refreshLogisticsInBackground(order);
+          refreshCount++;
+        } else {
+          console.log(`[物流刷新] 订单 ${orderId} 缓存未过期，跳过`);
+          skipNotExpiredCount++;
         }
       }
+
+      console.log(`[物流刷新] 检查完成，触发刷新: ${refreshCount}, 跳过重复: ${skipCount}, 缓存未过期: ${skipNotExpiredCount}`);
     } catch (error) {
-      // 静默处理物流检查错误
+      console.error('[物流刷新] 检查过期物流失败:', error);
     }
   },
 
@@ -463,58 +529,116 @@ Page({
    * 后台刷新物流状态（不阻塞UI）
    */
   async refreshLogisticsInBackground(order) {
+    const orderId = order._id;
+    const startTime = Date.now();
+    
+    this._ongoingLogisticsRefreshes.set(orderId, true);
+    console.log(`[物流刷新] ===== 开始物流刷新 =====, 订单ID: ${orderId}, 时间: ${new Date(startTime).toLocaleString()}`);
+
     try {
-      if (!order.logisticsInfo || !order.logisticsInfo.trackingNumber) {
+      if (!order.logisticsInfo) {
+        console.log(`[物流刷新] 订单 ${orderId} 无物流信息(logisticsInfo)，跳过`);
         return;
       }
+
+      if (!order.logisticsInfo.trackingNumber) {
+        console.log(`[物流刷新] 订单 ${orderId} 无快递单号，跳过`);
+        return;
+      }
+
+      const trackingNumber = order.logisticsInfo.trackingNumber;
+      const companyCode = order.logisticsInfo.companyCode || '未知';
+      console.log(`[物流刷新] 订单 ${orderId} 准备调用云函数, 快递单号: ${trackingNumber}, 快递公司: ${companyCode}`);
 
       const result = await wx.cloud.callFunction({
         name: 'express100',
         data: {
           action: 'queryLogisticsAndUpdateOrder',
-          expressNo: order.logisticsInfo.trackingNumber,
-          companyCode: order.logisticsInfo.companyCode || '',
+          expressNo: trackingNumber,
+          companyCode: companyCode,
           fromAddress: order.fromAddress || '',
           toAddress: this.buildToAddress(order),
           forceRefresh: true
         }
       });
 
-      if (result.result && result.result.success) {
-        const logisticsResult = result.result;
-        const nextLogisticsState = {
-          state: logisticsResult.state || '',
-          stateName: logisticsResult.stateName || '',
-          isCheck: logisticsResult.isCheck || '',
-          lastGetTime: new Date()
-        };
+      const callDuration = Date.now() - startTime;
+      console.log(`[物流刷新] 订单 ${orderId} 云函数调用完成, 耗时: ${callDuration}ms`);
 
-        if (String(logisticsResult.isCheck) === '1' && logisticsResult.arrivalTime) {
-          nextLogisticsState.checkTime = String(logisticsResult.arrivalTime).trim();
-        }
-
-        // 更新本地订单数据中的 logisticsState
-        const updatedOrders = this.data.originalOrders.map(o => {
-          if (o._id === order._id) {
-            return {
-              ...o,
-              logisticsState: nextLogisticsState,
-              // 如果订单已被更新为delivered，同步更新本地状态
-              ...(logisticsResult.orderUpdated ? { status: 'delivered' } : {})
-            };
-          }
-          return o;
-        });
-
-        this.setData({
-          originalOrders: updatedOrders
-        });
-
-        // 刷新当前显示的订单列表
-        this.processOrders(updatedOrders);
+      if (!result) {
+        console.error(`[物流刷新] 订单 ${orderId} 云函数返回为空`);
+        return;
       }
+
+      if (!result.result) {
+        console.error(`[物流刷新] 订单 ${orderId} 云函数返回无result字段`);
+        return;
+      }
+
+      if (!result.result.success) {
+        console.error(`[物流刷新] 订单 ${orderId} 云函数返回失败, 错误: ${result.result.error || '未知错误'}`);
+        return;
+      }
+
+      const logisticsResult = result.result;
+      console.log(`[物流刷新] 订单 ${orderId} 物流查询成功, 状态码: ${logisticsResult.state}, 状态名: ${logisticsResult.stateName}, 是否已签收: ${logisticsResult.isCheck === '1' ? '是' : '否'}, 订单是否更新: ${logisticsResult.orderUpdated ? '是' : '否'}`);
+      
+      if (this._isUnloaded) {
+        console.log(`[物流刷新] 订单 ${orderId} 物流刷新完成，但页面已卸载(_isUnloaded=true)，数据库已更新，跳过UI更新`);
+        return;
+      }
+
+      const nextLogisticsState = {
+        state: logisticsResult.state || '',
+        stateName: logisticsResult.stateName || '',
+        advancedStateName: logisticsResult.advancedStateName || '',
+        advancedStateMeaning: logisticsResult.advancedStateMeaning || '',
+        isCheck: logisticsResult.isCheck || '',
+        lastGetTime: new Date()
+      };
+
+      if (String(logisticsResult.isCheck) === '1' && logisticsResult.arrivalTime) {
+        nextLogisticsState.checkTime = String(logisticsResult.arrivalTime).trim();
+        console.log(`[物流刷新] 订单 ${orderId} 物流已签收，签收时间: ${nextLogisticsState.checkTime}`);
+      }
+
+      console.log(`[物流刷新] 订单 ${orderId} 准备更新本地数据, 新物流状态: ${JSON.stringify(nextLogisticsState)}`);
+
+      const updatedOrders = this.data.originalOrders.map(o => {
+        if (o._id === order._id) {
+          const updates = {
+            ...o,
+            logisticsState: nextLogisticsState
+          };
+          if (logisticsResult.orderUpdated) {
+            updates.status = 'delivered';
+            console.log(`[物流刷新] 订单 ${orderId} 状态更新为: delivered`);
+          }
+          return updates;
+        }
+        return o;
+      });
+
+      const setDataStartTime = Date.now();
+      this.setData({
+        originalOrders: updatedOrders
+      });
+      const setDataDuration = Date.now() - setDataStartTime;
+      console.log(`[物流刷新] 订单 ${orderId} setData完成, 耗时: ${setDataDuration}ms`);
+
+      const processOrdersStartTime = Date.now();
+      this.processOrders(updatedOrders);
+      const processOrdersDuration = Date.now() - processOrdersStartTime;
+      console.log(`[物流刷新] 订单 ${orderId} processOrders完成, 耗时: ${processOrdersDuration}ms`);
+
+      const totalDuration = Date.now() - startTime;
+      console.log(`[物流刷新] ===== 物流刷新完成 =====, 订单ID: ${orderId}, 总耗时: ${totalDuration}ms, 最终状态: ${nextLogisticsState.stateName}`);
     } catch (error) {
-      // 静默处理物流刷新错误
+      const totalDuration = Date.now() - startTime;
+      console.error(`[物流刷新] ===== 物流刷新失败 =====, 订单ID: ${orderId}, 总耗时: ${totalDuration}ms, 错误:`, error);
+    } finally {
+      this._ongoingLogisticsRefreshes.delete(orderId);
+      console.log(`[物流刷新] 订单 ${orderId} 从进行中列表移除, 当前进行中数量: ${this._ongoingLogisticsRefreshes.size}`);
     }
   },
 
@@ -634,7 +758,7 @@ Page({
       }
       queryPromise = orders.where(query).orderBy('updatedAtTs', 'desc').orderBy('_id', 'desc').limit(fetchLimit).get();
     } else if (status === "refund") {
-      let query = { ...baseQuery, status: _.in(['refund', 'refund_completed']) };
+      let query = { ...baseQuery, status: 'refund' };
       if (cursorCondition) {
         query = _.and([query, cursorCondition]);
       }
@@ -700,7 +824,7 @@ Page({
           } else if (status === "shipping") {
             latestQuery = orders.where({ ...baseQuery, status: _.in(['shipping', 'delivered']) });
           } else if (status === "refund") {
-            latestQuery = orders.where({ ...baseQuery, status: _.in(['refund', 'refund_completed']) });
+            latestQuery = orders.where({ ...baseQuery, status: 'refund' });
           } else if (status === "completed") {
             latestQuery = orders.where({ ...baseQuery, status: _.in(['completed', 'refund_completed']) });
           } else {
@@ -917,17 +1041,11 @@ Page({
           break;
 
         case "completed":
+          // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
           statusText = "已完成";
           break;
         case "refund":
-          // 根据售后状态显示更详细的状态
-          if (order.afterSalesStatus === 'processing') {
-            statusText = "处理中";
-          } else if (order.afterSalesStatus === 'pending') {
-            statusText = "待处理";
-          } else {
-            statusText = "售后中";
-          }
+          statusText = "售后处理中";
           break;
         case "refund_completed":
           // 根据售后结果显示更详细的状态
@@ -1686,7 +1804,7 @@ Page({
   },
 
   _updateOrderLogisticsState(orderId, logisticsResult) {
-    const { state, stateName, isCheck } = logisticsResult;
+    const { state, stateName, isCheck, advancedStateName, advancedStateMeaning } = logisticsResult;
     const orders = [...this.data.orders];
     const orderIndex = orders.findIndex(item => item._id === orderId);
     
@@ -1694,10 +1812,13 @@ Page({
       orders[orderIndex].logisticsState = {
         state: state || '',
         stateName: stateName || '',
+        advancedStateName: advancedStateName || '',
+        advancedStateMeaning: advancedStateMeaning || '',
         isCheck: isCheck || '',
         lastGetTime: new Date()
       };
       this.setData({ orders });
+      this.processOrders(orders);
     }
     
     const originalOrders = [...this.data.originalOrders];
@@ -1706,6 +1827,8 @@ Page({
       originalOrders[originalIndex].logisticsState = {
         state: state || '',
         stateName: stateName || '',
+        advancedStateName: advancedStateName || '',
+        advancedStateMeaning: advancedStateMeaning || '',
         isCheck: isCheck || '',
         lastGetTime: new Date()
       };
@@ -1783,7 +1906,7 @@ Page({
           setTimeout(() => {
             this.onShow();
           }, 1500);
-        } else if (logisticsResult.result.orderId) {
+        } else if (logisticsResult.result.orderId && !logisticsResult.result.fromCache) {
           this._updateOrderLogisticsState(orderId, logisticsResult.result);
         }
       }
@@ -1810,7 +1933,14 @@ Page({
       let stateMeaning = '';
       let displayStateText = '未知状态';
 
-      if (stateMap) {
+      const orderLogisticsState = this.data.logisticsMapData?.logisticsState || {};
+      const hasAdvancedInfo = orderLogisticsState.advancedStateName && orderLogisticsState.advancedStateMeaning;
+
+      if (hasAdvancedInfo) {
+        displayStateText = `【${orderLogisticsState.advancedStateName}】${orderLogisticsState.advancedStateMeaning}`;
+        stateName = orderLogisticsState.advancedStateName;
+        stateMeaning = orderLogisticsState.advancedStateMeaning;
+      } else if (stateMap) {
         const matchedState = stateMap.advanced[state] || stateMap.basic[state] || stateMap.advanced[fallbackState] || stateMap.basic[fallbackState] || null;
         if (matchedState) {
           stateName = matchedState.name || stateName;
@@ -2122,7 +2252,7 @@ Page({
     if (status === 'pending') return 'pending';
     if (status === 'paid') return 'paid';
     if (['shipping', 'delivered'].includes(status)) return 'shipping';
-    if (['refund', 'refund_completed'].includes(status)) return 'refund';
+    if (['refund'].includes(status)) return 'refund';
     if (['completed', 'refund_completed'].includes(status)) return 'completed';
     if (status === 'cancelled') return 'cancelled';
     
@@ -2160,7 +2290,7 @@ Page({
     }
 
     if (selectedStatus === 'refund') {
-      return ['refund', 'refund_completed'].includes(order.status);
+      return order.status === 'refund';
     }
 
     if (selectedStatus === 'completed') {

@@ -514,64 +514,30 @@ Page({
       
       console.log('准备创建订单:', orderData);
       
-      // 直接操作，先扣减库存，再创建订单
-      // 检查订单数据和商品信息
       if (!orderData || !orderData.products || orderData.products.length === 0) {
         throw new Error('订单数据或商品信息为空');
       }
       
-      console.log('开始扣减库存，商品数量:', orderData.products.length);
+      console.log('通过事务创建订单，商品数量:', orderData.products.length);
       
-      // 并行扣减库存
-      const stockPromises = orderData.products.map(product => {
-        if (!product.productId) {
-          return Promise.reject(new Error('商品ID为空'));
+      const createOrderRes = await wx.cloud.callFunction({
+        name: 'updateOrderStatus',
+        data: {
+          operation: 'createOrder',
+          params: {
+            orderData,
+            countDown: countDownMinutes
+          }
         }
-        if (!product.quantity) {
-          return Promise.reject(new Error('商品数量为空'));
-        }
-        
-        return db.collection('products').doc(product.productId).get()
-          .then(productRes => {
-            if (!productRes.data) {
-              throw new Error('商品不存在');
-            }
-            
-            const currentStock = productRes.data.stock || 0;
-            if (currentStock < product.quantity) {
-              throw new Error('商品库存不足');
-            }
-            
-            const newStock = currentStock - product.quantity;
-            console.log('准备更新商品库存，商品ID:', product.productId, '当前库存:', currentStock, '扣减数量:', product.quantity, '新库存:', newStock);
-            
-            return wx.cloud.callFunction({
-              name: 'updateStock',
-              data: {
-                productId: product.productId,
-                stock: newStock
-              }
-            }).catch(error => {
-              console.error('云函数更新库存失败，尝试直接更新:', error);
-              return db.collection('products').doc(product.productId).update({
-                data: { stock: newStock }
-              });
-            });
-          });
       });
       
-      await Promise.all(stockPromises);
+      if (!createOrderRes.result || !createOrderRes.result.success) {
+        throw new Error(createOrderRes.result?.error || '创建订单失败');
+      }
       
-      console.log('库存扣减成功');
-      
-      // 保存订单到数据库
-      const orderRes = await db.collection('orders').add({
-        data: orderData
-      });
-      
-      console.log("订单创建成功", orderRes);
-      console.log("订单ID:", orderRes._id);
-      const dbOrderId = orderRes._id;
+      console.log("订单创建成功（事务已提交）", createOrderRes.result);
+      console.log("订单ID:", createOrderRes.result.data.orderId);
+      const dbOrderId = createOrderRes.result.data.orderId;
       console.log("数据库订单ID:", dbOrderId);
       
       // 异步记录订单创建日志，不影响主流程

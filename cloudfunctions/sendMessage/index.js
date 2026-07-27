@@ -77,10 +77,6 @@ exports.main = async (event, context) => {
       message.cloudPath = normalizedExtra.cloudPath || '';
     }
     
-    // 保存消息
-    await db.collection('messages').add({ data: message });
-    
-    // 更新会话摘要：只保存消息列表真正需要的轻量字段，避免历史结构中 mediaMeta=null 引发嵌套更新冲突。
     const lastMessagePreview = {
       _id: message._id,
       content: message.content,
@@ -102,7 +98,6 @@ exports.main = async (event, context) => {
     const safeUnreadCountUser = Number.isFinite(unreadCountUser) ? unreadCountUser : 0;
     const safeUnreadCountCustomerService = Number.isFinite(unreadCountCustomerService) ? unreadCountCustomerService : 0;
     
-    // 初始化未读数量字段（如果不存在）
     if (!Number.isFinite(unreadCountUser)) {
       updateData.unreadCountUser = 0;
       session.unreadCountUser = 0;
@@ -118,7 +113,6 @@ exports.main = async (event, context) => {
       console.log('初始化unreadCount字段为0');
     }
     
-    // 根据发送者身份增加接收方的未读数
     console.log('发送者角色:', role);
     console.log('会话当前未读数量:', {
       unreadCountUser: session.unreadCountUser,
@@ -127,15 +121,11 @@ exports.main = async (event, context) => {
     });
     
     if (role === 'customer_service') {
-      // 客服发送消息，增加用户的未读计数
       updateData.unreadCountUser = safeUnreadCountUser + 1;
-      // 同时更新unreadCount字段，确保兼容性
       updateData.unreadCount = updateData.unreadCountUser;
       console.log('客服发送消息，更新用户未读计数为:', updateData.unreadCountUser);
     } else if (role === 'user') {
-      // 用户发送消息，增加客服的未读计数
       updateData.unreadCountCustomerService = safeUnreadCountCustomerService + 1;
-      // 同时更新unreadCount字段，确保兼容性
       updateData.unreadCount = updateData.unreadCountCustomerService;
       console.log('用户发送消息，更新客服未读计数为:', updateData.unreadCountCustomerService);
     } else {
@@ -144,19 +134,14 @@ exports.main = async (event, context) => {
     
     console.log('最终更新数据:', updateData);
     
-    // 更新会话
-    try {
-      await db.collection('sessions').doc(sessionId).update({
+    await db.runTransaction(async (transaction) => {
+      await transaction.collection('messages').add({ data: message });
+      await transaction.collection('sessions').doc(sessionId).update({
         data: updateData
       });
-      console.log('会话更新成功');
-    } catch (error) {
-      console.error('会话更新失败:', error);
-      return {
-        success: false,
-        error: '会话更新失败'
-      };
-    }
+    });
+    
+    console.log('发送消息完成（事务已提交）');
     
     return {
       success: true,

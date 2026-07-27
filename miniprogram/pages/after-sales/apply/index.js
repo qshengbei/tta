@@ -83,6 +83,16 @@ function getShippingResponsibility(reasonValue) {
   return sellerReasons.includes(reasonValue) ? 'seller' : 'buyer';
 }
 
+const QUALITY_REASONS = [
+  'empty_package', 'lost', 'no_tracking', 'damaged_rejected',
+  'size_mismatch', 'color_mismatch', 'material_mismatch', 'fade',
+  'quality', 'missing', 'damaged', 'wrong_item'
+];
+
+function isQualityReason(reasonValue) {
+  return QUALITY_REASONS.includes(reasonValue);
+}
+
 function getShippingResponsibilityText(value) {
   return value === 'buyer' ? '买家承担' : '商家承担';
 }
@@ -104,12 +114,14 @@ Page({
     showRefundTypeModal: false,
     showGoodsStatusModal: false,
     showReasonModal: false,
+    showRulesModal: false,
     
     requireProof: false,
     imageOptional: false,
     
     proofImages: [],
     proofVideos: [],
+    proofVideoThumbs: [],
     description: '',
     
     refundAmount: '',
@@ -236,7 +248,7 @@ Page({
         contactPhone = order.address.phone;
       }
 
-      const remainingDays = this.calculateRemainingDays(order);
+      const remainingDaysInfo = this.calculateRemainingDays(order);
 
       this.setData({
         order,
@@ -247,7 +259,9 @@ Page({
         refundAmount: Math.round(maxRefundAmount * 100) / 100,
         contactName,
         contactPhone,
-        remainingDays
+        remainingNormalDays: remainingDaysInfo.normal,
+        remainingQualityDays: remainingDaysInfo.quality,
+        remainingDays: remainingDaysInfo.normal
       });
 
       wx.hideLoading();
@@ -260,13 +274,34 @@ Page({
   },
 
   calculateRemainingDays(order) {
-    const receiptTime = parseFlexibleDate(order.logisticsState?.checkTime) || parseFlexibleDate(order.receiptTime);
-    if (!receiptTime) return 7;
+    // 判断是否已确认收货（交易成功）
+    const isTransactionCompleted = ['completed', 'refund'].includes(order.status);
+    
+    let receiptTime;
+    let normalDays;
+    
+    if (isTransactionCompleted) {
+      // 交易成功后：优先使用签收时间，回退到确认收货时间（签收后7天/15天）
+      receiptTime = parseFlexibleDate(order.logisticsState?.checkTime) || parseFlexibleDate(order.receiptTime);
+      normalDays = 7;
+    } else {
+      // 交易成功前：使用发货时间（发货后10天/15天）
+      receiptTime = parseFlexibleDate(order.shippingTime);
+      normalDays = 10;
+    }
+    
+    if (!receiptTime) return { normal: normalDays, quality: 15 };
     
     const now = new Date();
-    const diff = receiptTime.getTime() + 7 * 24 * 60 * 60 * 1000 - now.getTime();
-    if (diff <= 0) return 0;
-    return Math.floor(diff / (24 * 60 * 60 * 1000));
+    
+    const startDate = new Date(receiptTime.getFullYear(), receiptTime.getMonth(), receiptTime.getDate() + 1, 0, 0, 0);
+    const diff = now.getTime() - startDate.getTime();
+    const daysPassed = Math.floor(diff / (24 * 60 * 60 * 1000));
+    
+    const remainingNormalDays = Math.max(0, normalDays - daysPassed);
+    const remainingQualityDays = Math.max(0, 15 - daysPassed);
+    
+    return { normal: remainingNormalDays, quality: remainingQualityDays };
   },
 
   showRefundTypeModal() {
@@ -336,6 +371,14 @@ Page({
     this.setData({ showReasonModal: false });
   },
 
+  showAfterSalesRules() {
+    this.setData({ showRulesModal: true });
+  },
+
+  closeRulesModal() {
+    this.setData({ showRulesModal: false });
+  },
+
   selectReason(e) {
     const reasonItem = e.currentTarget.dataset.reason;
     const parsedReason = JSON.parse(reasonItem);
@@ -349,8 +392,10 @@ Page({
       requireProof: parsedReason.requireProof && !parsedReason.imageOptional,
       imageOptional: !!parsedReason.imageOptional,
       shippingResponsibility,
+      isQualityReason: isQualityReason(parsedReason.value),
       proofImages: [],
       proofVideos: [],
+      proofVideoThumbs: [],
       description: ''
     });
 
@@ -381,6 +426,14 @@ Page({
     this.setData({ proofImages });
   },
 
+  previewImage(e) {
+    const index = Number(e.currentTarget.dataset.index || 0);
+    wx.previewImage({
+      current: this.data.proofImages[index],
+      urls: this.data.proofImages
+    });
+  },
+
   chooseVideo() {
     if (this.data.proofVideos.length >= 1) {
       wx.showToast({ title: '最多上传1个视频', icon: 'none' });
@@ -395,10 +448,21 @@ Page({
       success: (res) => {
         const files = Array.isArray(res.tempFiles) ? res.tempFiles : [];
         if (files.length) {
+          const file = files[0];
+          console.log('[申请售后视频] 选择视频:', {
+            tempFilePath: file.tempFilePath,
+            thumbTempFilePath: file.thumbTempFilePath,
+            size: file.size,
+            duration: file.duration
+          });
           this.setData({
-            proofVideos: [files[0].tempFilePath]
+            proofVideos: [file.tempFilePath],
+            proofVideoThumbs: [file.thumbTempFilePath || '']
           });
         }
+      },
+      fail: (err) => {
+        console.error('[申请售后视频] 选择失败:', err);
       }
     });
   },
@@ -406,8 +470,31 @@ Page({
   deleteVideo(e) {
     const index = Number(e.currentTarget.dataset.index || 0);
     const proofVideos = [...this.data.proofVideos];
+    const proofVideoThumbs = [...this.data.proofVideoThumbs];
     proofVideos.splice(index, 1);
-    this.setData({ proofVideos });
+    proofVideoThumbs.splice(index, 1);
+    this.setData({ proofVideos, proofVideoThumbs });
+  },
+
+  previewVideo() {
+    const videoSrc = this.data.proofVideos[0];
+    if (!videoSrc) {
+      wx.showToast({ title: '视频不存在', icon: 'none' });
+      return;
+    }
+
+    wx.previewMedia({
+      sources: [{
+        url: videoSrc,
+        type: 'video'
+      }],
+      current: 0,
+      showmenu: true,
+      fail: (err) => {
+        console.error('[申请售后视频] 全屏预览失败:', err);
+        wx.showToast({ title: '视频预览失败，请稍后重试', icon: 'none' });
+      }
+    });
   },
 
   onDescriptionInput(e) {
@@ -494,8 +581,22 @@ Page({
 
     wx.showLoading({ title: '提交中...' });
 
+    console.log('=== 提交售后申请日志 ===');
+    console.log('订单ID:', this.data.order._id);
+    console.log('订单状态:', this.data.order.status);
+    console.log('售后类型:', this.data.refundType);
+    console.log('售后原因:', reason);
+    console.log('售后原因代码:', reasonValue);
+    console.log('剩余常规售后天数:', this.data.remainingNormalDays);
+    console.log('剩余质量售后天数:', this.data.remainingQualityDays);
+    console.log('签收时间(checkTime):', this.data.order?.logisticsState?.checkTime);
+    console.log('确认收货时间(receiptTime):', this.data.order?.receiptTime);
+    console.log('发货时间(shippingTime):', this.data.order?.shippingTime);
+    console.log('交易是否完成:', ['completed', 'refund'].includes(this.data.order.status));
+    console.log('========================');
+
     // 先处理视频，生成缩略图
-    this.processVideosWithThumbs(proofVideos)
+    this.processVideosWithThumbs(proofVideos, this.data.proofVideoThumbs)
       .then(({ uploadedVideos, uploadedThumbs }) => {
         // 上传图片
         const imageUploadPromises = proofImages.map((image, index) => wx.cloud.uploadFile({
@@ -553,6 +654,9 @@ Page({
         
         wx.hideLoading();
         wx.showToast({ title: '售后申请提交成功', icon: 'success' });
+        
+        getApp().globalData.needRefreshOrderDetail = true;
+        
         setTimeout(() => {
           if (caseId) {
             wx.navigateTo({ url: `/pages/after-sales/detail/index?id=${caseId}` });
@@ -571,54 +675,40 @@ Page({
       });
   },
 
-  async processVideosWithThumbs(videos) {
+  async processVideosWithThumbs(videos, videoThumbs) {
     const uploadedVideos = [];
     const uploadedThumbs = [];
-    
+    const thumbs = Array.isArray(videoThumbs) ? videoThumbs : [];
+
     for (let i = 0; i < videos.length; i++) {
       const videoPath = videos[i];
-      
+      const localThumb = thumbs[i] || '';
+
       // 上传视频
       const videoRes = await wx.cloud.uploadFile({
         cloudPath: `after-sales/videos/${Date.now()}_${i}.mp4`,
         filePath: videoPath
       });
       uploadedVideos.push(videoRes.fileID);
-      
-      // 生成并上传缩略图
-      const thumbPath = await this.generateVideoThumbnail(videoPath, i);
-      if (thumbPath) {
-        const thumbRes = await wx.cloud.uploadFile({
-          cloudPath: `after-sales/thumbs/${Date.now()}_${i}.png`,
-          filePath: thumbPath
-        });
-        uploadedThumbs.push(thumbRes.fileID);
+
+      // 上传缩略图（来自 wx.chooseMedia 的 thumbTempFilePath）
+      if (localThumb) {
+        try {
+          const thumbRes = await wx.cloud.uploadFile({
+            cloudPath: `after-sales/thumbs/${Date.now()}_${i}.jpg`,
+            filePath: localThumb
+          });
+          uploadedThumbs.push(thumbRes.fileID);
+        } catch (e) {
+          console.error('[申请售后视频] 缩略图上传失败:', e);
+          uploadedThumbs.push('');
+        }
       } else {
         uploadedThumbs.push('');
       }
     }
-    
-    return { uploadedVideos, uploadedThumbs };
-  },
 
-  generateVideoThumbnail(videoPath, index) {
-    return new Promise((resolve) => {
-      wx.compressVideo({
-        src: videoPath,
-        quality: 'low',
-        success: (res) => {
-          // 使用压缩后的视频第一帧作为缩略图
-          // 通过拼接URL参数获取第一帧
-          const thumbUrl = `${res.tempFilePath}?vframe/jpg/offset/0/w/400/h/400`;
-          resolve(res.tempFilePath);
-        },
-        fail: () => {
-          // 如果压缩失败，尝试使用原视频的第一帧
-          const thumbUrl = `${videoPath}?vframe/jpg/offset/0/w/400/h/400`;
-          resolve(videoPath);
-        }
-      });
-    });
+    return { uploadedVideos, uploadedThumbs };
   },
 
   goBack() {

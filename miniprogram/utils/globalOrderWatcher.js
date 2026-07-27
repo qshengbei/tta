@@ -503,7 +503,7 @@ class GlobalOrderWatcher {
     if (status === 'pending') return 'pending';
     if (status === 'paid') return 'paid';
     if (['shipping', 'delivered'].includes(status)) return 'shipping';
-    if (['refund', 'refund_completed'].includes(status)) return 'refund';
+    if (['refund'].includes(status)) return 'refund';
     if (['completed', 'refund_completed'].includes(status)) return 'completed';
     if (status === 'cancelled') return 'cancelled';
     
@@ -527,7 +527,7 @@ class GlobalOrderWatcher {
     if (statusTag === 'pending' && status === 'pending') return true;
     if (statusTag === 'paid' && status === 'paid') return true;
     if (statusTag === 'shipping' && ['shipping', 'delivered'].includes(status)) return true;
-    if (statusTag === 'refund' && ['refund', 'refund_completed'].includes(status)) return true;
+    if (statusTag === 'refund' && status === 'refund') return true;
     if (statusTag === 'completed' && ['completed', 'refund_completed'].includes(status)) return true;
     if (statusTag === 'cancelled' && status === 'cancelled') return true;
     

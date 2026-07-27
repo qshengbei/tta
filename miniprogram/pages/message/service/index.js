@@ -2222,7 +2222,7 @@ Page({
         paid: '待发货',
         shipping: '待收货',
         completed: '已完成',
-        refund: '售后中',
+        refund: '售后处理中',
         refund_completed: '售后完成',
         cancelled: '已取消'
       },
@@ -2240,7 +2240,19 @@ Page({
         cancelled: '已取消'
       }
     };
-    return (statusMap[deliveryType] && statusMap[deliveryType][status]) || order.statusText || order.status || '订单';
+    let defaultText = (statusMap[deliveryType] && statusMap[deliveryType][status]) || order.statusText || order.status || '订单';
+
+    if (status === 'refund_completed' && order.afterSalesResult) {
+      if (order.afterSalesResult.includes('部分')) {
+        defaultText = '部分退款';
+      } else if (order.afterSalesResult.includes('换货')) {
+        defaultText = '换货完成';
+      } else if (order.afterSalesResult.includes('退款')) {
+        defaultText = '退款完成';
+      }
+    }
+
+    return defaultText;
   },
   buildOrderPickerItem(order = {}) {
     const firstProduct = (order.products && order.products[0]) || {};
@@ -2284,7 +2296,10 @@ Page({
       if ((item._deliveryType || 'express') !== normalizedDelivery) return false;
       if (normalizedStatus === 'all') return true;
       if (normalizedStatus === 'refund') {
-        return item._status === 'refund' || item._status === 'refund_completed';
+        return item._status === 'refund';
+      }
+      if (normalizedStatus === 'completed') {
+        return item._status === 'completed' || item._status === 'refund_completed';
       }
       return item._status === normalizedStatus;
     });

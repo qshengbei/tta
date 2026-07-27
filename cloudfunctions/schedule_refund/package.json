@@ -1,0 +1,9 @@
+{
+  "name": "schedule_refund",
+  "version": "1.0.0",
+  "description": "定时处理待退款记录",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

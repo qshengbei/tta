@@ -1,0 +1,56 @@
+<view class="return-tracking">
+  <view class="return-tracking__header">
+    <view class="return-tracking__header-left"></view>
+    <view class="return-tracking__header-title"></view>
+    <view class="return-tracking__header-right"></view>
+  </view>
+
+  <view class="return-tracking__content">
+    <view class="return-tracking__order-info">
+      <text class="return-tracking__order-label">售后单号：</text>
+      <text class="return-tracking__order-value">{{caseInfo.caseNo || caseId}}</text>
+    </view>
+
+    <view class="return-tracking__order-info">
+      <text class="return-tracking__order-label">订单号：</text>
+      <text class="return-tracking__order-value">{{orderInfo.orderNumber}}</text>
+    </view>
+
+    <view class="return-tracking__logistics-section">
+      <text class="return-tracking__section-title">寄回物流信息</text>
+
+      <view class="return-tracking__form-item">
+        <text class="return-tracking__form-label">快递公司：</text>
+        <view class="return-tracking__form-select" bindtap="showCompanyPicker">
+          <text class="return-tracking__form-select-value">{{selectedCompany ? selectedCompany.name : '请选择快递公司'}}</text>
+          <text class="return-tracking__form-select-arrow">▼</text>
+        </view>
+      </view>
+
+      <view class="return-tracking__form-item">
+        <text class="return-tracking__form-label">快递单号：</text>
+        <input class="return-tracking__form-input" placeholder="请输入快递单号" value="{{trackingNumber}}" bindinput="inputTrackingNumber" />
+      </view>
+    </view>
+
+    <button class="return-tracking__submit-btn" bindtap="submitReturnTracking" disabled="{{!selectedCompany || !trackingNumber || submitting}}">
+      {{submitting ? '提交中...' : '确认提交'}}
+    </button>
+  </view>
+
+  <view class="return-tracking__picker" wx:if="{{showCompanyPicker}}">
+    <view class="return-tracking__picker-mask" bindtap="hideCompanyPicker"></view>
+    <view class="return-tracking__picker-content">
+      <view class="return-tracking__picker-header">
+        <text class="return-tracking__picker-cancel" bindtap="hideCompanyPicker">取消</text>
+        <text class="return-tracking__picker-title">选择快递公司</text>
+        <text class="return-tracking__picker-confirm" bindtap="confirmCompany">确定</text>
+      </view>
+      <picker-view class="return-tracking__picker-view" indicator-style="height: 50px;" style="width: 100%; height: 300px;" value="{{companyPickerValue}}" bindchange="companyPickerChange">
+        <picker-view-column>
+          <view wx:for="{{expressCompanies}}" wx:key="code" style="height: 50px; line-height: 50px; text-align: center;">{{item.name}}</view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+  </view>
+</view>

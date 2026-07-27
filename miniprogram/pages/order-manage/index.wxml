@@ -259,7 +259,7 @@
           <view wx:for="{{afterSalesCases}}" wx:key="_id" class="after-sales-case-item" catchtap="selectAfterSalesCase" data-case-doc="{{item}}">
             <view class="after-sales-case-item__header">
               <text class="after-sales-case-item__no">售后单号：{{item.caseNo || item._id}}</text>
-              <text class="after-sales-case-item__status">{{item.caseStatus === 'submitted' ? '待审核' : item.caseStatus === 'reviewing' ? '审核中' : item.caseStatus === 'waiting_buyer_return' ? '待买家寄回' : item.caseStatus === 'waiting_seller_receive' ? '待商家收货' : item.caseStatus === 'processing' ? '处理中' : item.caseStatus}}</text>
+              <text class="after-sales-case-item__status">{{item.caseStatus === 'submitted' ? '待审核' : item.caseStatus === 'reviewing' ? '审核中' : item.caseStatus === 'waiting_buyer_return' ? '待买家寄回' : item.caseStatus === 'waiting_seller_receive' ? '待商家收货' : item.caseStatus === 'seller_reviewing' ? '商家验货中' : item.caseStatus === 'seller_returning' ? '商家寄回中' : item.caseStatus === 'buyer_receiving' ? '待买家收货' : item.caseStatus === 'pending_refund' ? '待退款' : item.caseStatus === 'intercepting' ? '拦截中' : item.caseStatus}}</text>
             </view>
             <view class="after-sales-case-item__content">
               <text class="after-sales-case-item__reason">申请原因：{{item.applyReasonText || item.applyDescription || '售后申请'}}</text>

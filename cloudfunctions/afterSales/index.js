@@ -108,6 +108,45 @@ exports.main = async (event, context) => {
       return result.result || result;
     }
 
+    if (action === 'getDetail') {
+      // 查询售后详情
+      const { caseId, orderId } = data;
+      
+      console.log('查询售后详情，caseId:', caseId, 'orderId:', orderId);
+      
+      if (!caseId && !orderId) {
+        return {
+          success: false,
+          error: '缺少参数'
+        };
+      }
+      
+      let query = db.collection('after_sales_cases');
+      
+      if (caseId) {
+        query = query.doc(caseId);
+      } else if (orderId) {
+        query = query.where({ orderId }).limit(1);
+      }
+      
+      const res = await query.get();
+      
+      if (res.data) {
+        const afterSales = caseId ? res.data : (res.data[0] || null);
+        if (afterSales) {
+          return {
+            success: true,
+            data: afterSales
+          };
+        }
+      }
+      
+      return {
+        success: false,
+        error: '售后记录不存在'
+      };
+    }
+
     return {
       success: false,
       error: '不支持的操作类型'

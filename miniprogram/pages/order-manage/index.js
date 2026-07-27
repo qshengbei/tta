@@ -115,7 +115,7 @@ Page({
   },
 
   async getActiveAfterSalesCases(orderId) {
-    const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'intercepting'];
+    const activeStatuses = ['submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'seller_reviewing', 'seller_returning', 'buyer_receiving', 'pending_refund', 'processing', 'intercepting'];
     const caseRes = await db.collection('after_sales_cases').where({
       orderId,
       caseStatus: db.command.in(activeStatuses)
@@ -192,8 +192,11 @@ Page({
       cancelled: '已取消',
       waiting_buyer_return: '待买家寄回',
       waiting_seller_receive: '待商家收货',
+      seller_received: '商家验货中',
       seller_reviewing: '商家验货中',
       seller_returning: '商家寄回中',
+      buyer_receiving: '待买家收货',
+      pending_refund: '待退款',
       intercepting: '拦截中'
     };
     return statusMap[status] || status || '待处理';

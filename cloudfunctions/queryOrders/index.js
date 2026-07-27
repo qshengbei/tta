@@ -35,7 +35,7 @@ exports.main = async (event, context) => {
     } else if (status === 'shipping') {
       conditions.push({ status: _.in(['shipping', 'delivered']) });
     } else if (status === 'refund') {
-      conditions.push({ status: _.in(['refund', 'refund_completed']) });
+      conditions.push({ status: 'refund' });
     } else if (status === 'completed') {
       conditions.push({ status: _.in(['completed', 'refund_completed']) });
     } else if (status) {

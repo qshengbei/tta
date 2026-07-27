@@ -1,65 +1,31 @@
-[性能分析][商品详情页] ====== onLoad 开始 ======
-当前openid: o1R-w7S-1p19alqjb6dVUyYdunSs
-查询历史地址开始
-查询条件 openid: o1R-w7S-1p19alqjb6dVUyYdunSs
-[性能分析][商品详情页] 从数据库获取商品详情
-[性能分析][商品详情页] ====== onShow 开始 ======
-[性能分析][商品详情页] setData pageVisible=true 耗时: 1ms
-[GlobalProductWatcher] Page subscribed: product_detail_fb39ee6269aecedd00cb426d7f7d0f02_1783616672130 cacheKey: product_detail_fb39ee6269aecedd00cb426d7f7d0f02
-[GlobalProductWatcher] Page visibility: product_detail_fb39ee6269aecedd00cb426d7f7d0f02_1783616672130 true
-[性能分析][商品详情页] onShow: 3ms
-[pages/product-detail/index] Some selectors are not allowed in component wxss, including tag name selectors, ID selectors, and attribute selectors.(./components/quantity-selector/index.wxss:46:17)
-[pages/product-detail/index] Some selectors are not allowed in component wxss, including tag name selectors, ID selectors, and attribute selectors.(./components/cart-preview/index.wxss:61:21)
-[性能分析][商品详情页] 数据库查询: 324ms
-[性能分析][商品详情页] 数据库返回商品数据: 1026 bytes = 1.00 KB
-[性能分析][商品详情页] 开始获取同布料商品，materialId: cdb193f369b1677e002dab497f43ddbb
-[性能分析][商品详情页] setData 商品数据(数据库) 耗时: 3ms
-[性能分析][商品详情页] 图片分析: 封面图= true , 详情图数量= 2 , 总图片数= 3
-[性能分析][商品详情页] 预览图片URLs: 3 个
-[性能分析][商品详情页] getCoverImageUrl 开始, coverImage: cloud://cloud1-4gs2vu8c6544e586.636c-cloud1-4gs2vu8c6544e586-1408542930/products/scrunchie-blue-cover.jpg
-[性能分析][商品详情页] fetchProduct(数据库): 339ms
-获取客服方法配置: custom
-查询结果: [{…}]
-最新的地址信息: {_id: "da3d566169b7aec7005cdcff728bc99c", _openid: "o1R-w7S-1p19alqjb6dVUyYdunSs", address: "福建省厦门市集美区苑东路", createdAt: "<Date: 2026-05-27T19:06:11.711Z>", location: {…}, …}
-省份信息: 福建省
-设置当前省份为: 福建省
-[pages/product-detail/index] [Component] <canvas>: canvas 2d 接口支持同层渲染且性能更佳，建议切换使用。详见文档 https://developers.weixin.qq.com/miniprogram/dev/component/canvas.html#Canvas-2D-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81
-[pages/product-detail/index]  提示： text 组件包含了长文本，可以考虑增加 user-select 属性，方便用户复制。
-缓存设置成功: expressRules
-运费规则: {fee: 4, freeShipping: 40, provinces: Array(1), region: "福建省内", sort: 1}
-商品总价: 39
-包邮条件: 40
-运费: 4
-[性能分析][商品详情页] getCoverImageUrl 成功, 耗时: 418 ms
-[性能分析][商品详情页] 临时URL: https://636c-cloud1-4gs2vu8c6544e586-1408542930.tc...
-Fri Jul 10 2026 01:04:32 GMT+0800 (中国标准时间) 云开发数据库索引建议
-发起的如下数据库查询经自动检测发现以下问题，且可能缺乏高效的索引支持，如果此查询需在生产环境频繁使用，建议建立相应完整索引
-查询语句:
-db.collection('products').where({
-  materialId: 'cdb193f369b1677e002dab497f43ddbb'
-})
-.orderBy('_id', 'desc')
-.get()
-索引建议 : 
-组合索引: 
-  materialId: 升序
-  _id: 降序
-
-快速创建索引链接：cloud://createindex?env=cloud1-4gs2vu8c6544e586&collection=products&from=console&s=%5B%7B%22field%22%3A%22materialId%22%2C%22type%22%3A1%7D%2C%7B%22field%22%3A%22_id%22%2C%22type%22%3A-1%7D%5D
-如建立上述建议的索引，有以下相同前缀的多余索引可以考虑新索引建立完成后去除：
-索引 1: (索引名 idx_products_materialId)
-  materialId: 升序
-
-[性能分析][商品详情页] 图片加载完成: 类型= cover 索引= 0 尺寸= 4672x4672 像素数= 21,827,584
-[性能分析][商品详情页] 图片加载完成: 类型= detail 索引= 1 尺寸= 4672x4672 像素数= 21,827,584
-Fri Jul 10 2026 01:04:33 GMT+0800 (中国标准时间) 云开发数据库索引建议
-发起的如下数据库查询经自动检测发现以下问题
-查询语句:
-db.collection('settings').where({})
-.get()
-1. 全量查询告警: 空查询语句可能需扫全表
-[性能分析][商品详情页] 分组结果: (2) [{…}, {…}]
-[性能分析][商品详情页] 同布料商品分组数据: 20658 bytes = 20.17 KB
-[性能分析][商品详情页] setData 同布料商品分组 耗时: 4ms
-[性能分析][商品详情页] 同布料商品已缓存
-[性能分析][商品详情页] fetchSameMaterialProducts: 1365ms
+START RequestId: 27d387ed-807d-45e0-8389-ee15f6ceb10a
+Event RequestId: 27d387ed-807d-45e0-8389-ee15f6ceb10a
+389-ee15f6ceb10a	templateId: undefined
+2026-07-26T17:33:14.420Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	data: undefined
+2026-07-26T17:33:14.420Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	extras: undefined
+2026-07-26T17:33:14.420Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	初始化售后通知模板...
+2026-07-26T17:33:14.421Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.462Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.511Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.543Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.590Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.635Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.685Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.729Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.764Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.817Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.859Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.899Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.954Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:14.999Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.048Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.095Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.208Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.245Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.283Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.320Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.368Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+2026-07-26T17:33:15.416Z	27d387ed-807d-45e0-8389-ee15f6ceb10a	[TCB][WARN] 当前未指定env，将默认使用当前函数所在环境的环境：cloud1-4gs2vu8c6544e586！
+Response RequestId: 27d387ed-807d-45e0-8389-ee15f6ceb10a RetMsg: {"success":false,"successCount":0,"failCount":22,"results":[{"templateId":"template_user_after_sales_cancel","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_submit_return_tracking","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_modify_return_tracking","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_confirm_return_received","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_admin_after_sales_apply","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_admin_after_sales_submit_return_tracking","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_admin_after_sales_modify_return_tracking","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_admin_after_sales_cancel","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_admin_after_sales_confirm_return_received","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_approve_refund","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_approve_exchange","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_reject","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_confirm_receipt","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_inspect_pass_refund","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_inspect_pass_exchange","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_inspect_fail","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_fill_return_tracking","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_complete_refund","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_complete_exchange","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_auto_confirm_receipt","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_auto_confirm_return_received","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"},{"templateId":"template_user_after_sales_auto_approve","action":"error","success":false,"error":"document.set:fail -501007 invalid parameters. 不能更新_id的值"}]}
+END RequestId: 27d387ed-807d-45e0-8389-ee15f6ceb10a
+Report RequestId: 27d387ed-807d-45e0-8389-ee15f6ceb10a Duration: 1049ms Memory: 256MB MemUsage: 26.605469MB

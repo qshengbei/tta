@@ -35,7 +35,7 @@ const STATUS_TEXT_MAP = {
   reviewing: '审核中',
   waiting_buyer_return: '待买家寄回',
   waiting_seller_receive: '待商家收货',
-  processing: '处理中',
+  pending_refund: '待退款',
   rejected: '已拒绝',
   completed: '已完成',
   cancelled: '已取消',
@@ -43,6 +43,7 @@ const STATUS_TEXT_MAP = {
   approved: '已通过',
   seller_reviewing: '商家验货中',
   seller_returning: '商家寄回中',
+  buyer_receiving: '待买家收货',
   intercepting: '正在拦截快递'
 };
 
@@ -59,6 +60,7 @@ const STATUS_DESC_MAP = {
   approved: '您的售后申请已通过，我们将尽快为您处理',
   seller_reviewing: '商家正在验货，请耐心等待',
   seller_returning: '商家正在将商品寄回，请留意物流信息',
+  buyer_receiving: '商家已寄回商品，请注意查收并确认收货',
   intercepting: '客服正在拦截快递，请耐心等待后续处理'
 };
 
@@ -74,10 +76,12 @@ const STATUS_CLASS_MAP = {
   pending: 'status-section__status--pending',
   approved: 'status-section__status--approved',
   seller_reviewing: 'status-section__status--pending',
-  seller_returning: 'status-section__status--processing'
+  seller_returning: 'status-section__status--processing',
+  buyer_receiving: 'status-section__status--processing',
+  intercepting: 'status-section__status--pending'
 };
 
-const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'processing', 'approved'];
+const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
 
 function parseDate(value) {
@@ -137,8 +141,22 @@ Page({
     isExpired: false,
     processingExpired: false,
     autoProcessCountdown: '',
-    pageVisible: false
+    pageVisible: false,
+    showLogistics: false,
+    logisticsData: null,
+    logisticsMapData: null,
+    logisticsModalTitle: '',
+    logisticsMapCenter: {
+      latitude: 39.908823,
+      longitude: 116.397470
+    },
+    logisticsMapScale: 10,
+    logisticsTrackPoints: [],
+    logisticsStateMap: null,
+    operationLogs: [] // 操作记录
   },
+
+  detectTimer: null,
 
   onLoad(options) {
     const id = options.id;
@@ -156,6 +174,11 @@ Page({
       this.fetchAfterSalesDetail(this.caseId);
       console.log('[售后详情页面] 开始实时监听');
       this.startAfterSalesWatch();
+    }
+    
+    // 加载物流状态映射
+    if (!this.data.logisticsStateMap) {
+      this.getStateMap();
     }
   },
 
@@ -207,6 +230,8 @@ Page({
             this.startAutoProcessCountdown();
             // 获取退款记录
             this.fetchRefundRecord(id);
+            // 获取操作记录
+            this.fetchOperationLogs(id);
             wx.hideLoading();
           });
       })
@@ -312,7 +337,7 @@ Page({
       contactPhone: record.contactPhone || '',
       createdAtText: formatTime(record.createdAt),
       updatedAtText: formatTime(record.updatedAt),
-      processInfo: record.processSummary
+      processInfo: record.processSummary && record.processSummary.result
         ? {
             opinion: record.processSummary.result || '',
             processTimeText: formatTime(record.processSummary.processTime || null)
@@ -321,7 +346,13 @@ Page({
       itemCount: Number(record.itemCount || 0) || 0,
       totalApplyQty: Number(record.totalApplyQty || 0) || 0,
       reasonCode: record.applyReasonCode || record.reasonCode || '',
-      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode))
+      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode)),
+      returnTrackingNumber: record.returnLogisticsInfo?.trackingNumber || '',
+      returnCompanyCode: record.returnLogisticsInfo?.companyCode || '',
+      returnCompanyName: record.returnLogisticsInfo?.companyName || '',
+      returnLogisticsInfo: record.returnLogisticsInfo || null,
+      sellerReturnLogistics: record.sellerReturnLogistics || null,
+      inspectEvidence: record.inspectEvidence || null
     };
   },
 
@@ -368,6 +399,7 @@ Page({
       applyQty: Number(item.applyQty || 0) || 0,
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
+      itemStatus: status,
       statusText: STATUS_TEXT_MAP[status] || status,
       shippingResponsibilityText: getShippingResponsibilityText(item.shippingResponsibility),
       productSupports7DayReturn: item.productSupports7DayReturn || false
@@ -455,6 +487,194 @@ Page({
     }));
   },
 
+  // 找到第一个待买家收货的明细
+  getFirstBuyerReceivingItem() {
+    const items = this.data.afterSalesItems || [];
+    return items.find(item => item.itemStatus === 'buyer_receiving');
+  },
+
+  // 买家确认收到商家寄回的商品
+  handleConfirmReturnReceived() {
+    const targetItem = this.getFirstBuyerReceivingItem();
+    if (!targetItem) {
+      wx.showToast({ title: '没有待确认的寄回商品', icon: 'none' });
+      return;
+    }
+
+    wx.showModal({
+      title: '确认收货',
+      content: '确认已收到商家寄回的商品吗？',
+      success: (res) => {
+        if (res.confirm) {
+          this.performConfirmReturnReceived(targetItem._id);
+        }
+      }
+    });
+  },
+
+  performConfirmReturnReceived(itemId) {
+    wx.showLoading({ title: '确认中...' });
+    wx.cloud.callFunction({
+      name: 'updateOrderStatus',
+      data: {
+        orderId: this.data.afterSales.orderId,
+        operation: 'processAfterSales',
+        params: {
+          caseId: this.data.afterSales._id,
+          itemId: itemId,
+          itemAction: 'confirm_return_received',
+          operatorType: 'user',
+          result: '买家确认收到寄回商品'
+        }
+      }
+    }).then(res => {
+      wx.hideLoading();
+      if (!res.result || !res.result.success) {
+        throw new Error(res.result?.error || '确认收货失败');
+      }
+      wx.showToast({ title: '确认成功', icon: 'success' });
+      getApp().globalData.needRefreshOrderDetail = true;
+      getApp().globalData.needRefreshOrderList = true;
+      setTimeout(() => {
+        this.fetchAfterSalesDetail(this.caseId);
+      }, 800);
+    }).catch(err => {
+      wx.hideLoading();
+      console.error('确认收到寄回商品失败:', err);
+      wx.showToast({ title: err.message || '确认收货失败', icon: 'none' });
+    });
+  },
+
+  // 查看商家寄回物流
+  async showSellerReturnLogistics() {
+    const sellerReturnLogistics = this.data.afterSales.sellerReturnLogistics || {};
+    const { trackingNumber, companyCode, companyName } = sellerReturnLogistics;
+    if (!trackingNumber || !companyCode) {
+      wx.showToast({ title: '没有寄回物流信息', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '查询物流中...' });
+
+    try {
+      console.log('[寄回物流] 调用云函数参数:', {
+        action: 'queryReturnLogisticsAndUpdateCase',
+        expressNo: trackingNumber,
+        companyCode: companyCode,
+        caseId: this.data.afterSales._id
+      });
+
+      const res = await wx.cloud.callFunction({
+        name: 'express100',
+        data: {
+          action: 'queryReturnLogisticsAndUpdateCase',
+          expressNo: trackingNumber,
+          companyCode: companyCode,
+          caseId: this.data.afterSales._id,
+          logisticsType: 'seller_return'
+        }
+      });
+      wx.hideLoading();
+      console.log('[寄回物流] 物流查询返回结果:', res);
+
+      if (res.result?.success && res.result.data) {
+        const rawLogisticsData = res.result.data;
+        const logisticsData = {
+          ...res.result,
+          data: rawLogisticsData.data || [],
+          nu: rawLogisticsData.nu || trackingNumber,
+          com: rawLogisticsData.com || companyCode,
+          status: rawLogisticsData.status || '',
+          state: rawLogisticsData.state || ''
+        };
+
+        const state = logisticsData.state || '';
+        const latestTrack = Array.isArray(logisticsData.data) && logisticsData.data.length > 0 ? logisticsData.data[0] : null;
+        const fallbackState = (
+          logisticsData.stateEx ||
+          logisticsData.advancedState ||
+          (latestTrack && (latestTrack.statusCode || latestTrack.stateEx)) ||
+          ''
+        );
+
+        const stateMap = this.data.logisticsStateMap;
+        let stateName = '未知状态';
+        let stateMeaning = '';
+        let displayStateText = '未知状态';
+
+        if (stateMap) {
+          const matchedState = stateMap.advanced[state] || stateMap.basic[state] || stateMap.advanced[fallbackState] || stateMap.basic[fallbackState] || null;
+          if (matchedState) {
+            stateName = matchedState.name || stateName;
+            stateMeaning = matchedState.meaning || stateMeaning;
+            displayStateText = matchedState.meaning
+              ? `【${matchedState.name}】${matchedState.meaning}`
+              : matchedState.name;
+          }
+        }
+
+        if (displayStateText === '未知状态') {
+          displayStateText = (latestTrack && latestTrack.status) || (stateMeaning ? `【${stateName}】${stateMeaning}` : stateName);
+        }
+
+        logisticsData.stateName = stateName;
+        logisticsData.stateMeaning = stateMeaning;
+        logisticsData.displayStateText = displayStateText;
+
+        const trackPoints = [];
+        let centerLatitude = 39.908823;
+        let centerLongitude = 116.397470;
+        let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+
+        if (logisticsData.data && logisticsData.data.length > 0) {
+          logisticsData.data.forEach((item, index) => {
+            if (item.latitude && item.longitude) {
+              trackPoints.push({
+                id: index,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                width: 8,
+                height: 8,
+                iconPath: '/miniprogram/images/icons/快递轨迹点.png'
+              });
+              minLat = Math.min(minLat, item.latitude);
+              maxLat = Math.max(maxLat, item.latitude);
+              minLng = Math.min(minLng, item.longitude);
+              maxLng = Math.max(maxLng, item.longitude);
+            }
+          });
+          if (trackPoints.length > 0) {
+            centerLatitude = (minLat + maxLat) / 2;
+            centerLongitude = (minLng + maxLng) / 2;
+          }
+        }
+
+        this.setData({
+          showLogistics: true,
+          logisticsModalTitle: '商家寄回物流信息',
+          logisticsData: logisticsData,
+          logisticsMapData: {
+            trackingNumber: trackingNumber,
+            companyName: companyName || logisticsData.com || companyCode,
+            status: logisticsData.status
+          },
+          logisticsMapCenter: {
+            latitude: centerLatitude,
+            longitude: centerLongitude
+          },
+          logisticsMapScale: 10,
+          logisticsTrackPoints: trackPoints
+        });
+      } else {
+        wx.showToast({ title: '查询物流失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.error('查询寄回物流失败:', err);
+      wx.showToast({ title: '查询物流失败', icon: 'none' });
+    }
+  },
+
   previewImage(e) {
     const index = e.currentTarget.dataset.index;
     const images = this.data.afterSales.proofImages;
@@ -462,6 +682,38 @@ Page({
       current: images[index],
       urls: images
     });
+  },
+
+  previewInspectImage(e) {
+    const index = Number(e.currentTarget.dataset.index || 0);
+    const evidence = this.data.afterSales.inspectEvidence;
+    const images = evidence && Array.isArray(evidence.images) ? evidence.images : [];
+    if (images.length > 0) {
+      wx.previewImage({
+        current: images[index],
+        urls: images
+      });
+    }
+  },
+
+  previewInspectVideo() {
+    const evidence = this.data.afterSales.inspectEvidence;
+    const videos = evidence && Array.isArray(evidence.videos) ? evidence.videos : [];
+    if (videos.length > 0) {
+      const sources = videos.map(item => ({
+        url: item,
+        type: 'video'
+      }));
+      wx.previewMedia({
+        sources: sources,
+        current: 0,
+        showmenu: true,
+        fail: (err) => {
+          console.error('[售后详情] 验货视频预览失败:', err);
+          wx.showToast({ title: '视频预览失败，请稍后重试', icon: 'none' });
+        }
+      });
+    }
   },
 
   playVideo(e) {
@@ -546,6 +798,236 @@ Page({
 
   goBack() {
     wx.navigateBack();
+  },
+
+  goToReturnTracking() {
+    const afterSales = this.data.afterSales;
+    const orderId = afterSales.orderId || this.data.orderId || '';
+    const caseId = afterSales._id || '';
+    
+    let url = `/pages/after-sales/return-tracking/index?orderId=${orderId}&caseId=${caseId}`;
+    
+    if (afterSales.status === 'waiting_seller_receive' && afterSales.returnLogisticsInfo?.trackingNumber) {
+      url += `&trackingNumber=${encodeURIComponent(afterSales.returnLogisticsInfo.trackingNumber)}`;
+      url += `&companyCode=${encodeURIComponent(afterSales.returnLogisticsInfo.companyCode)}`;
+      url += `&companyName=${encodeURIComponent(afterSales.returnLogisticsInfo.companyName)}`;
+    }
+    
+    wx.navigateTo({ url });
+  },
+
+  async getStateMap() {
+    try {
+      const result = await wx.cloud.callFunction({
+        name: 'express100',
+        data: {
+          action: 'getStateMap'
+        }
+      });
+      if (result.result.success) {
+        this.setData({
+          logisticsStateMap: result.result.data
+        });
+      }
+    } catch (error) {
+      console.error('[售后详情] 获取物流状态映射失败:', error);
+    }
+  },
+
+  async showReturnLogistics() {
+    const returnLogisticsInfo = this.data.afterSales.returnLogisticsInfo || {};
+    const { trackingNumber, companyCode, companyName } = returnLogisticsInfo;
+    if (!trackingNumber || !companyCode) {
+      wx.showToast({ title: '没有退货物流信息', icon: 'none' });
+      return;
+    }
+
+    wx.showLoading({ title: '查询物流中...' });
+
+    try {
+      console.log('[退货物流] 调用云函数参数:', {
+        action: 'queryReturnLogisticsAndUpdateCase',
+        expressNo: trackingNumber,
+        companyCode: companyCode,
+        caseId: this.data.afterSales._id
+      });
+      
+      const res = await wx.cloud.callFunction({
+        name: 'express100',
+        data: {
+          action: 'queryReturnLogisticsAndUpdateCase',
+          expressNo: trackingNumber,
+          companyCode: companyCode,
+          caseId: this.data.afterSales._id
+        }
+      });
+      wx.hideLoading();
+      console.log('[退货物流] 物流查询返回结果:', res);
+      console.log('[退货物流] result完整对象:', JSON.stringify(res.result));
+      console.log('[退货物流] 是否命中缓存:', res.result?.fromCache ? '是' : '否');
+      
+      if (res.result?.success && res.result.data) {
+        const rawLogisticsData = res.result.data;
+        console.log('[退货物流] 原始物流数据:', rawLogisticsData);
+        
+        const logisticsData = {
+          ...res.result,
+          data: rawLogisticsData.data || [],
+          nu: rawLogisticsData.nu || trackingNumber,
+          com: rawLogisticsData.com || companyCode,
+          status: rawLogisticsData.status || '',
+          state: rawLogisticsData.state || ''
+        };
+        
+        const state = logisticsData.state || '';
+        console.log('[退货物流] state:', state);
+        
+        const latestTrack = Array.isArray(logisticsData.data) && logisticsData.data.length > 0 ? logisticsData.data[0] : null;
+        console.log('[退货物流] latestTrack:', latestTrack);
+        
+        const fallbackState = (
+          logisticsData.stateEx ||
+          logisticsData.advancedState ||
+          (latestTrack && (latestTrack.statusCode || latestTrack.stateEx)) ||
+          ''
+        );
+        console.log('[退货物流] fallbackState:', fallbackState);
+        
+        const stateMap = this.data.logisticsStateMap;
+        console.log('[退货物流] stateMap:', stateMap);
+        
+        let stateName = '未知状态';
+        let stateMeaning = '';
+        let displayStateText = '未知状态';
+        
+        if (stateMap) {
+          console.log('[退货物流] stateMap.advanced:', stateMap.advanced);
+          console.log('[退货物流] stateMap.basic:', stateMap.basic);
+          
+          const matchedState = stateMap.advanced[state] || stateMap.basic[state] || stateMap.advanced[fallbackState] || stateMap.basic[fallbackState] || null;
+          console.log('[退货物流] matchedState:', matchedState);
+          
+          if (matchedState) {
+            stateName = matchedState.name || stateName;
+            stateMeaning = matchedState.meaning || stateMeaning;
+            displayStateText = matchedState.meaning
+              ? `【${matchedState.name}】${matchedState.meaning}`
+              : matchedState.name;
+          }
+        }
+        
+        console.log('[退货物流] stateName:', stateName, 'stateMeaning:', stateMeaning, 'displayStateText:', displayStateText);
+
+        if (displayStateText === '未知状态') {
+          displayStateText = (latestTrack && latestTrack.status) || (stateMeaning ? `【${stateName}】${stateMeaning}` : stateName);
+        }
+        
+        logisticsData.stateName = stateName;
+        logisticsData.stateMeaning = stateMeaning;
+        logisticsData.displayStateText = displayStateText;
+
+        const trackPoints = [];
+        let centerLatitude = 39.908823;
+        let centerLongitude = 116.397470;
+        let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+
+        if (logisticsData.data && logisticsData.data.length > 0) {
+          logisticsData.data.forEach((item, index) => {
+            if (item.latitude && item.longitude) {
+              trackPoints.push({
+                id: index,
+                latitude: item.latitude,
+                longitude: item.longitude,
+                width: 8,
+                height: 8,
+                iconPath: '/miniprogram/images/icons/快递轨迹点.png'
+              });
+
+              minLat = Math.min(minLat, item.latitude);
+              maxLat = Math.max(maxLat, item.latitude);
+              minLng = Math.min(minLng, item.longitude);
+              maxLng = Math.max(maxLng, item.longitude);
+            }
+          });
+
+          if (trackPoints.length > 0) {
+            centerLatitude = (minLat + maxLat) / 2;
+            centerLongitude = (minLng + maxLng) / 2;
+          }
+        }
+
+        this.setData({
+          showLogistics: true,
+          logisticsModalTitle: '退货物流信息',
+          logisticsData: logisticsData,
+          logisticsMapData: {
+            trackingNumber: trackingNumber,
+            companyName: companyName || logisticsData.com || companyCode,
+            status: logisticsData.status
+          },
+          logisticsMapCenter: {
+            latitude: centerLatitude,
+            longitude: centerLongitude
+          },
+          logisticsMapScale: 10,
+          logisticsTrackPoints: trackPoints
+        });
+      } else {
+        wx.showToast({ title: '查询物流失败', icon: 'none' });
+      }
+    } catch (err) {
+      wx.hideLoading();
+      console.error('查询退货物流失败:', err);
+      wx.showToast({ title: '查询物流失败', icon: 'none' });
+    }
+  },
+
+  closeLogistics() {
+    this.setData({ showLogistics: false });
+  },
+
+  resetMap() {
+    const trackPoints = this.data.logisticsTrackPoints;
+    if (trackPoints.length > 0) {
+      let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+      trackPoints.forEach(item => {
+        minLat = Math.min(minLat, item.latitude);
+        maxLat = Math.max(maxLat, item.latitude);
+        minLng = Math.min(minLng, item.longitude);
+        maxLng = Math.max(maxLng, item.longitude);
+      });
+      this.setData({
+        logisticsMapCenter: {
+          latitude: (minLat + maxLat) / 2,
+          longitude: (minLng + maxLng) / 2
+        },
+        logisticsMapScale: 10
+      });
+    }
+  },
+
+  fullScreenMap() {
+    wx.showToast({ title: '全屏地图暂未实现', icon: 'none' });
+  },
+
+  preventTouchMove() {},
+
+  formatLogisticsInfo(logisticsData) {
+    if (!logisticsData || !logisticsData.data) {
+      return '暂无物流信息';
+    }
+
+    const { data, stateName, companyName, trackingNumber } = logisticsData;
+    let info = `快递公司：${companyName || '未知'}\n运单号：${trackingNumber || '未知'}\n当前状态：${stateName || '未知'}\n\n物流轨迹：\n`;
+
+    const tracks = Array.isArray(data) ? data : [];
+    tracks.forEach((track, index) => {
+      const time = track.time || '';
+      const context = track.context || track.status || '';
+      info += `${index + 1}. ${time} ${context}\n`;
+    });
+
+    return info;
   },
 
   shouldAutoApproveImmediately() {
@@ -725,5 +1207,88 @@ Page({
     }).catch(err => {
       console.error('获取退款记录失败:', err);
     });
+  },
+
+  fetchOperationLogs(caseId) {
+    if (!caseId) return;
+
+    const db = wx.cloud.database();
+    db.collection('after_sales_logs')
+      .where({ caseId })
+      .orderBy('createdAt', 'desc')
+      .get()
+      .then(res => {
+        const actionMap = {
+          'create_case': '提交售后申请',
+          'approve_refund': '同意退款申请',
+          'approve_exchange': '同意换货申请',
+          'reject_refund': '拒绝退款申请',
+          'reject_exchange': '拒绝换货申请',
+          'complete_refund': '完成退款',
+          'complete_exchange': '完成换货',
+          'complete_case_refund': '完成退款',
+          'complete_case_exchange': '完成换货',
+          'complete_case_after_sales': '售后完成',
+          'cancel_case': '取消申请',
+          'start_intercepting': '开始拦截快递',
+          'approve_intercepting': '拦截成功',
+          'reject_intercepting': '拦截失败',
+          'submit_return_tracking': '填写退货单号',
+          'modify_return_tracking': '修改退货单号',
+          'confirm_receipt_refund': '确认收货',
+          'confirm_receipt_exchange': '确认收货',
+          'inspect_pass_refund': '验货通过',
+          'inspect_pass_exchange': '验货通过',
+          'inspect_fail_refund': '验货不通过',
+          'inspect_fail_exchange': '验货不通过',
+          'fill_return_tracking_refund': '填写寄回单号',
+          'fill_return_tracking_exchange': '填写寄回单号',
+          'confirm_return_received_refund': '确认收到寄回商品',
+          'confirm_return_received_exchange': '确认收到寄回商品',
+          'auto_confirm_return_received_refund': '系统自动确认寄回收货',
+          'auto_confirm_return_received_exchange': '系统自动确认寄回收货'
+        };
+
+        const logs = (res.data || []).map(log => {
+          let actionText = '';
+          let operatorText = '';
+
+          actionText = actionMap[log.action] || log.action;
+
+          if (log.operatorType === 'admin') {
+            operatorText = '管理员';
+          } else if (log.operatorType === 'system') {
+            operatorText = '系统';
+          } else {
+            operatorText = '用户';
+          }
+
+          let createdAtText = '';
+          if (log.createdAt) {
+            const date = new Date(log.createdAt);
+            if (!isNaN(date.getTime())) {
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              const hours = String(date.getHours()).padStart(2, '0');
+              const minutes = String(date.getMinutes()).padStart(2, '0');
+              createdAtText = `${year}-${month}-${day} ${hours}:${minutes}`;
+            }
+          }
+
+          return {
+            ...log,
+            actionText,
+            operatorText,
+            createdAtText
+          };
+        });
+
+        this.setData({ operationLogs: logs });
+      })
+      .catch(err => {
+        console.error('获取操作记录失败:', err);
+        this.setData({ operationLogs: [] });
+      });
   }
 });

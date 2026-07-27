@@ -16,37 +16,37 @@ const CACHE_DURATION = 30 * 60 * 1000 // 30分钟
 
 // 物流状态数据
 const logisticsStateData = [
-  { state: '1', stateName: '揽收', advancedState: '1', advancedStateName: '揽收', meaning: '快件揽件' },
-  { state: '1', stateName: '揽收', advancedState: '101', advancedStateName: '已下单', meaning: '已经下快件单' },
-  { state: '1', stateName: '揽收', advancedState: '102', advancedStateName: '待揽收', meaning: '待快递公司揽收' },
-  { state: '1', stateName: '揽收', advancedState: '103', advancedStateName: '已揽收', meaning: '快递公司已经揽收' },
-  { state: '0', stateName: '在途', advancedState: '0', advancedStateName: '在途', meaning: '快件在途中' },
-  { state: '0', stateName: '在途', advancedState: '1001', advancedStateName: '到达派件城市', meaning: '快件到达收件人城市' },
-  { state: '0', stateName: '在途', advancedState: '1002', advancedStateName: '干线', meaning: '快件处于运输过程中' },
-  { state: '0', stateName: '在途', advancedState: '1003', advancedStateName: '转递', meaning: '快件发往到新的收件地址' },
-  { state: '5', stateName: '派件', advancedState: '5', advancedStateName: '派件', meaning: '快件正在派件' },
-  { state: '5', stateName: '派件', advancedState: '501', advancedStateName: '投柜或驿站', meaning: '快件已经投递到快递柜或者快递驿站' },
-  { state: '3', stateName: '签收', advancedState: '3', advancedStateName: '签收', meaning: '快件已签收' },
-  { state: '3', stateName: '签收', advancedState: '301', advancedStateName: '本人签收', meaning: '收件人正常签收' },
-  { state: '3', stateName: '签收', advancedState: '302', advancedStateName: '派件异常后签收', meaning: '快件显示派件异常，但后续正常签收' },
-  { state: '3', stateName: '签收', advancedState: '303', advancedStateName: '代签', meaning: '快件已被代签' },
-  { state: '3', stateName: '签收', advancedState: '304', advancedStateName: '投柜或站签收', meaning: '快件已从快递柜或者驿站取出签收' },
-  { state: '6', stateName: '退回', advancedState: '6', advancedStateName: '退回', meaning: '快件正处于返回发货人的途中' },
+  { state: '1', stateName: '已揽收', advancedState: '1', advancedStateName: '揽收', meaning: '快件揽件' },
+  { state: '1', stateName: '已揽收', advancedState: '101', advancedStateName: '已下单', meaning: '已经下快件单' },
+  { state: '1', stateName: '已揽收', advancedState: '102', advancedStateName: '待揽收', meaning: '待快递公司揽收' },
+  { state: '1', stateName: '已揽收', advancedState: '103', advancedStateName: '已揽收', meaning: '快递公司已经揽收' },
+  { state: '0', stateName: '运输中', advancedState: '0', advancedStateName: '在途', meaning: '快件在途中' },
+  { state: '0', stateName: '运输中', advancedState: '1001', advancedStateName: '到达派件城市', meaning: '快件到达收件人城市' },
+  { state: '0', stateName: '运输中', advancedState: '1002', advancedStateName: '干线', meaning: '快件处于运输过程中' },
+  { state: '0', stateName: '运输中', advancedState: '1003', advancedStateName: '转递', meaning: '快件发往到新的收件地址' },
+  { state: '5', stateName: '派送中', advancedState: '5', advancedStateName: '派件', meaning: '快件正在派件' },
+  { state: '5', stateName: '派送中', advancedState: '501', advancedStateName: '投柜或驿站', meaning: '快件已经投递到快递柜或者快递驿站' },
+  { state: '3', stateName: '已签收', advancedState: '3', advancedStateName: '签收', meaning: '快件已签收' },
+  { state: '3', stateName: '已签收', advancedState: '301', advancedStateName: '本人签收', meaning: '收件人正常签收' },
+  { state: '3', stateName: '已签收', advancedState: '302', advancedStateName: '派件异常后签收', meaning: '快件显示派件异常，但后续正常签收' },
+  { state: '3', stateName: '已签收', advancedState: '303', advancedStateName: '代签', meaning: '快件已被代签' },
+  { state: '3', stateName: '已签收', advancedState: '304', advancedStateName: '投柜或站签收', meaning: '快件已从快递柜或者驿站取出签收' },
+  { state: '6', stateName: '已退回', advancedState: '6', advancedStateName: '退回', meaning: '快件正处于返回发货人的途中' },
   { state: '4', stateName: '退签', advancedState: '4', advancedStateName: '退签', meaning: '此快件单已退签' },
   { state: '4', stateName: '退签', advancedState: '401', advancedStateName: '已销单', meaning: '此快件单已撤销' },
   { state: '14', stateName: '拒签', advancedState: '14', advancedStateName: '拒签', meaning: '收件人拒绝签收，且寄件人签收了' },
   { state: '7', stateName: '转投', advancedState: '7', advancedStateName: '转投', meaning: '快件转给其他快递公司邮寄' },
-  { state: '2', stateName: '疑难', advancedState: '2', advancedStateName: '疑难', meaning: '快件存在疑难' },
-  { state: '2', stateName: '疑难', advancedState: '201', advancedStateName: '超时未签收', meaning: '快件长时间派件后未签收' },
-  { state: '2', stateName: '疑难', advancedState: '202', advancedStateName: '超时未更新', meaning: '快件长时间没有派件或签收' },
-  { state: '2', stateName: '疑难', advancedState: '203', advancedStateName: '拒收', meaning: '收件人发起拒收快递,待发货方确认' },
-  { state: '2', stateName: '疑难', advancedState: '204', advancedStateName: '派件异常', meaning: '快件派件时遇到异常情况' },
-  { state: '2', stateName: '疑难', advancedState: '205', advancedStateName: '柜或驿站超时未取', meaning: '快件在快递柜或者驿站长时间未取' },
-  { state: '2', stateName: '疑难', advancedState: '206', advancedStateName: '无法联系', meaning: '无法联系到收件人' },
-  { state: '2', stateName: '疑难', advancedState: '207', advancedStateName: '超区', meaning: '超出快递公司的服务区范围' },
-  { state: '2', stateName: '疑难', advancedState: '208', advancedStateName: '滞留', meaning: '快件滞留在网点，没有派送' },
-  { state: '2', stateName: '疑难', advancedState: '209', advancedStateName: '破损', meaning: '快件破损' },
-  { state: '2', stateName: '疑难', advancedState: '210', advancedStateName: '销单', meaning: '寄件人申请撤销寄件' },
+  { state: '2', stateName: '异常', advancedState: '2', advancedStateName: '疑难', meaning: '快件存在疑难' },
+  { state: '2', stateName: '异常', advancedState: '201', advancedStateName: '超时未签收', meaning: '快件长时间派件后未签收' },
+  { state: '2', stateName: '异常', advancedState: '202', advancedStateName: '超时未更新', meaning: '快件长时间没有派件或签收' },
+  { state: '2', stateName: '异常', advancedState: '203', advancedStateName: '拒收', meaning: '收件人发起拒收快递,待发货方确认' },
+  { state: '2', stateName: '异常', advancedState: '204', advancedStateName: '派件异常', meaning: '快件派件时遇到异常情况' },
+  { state: '2', stateName: '异常', advancedState: '205', advancedStateName: '柜或驿站超时未取', meaning: '快件在快递柜或者驿站长时间未取' },
+  { state: '2', stateName: '异常', advancedState: '206', advancedStateName: '无法联系', meaning: '无法联系到收件人' },
+  { state: '2', stateName: '异常', advancedState: '207', advancedStateName: '超区', meaning: '超出快递公司的服务区范围' },
+  { state: '2', stateName: '异常', advancedState: '208', advancedStateName: '滞留', meaning: '快件滞留在网点，没有派送' },
+  { state: '2', stateName: '异常', advancedState: '209', advancedStateName: '破损', meaning: '快件破损' },
+  { state: '2', stateName: '异常', advancedState: '210', advancedStateName: '销单', meaning: '寄件人申请撤销寄件' },
   { state: '8', stateName: '清关', advancedState: '8', advancedStateName: '清关', meaning: '快件清关' },
   { state: '10', stateName: '待清关', advancedState: '10', advancedStateName: '待清关', meaning: '快件等待清关' },
   { state: '11', stateName: '清关中', advancedState: '11', advancedStateName: '清关中', meaning: '快件正在清关流程中' },
@@ -237,6 +237,8 @@ async function getLatestLogisticsCache(expressNo, companyCode) {
     const now = Date.now()
     let latest = null
 
+    console.log('[缓存查询] 开始查询 - expressNo:', expressNo, ', companyCode:', companyCode);
+
     if (expressNo && companyCode) {
       const byFields = await db.collection('logisticsInfo')
         .where({ expressNo, companyCode })
@@ -244,8 +246,10 @@ async function getLatestLogisticsCache(expressNo, companyCode) {
         .limit(1)
         .get()
 
+      console.log('[缓存查询] byFields结果 - count:', byFields.data?.length || 0);
       if (byFields.data && byFields.data.length > 0) {
         latest = byFields.data[0]
+        console.log('[缓存查询] byFields命中 - expressNo:', latest.expressNo, ', companyCode:', latest.companyCode, ', updatedAt:', latest.updatedAt);
       }
     }
 
@@ -261,12 +265,15 @@ async function getLatestLogisticsCache(expressNo, companyCode) {
         .limit(1)
         .get()
 
+      console.log('[缓存查询] legacy结果 - count:', legacy.data?.length || 0);
       if (legacy.data && legacy.data.length > 0) {
         latest = legacy.data[0]
+        console.log('[缓存查询] legacy命中 - key:', latest.key, ', expressNo:', latest.expressNo, ', companyCode:', latest.companyCode);
       }
     }
 
     if (!latest) {
+      console.log('[缓存查询] 未命中任何缓存');
       return { hit: false }
     }
 
@@ -323,6 +330,116 @@ async function initLogisticsStateData() {
 }
 
 /**
+ * 更新物流状态数据（将基础状态名称更新为淘宝风格）
+ * 执行方式: 在云开发控制台调用 express100 云函数，action: 'updateLogisticsStateData'
+ * 
+ * 更新范围:
+ * 1. logisticsState 集合 - 状态映射表（state -> stateName）
+ * 2. orders 集合 - 所有订单的 logisticsState.stateName 字段
+ */
+async function updateLogisticsStateData() {
+  try {
+    console.log('开始更新物流状态数据');
+    
+    const stateNameMap = {
+      '1': '已揽收',
+      '0': '运输中',
+      '5': '派送中',
+      '3': '已签收',
+      '6': '已退回',
+      '4': '退签',
+      '14': '拒签',
+      '7': '转投',
+      '2': '异常',
+      '8': '清关',
+      '10': '待清关',
+      '11': '清关中',
+      '12': '已清关',
+      '13': '清关异常'
+    };
+
+    let totalUpdated = 0;
+
+    console.log('=== 更新 logisticsState 集合 ===');
+    const stateRes = await db.collection('logisticsState').get();
+    const existingStateData = stateRes.data || [];
+    console.log(`查询到 ${existingStateData.length} 条物流状态映射数据`);
+
+    let stateUpdatedCount = 0;
+    const stateTasks = [];
+
+    existingStateData.forEach(item => {
+      const currentState = String(item.state || '');
+      const targetStateName = stateNameMap[currentState];
+      
+      if (targetStateName && item.stateName !== targetStateName) {
+        console.log(`更新状态映射 ${currentState}: ${item.stateName} -> ${targetStateName}`);
+        stateTasks.push(db.collection('logisticsState').doc(item._id).update({
+          data: {
+            stateName: targetStateName
+          }
+        }));
+        stateUpdatedCount++;
+      }
+    });
+
+    if (stateTasks.length > 0) {
+      await Promise.all(stateTasks);
+      console.log(`成功更新 ${stateUpdatedCount} 条物流状态映射数据`);
+    } else {
+      console.log('没有需要更新的物流状态映射数据');
+    }
+    totalUpdated += stateUpdatedCount;
+
+    console.log('=== 更新 orders 集合 ===');
+    const orderRes = await db.collection('orders').where({
+      logisticsState: db.command.exists(true)
+    }).get();
+    const existingOrders = orderRes.data || [];
+    console.log(`查询到 ${existingOrders.length} 条包含物流状态的订单`);
+
+    let orderUpdatedCount = 0;
+    const orderTasks = [];
+
+    existingOrders.forEach(order => {
+      if (!order.logisticsState) return;
+      
+      const currentState = String(order.logisticsState.state || '');
+      const targetStateName = stateNameMap[currentState];
+      
+      if (targetStateName && order.logisticsState.stateName !== targetStateName) {
+        console.log(`更新订单 ${order._id} 物流状态: ${order.logisticsState.stateName} -> ${targetStateName}`);
+        orderTasks.push(db.collection('orders').doc(order._id).update({
+          data: {
+            'logisticsState.stateName': targetStateName
+          }
+        }));
+        orderUpdatedCount++;
+      }
+    });
+
+    if (orderTasks.length > 0) {
+      await Promise.all(orderTasks);
+      console.log(`成功更新 ${orderUpdatedCount} 条订单的物流状态名称`);
+    } else {
+      console.log('没有需要更新的订单物流状态名称');
+    }
+    totalUpdated += orderUpdatedCount;
+
+    return { 
+      success: true, 
+      message: `物流状态数据更新完成，共更新 ${totalUpdated} 条记录（状态映射: ${stateUpdatedCount}条，订单: ${orderUpdatedCount}条）`,
+      stateUpdatedCount,
+      orderUpdatedCount,
+      totalUpdated
+    };
+  } catch (error) {
+    console.error('更新物流状态数据失败:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+/**
  * 获取物流状态映射
  */
 async function getStateMap() {
@@ -370,33 +487,37 @@ async function getStateMap() {
  */
 async function extractStateInfo(logisticsData) {
   if (!logisticsData || typeof logisticsData !== 'object') {
-    return { state: '', stateName: '', isCheck: '', arrivalTime: '' }
+    return { state: '', stateName: '', advancedStateName: '', advancedStateMeaning: '', isCheck: '', arrivalTime: '' }
   }
 
-  const state = logisticsData.state || logisticsData.advancedState || '';
+  const basicState = logisticsData.state || '';
+  const advancedState = logisticsData.advancedState || '';
   const isCheck = logisticsData.ischeck ?? logisticsData.isCheck ?? '';
 
-  // 获取状态映射
   const stateMap = await getStateMap();
   
-  // 优先查找 advancedState 对应的状态名
-  let stateName = '';
-  if (logisticsData.advancedState && stateMap.advanced && stateMap.advanced[logisticsData.advancedState]) {
-    stateName = stateMap.advanced[logisticsData.advancedState].name || '';
-  }
-  
-  // 如果没有找到，查找 state 对应的状态名
-  if (!stateName && state) {
-    if (stateMap.basic && stateMap.basic[state]) {
-      stateName = stateMap.basic[state].name || '';
-    } else if (stateMap.advanced && stateMap.advanced[state]) {
-      stateName = stateMap.advanced[state].name || '';
-    }
+  let basicStateName = '';
+  let advancedStateName = '';
+  let advancedStateMeaning = '';
+
+  if (basicState && stateMap.basic && stateMap.basic[basicState]) {
+    basicStateName = stateMap.basic[basicState].name || '';
+  } else if (basicState && stateMap.advanced && stateMap.advanced[basicState]) {
+    basicStateName = stateMap.advanced[basicState].name || '';
   }
 
+  if (advancedState && stateMap.advanced && stateMap.advanced[advancedState]) {
+    advancedStateName = stateMap.advanced[advancedState].name || '';
+    advancedStateMeaning = stateMap.advanced[advancedState].meaning || '';
+  }
+
+  const finalState = advancedState || basicState;
+
   return {
-    state,
-    stateName: stateName || logisticsData.stateName || '',
+    state: finalState,
+    stateName: basicStateName || logisticsData.stateName || '',
+    advancedStateName,
+    advancedStateMeaning,
     isCheck: String(isCheck),
     arrivalTime: String(
       logisticsData.arrivalTime ||
@@ -414,30 +535,104 @@ async function extractStateInfo(logisticsData) {
 async function smartCheck(expressNo) {
   const config = await getExpress100Config()
 
-  // 检查配置和接口启用状态
   if (!config.key || !config.customer || !isApiEnabled(config, 'smartCheck')) {
     return { success: false, error: '快递100配置未设置或智能判断接口未启用' }
   }
 
+  const maxRetries = 2;
+  const timeout = 5000;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const cleanKey = config.key.replace(/\s/g, '');
+      
+      const response = await axios.get('https://www.kuaidi100.com/autonumber/auto', {
+        params: {
+          num: expressNo,
+          key: cleanKey
+        },
+        timeout: timeout
+      })
+
+      if (response.data && response.data.auto && response.data.auto.length > 0) {
+        return { success: true, data: response.data }
+      } else if (response.data && response.data.auto) {
+        return { success: false, error: '未识别到快递公司', data: response.data }
+      } else {
+        throw new Error('接口返回格式异常');
+      }
+    } catch (error) {
+      lastError = error;
+      console.error(`智能判断接口调用失败（第${attempt}次）:`, error.message);
+      
+      if (attempt < maxRetries) {
+        console.log(`等待${attempt * 100}ms后重试...`);
+        await new Promise(resolve => setTimeout(resolve, attempt * 100));
+      }
+    }
+  }
+
+  return { success: false, error: lastError?.message || '智能判断接口调用失败', retried: maxRetries }
+}
+
+/**
+ * 快递信息基础查询接口（无需地址，resultv2=0）
+ * 适用于退货物流等无法获取发货地址的场景
+ */
+async function basicQuery(expressNo, companyCode, options = {}) {
+  const { skipCache = false } = options
+  const config = await getExpress100Config()
+
+  if (!config.key || !config.customer) {
+    return { success: false, error: '快递100配置未设置' }
+  }
+
+  const cacheKey = `basicQuery_${companyCode}_${expressNo}`
+
+  let cacheResult = { hit: false }
+  if (!skipCache) {
+    cacheResult = await checkCache(cacheKey)
+    if (cacheResult.hit) {
+      console.log('[基础查询] 命中缓存，直接返回。cacheKey=', cacheKey)
+      return { success: true, data: cacheResult.data, fromCache: true }
+    }
+  }
+
   try {
-    // 去除key值中的所有空白字符
-    const cleanKey = config.key.replace(/\s/g, '');
-    console.log('传递给快递100的key:', cleanKey);
-    console.log('key长度:', cleanKey.length);
-    console.log('key字符码:', cleanKey.split('').map(c => c.charCodeAt(0)));
-    
-    // 智能判断接口使用不同的URL和参数格式
-    const response = await axios.get('https://www.kuaidi100.com/autonumber/auto', {
-      params: {
-        num: expressNo,
-        key: cleanKey
+    const requestData = {
+      com: companyCode,
+      num: expressNo,
+      resultv2: '0'
+    }
+
+    const requestStr = JSON.stringify(requestData)
+    const sign = crypto.createHash('md5').update(requestStr + config.key + config.customer).digest('hex').toUpperCase()
+
+    const formData = new URLSearchParams({
+      customer: config.customer,
+      sign,
+      param: requestStr
+    })
+
+    const response = await axios.post(`${API_BASE_URL}/poll/query.do`, formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
     })
 
+    if (!(response.data && response.data.result === false)) {
+      await updateCache(cacheKey, response.data, cacheResult.cacheId, {
+        expressNo,
+        companyCode,
+        apiType: 'basicQuery'
+      })
+    }
+
     return { success: true, data: response.data }
   } catch (error) {
-    console.error('智能判断接口调用失败:', error)
-    return { success: false, error: error.message || '智能判断接口调用失败' }
+    console.error('基础查询接口调用失败:', error)
+    return { success: false, error: error.message || '基础查询接口调用失败' }
   }
 }
 
@@ -775,6 +970,8 @@ async function queryLogisticsAndUpdateOrder(expressNo, companyCode, fromAddress,
       logisticsState: {
         state: logisticsResult.state || '',
         stateName: logisticsResult.stateName || '',
+        advancedStateName: logisticsResult.advancedStateName || '',
+        advancedStateMeaning: logisticsResult.advancedStateMeaning || '',
         isCheck: logisticsResult.isCheck || '',
         lastGetTime: now,
         checkTime: logisticsResult.arrivalTime || ''
@@ -809,6 +1006,167 @@ async function queryLogisticsAndUpdateOrder(expressNo, companyCode, fromAddress,
       ...logisticsResult,
       orderUpdated: false,
       orderUpdateError: error.message
+    };
+  }
+}
+
+/**
+ * 查询退货物流信息并更新对应售后单状态（如果物流已签收）
+ * 使用基础查询接口（无需地址），适用于退货物流场景
+ */
+async function queryReturnLogisticsAndUpdateCase(expressNo, companyCode, fromAddress, toAddress, caseId, forceRefresh = false, logisticsType = '') {
+  const isSellerReturn = logisticsType === 'seller_return';
+  console.log('[退货物流] 开始查询退货物流:', { expressNo, companyCode, caseId, logisticsType, isSellerReturn });
+  
+  let logisticsResult = null;
+  
+  if (!forceRefresh) {
+    console.log('[退货物流] 检查缓存 - expressNo:', expressNo, ', companyCode:', companyCode);
+    const latestCache = await getLatestLogisticsCache(expressNo, companyCode);
+    console.log('[退货物流] 缓存检查结果:', { hit: latestCache.hit, ageMs: latestCache.ageMs, finished: latestCache.finished });
+    if (latestCache.hit) {
+      console.log('[退货物流] 命中缓存，直接返回');
+      const stateInfo = await extractStateInfo(latestCache.data);
+      logisticsResult = {
+        success: true,
+        data: latestCache.data,
+        state: stateInfo.state,
+        stateName: stateInfo.stateName,
+        isCheck: stateInfo.isCheck,
+        arrivalTime: stateInfo.arrivalTime,
+        lastGetTime: new Date(),
+        fromCache: true,
+        companyCode: companyCode
+      };
+    }
+  }
+  
+  if (!logisticsResult) {
+    logisticsResult = await basicQuery(expressNo, companyCode, { skipCache: true });
+    console.log('[退货物流] 未命中缓存，调用接口查询:', logisticsResult);
+    
+    if (logisticsResult.success && logisticsResult.data) {
+      const stateInfo = await extractStateInfo(logisticsResult.data);
+      console.log('[退货物流] extractStateInfo 返回:', stateInfo);
+      
+      logisticsResult.state = stateInfo.state;
+      logisticsResult.stateName = stateInfo.stateName;
+      logisticsResult.isCheck = stateInfo.isCheck;
+      logisticsResult.arrivalTime = stateInfo.arrivalTime;
+      
+      console.log('[退货物流] 处理后的 logisticsResult:', {
+        state: logisticsResult.state,
+        stateName: logisticsResult.stateName,
+        isCheck: logisticsResult.isCheck
+      });
+    }
+  }
+
+  if (!logisticsResult.success) {
+    return {
+      ...logisticsResult,
+      caseUpdated: false
+    };
+  }
+
+  if (logisticsResult.fromCache) {
+    console.log('[退货物流] 缓存命中，不更新数据库');
+    return {
+      ...logisticsResult,
+      caseUpdated: false,
+      fromCache: true
+    };
+  }
+
+  const isDelivered = String(logisticsResult.isCheck) === '1';
+
+  try {
+    let caseRes = null;
+    let afterSalesCase = null;
+    
+    if (caseId) {
+      caseRes = await db.collection('after_sales_cases').doc(caseId).get();
+      afterSalesCase = caseRes.data;
+    } else {
+      const trackingField = isSellerReturn ? 'sellerReturnLogistics.trackingNumber' : 'returnLogisticsInfo.trackingNumber';
+      caseRes = await db.collection('after_sales_cases')
+        .where({
+          [trackingField]: expressNo
+        })
+        .limit(1)
+        .get();
+      if (caseRes.data && caseRes.data.length > 0) {
+        afterSalesCase = caseRes.data[0];
+      }
+    }
+
+    if (!afterSalesCase) {
+      return {
+        ...logisticsResult,
+        caseUpdated: false,
+        caseUpdateMessage: '没有找到对应的售后单'
+      };
+    }
+    console.log('[退货物流] 找到售后单:', afterSalesCase._id, '当前状态:', afterSalesCase.caseStatus);
+    console.log('[退货物流] 当前 returnLogisticsInfo:', afterSalesCase.returnLogisticsInfo);
+    console.log('[退货物流] 当前 sellerReturnLogistics:', afterSalesCase.sellerReturnLogistics);
+
+    const now = new Date();
+    const logisticsStateFields = {
+      state: logisticsResult.state || '',
+      stateName: logisticsResult.stateName || '',
+      isCheck: logisticsResult.isCheck || '',
+      lastGetTime: now,
+      checkTime: logisticsResult.arrivalTime || ''
+    };
+
+    let updateData;
+    if (isSellerReturn) {
+      // 商家寄回物流：更新 sellerReturnLogistics 字段
+      updateData = {
+        sellerReturnLogistics: {
+          ...(afterSalesCase.sellerReturnLogistics || {}),
+          trackingNumber: (afterSalesCase.sellerReturnLogistics && afterSalesCase.sellerReturnLogistics.trackingNumber) || expressNo,
+          companyCode: (afterSalesCase.sellerReturnLogistics && afterSalesCase.sellerReturnLogistics.companyCode) || companyCode,
+          companyName: (afterSalesCase.sellerReturnLogistics && afterSalesCase.sellerReturnLogistics.companyName) || '',
+          ...logisticsStateFields
+        },
+        updatedAt: now
+      };
+    } else {
+      // 买家退货物流：更新 returnLogisticsInfo 字段
+      updateData = {
+        returnLogisticsInfo: {
+          ...afterSalesCase.returnLogisticsInfo,
+          ...logisticsStateFields
+        },
+        updatedAt: now
+      };
+    }
+
+    console.log('[退货物流] 准备更新的数据:', updateData);
+
+    // 注意：查询物流只是更新物流信息，不自动改变售后单状态
+    // 售后单状态变更应由管理员确认收货后手动触发
+
+    await db.collection('after_sales_cases').doc(afterSalesCase._id).update({
+      data: updateData
+    });
+    console.log('[退货物流] 数据库更新成功（仅更新物流信息，未改变售后单状态）');
+
+
+    return {
+      ...logisticsResult,
+      caseUpdated: true,
+      caseId: afterSalesCase._id,
+      caseStatus: afterSalesCase.caseStatus
+    };
+  } catch (error) {
+    console.error('自动更新售后单状态失败:', error);
+    return {
+      ...logisticsResult,
+      caseUpdated: false,
+      caseUpdateError: error.message
     };
   }
 }
@@ -859,6 +1217,8 @@ exports.main = async (event, context) => {
     switch (action) {
       case 'smartCheck':
         return await smartCheck(params.expressNo)
+      case 'basicQuery':
+        return await basicQuery(params.expressNo, params.companyCode, { skipCache: params.forceRefresh })
       case 'realTimeQuery':
         return await realTimeQuery(params.expressNo, params.companyCode, params.fromAddress, params.toAddress)
       case 'subscribe':
@@ -883,8 +1243,20 @@ exports.main = async (event, context) => {
           params.toAddress,
           params.forceRefresh
         )
+      case 'queryReturnLogisticsAndUpdateCase':
+        return await queryReturnLogisticsAndUpdateCase(
+          params.expressNo,
+          params.companyCode,
+          params.fromAddress,
+          params.toAddress,
+          params.caseId,
+          params.forceRefresh,
+          params.logisticsType
+        )
       case 'initLogisticsStateData':
         return await initLogisticsStateData()
+      case 'updateLogisticsStateData':
+        return await updateLogisticsStateData()
       case 'getStateMap':
         return { success: true, data: await getStateMap() }
       default:

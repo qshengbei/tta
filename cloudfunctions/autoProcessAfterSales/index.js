@@ -8,6 +8,9 @@ const LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 const EXPIRE_GRACE_MS = 1000;
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
 
+const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
+const REFUND_TYPES = ['refund', 'quality_refund', 'return_refund', 'quality_return_refund', 'refund_received', 'refund_not_received'];
+
 const { logOrderOperation } = require('./common/orderLogHelper');
 
 function normalizeDate(value) {
@@ -231,7 +234,6 @@ async function processImmediateApproval(caseRecord, now) {
 }
 
 exports.main = async (event, context) => {
-  context.callbackWaitsForEmptyEventLoop = false;
   const instanceId = `autoProcess_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
   try {
@@ -303,6 +305,7 @@ exports.main = async (event, context) => {
     let processedCount = 0;
     let failedCount = 0;
     let immediateCount = 0;
+    const logPromises = [];
 
     for (const caseRecord of normalizedCases) {
       if (caseRecord.autoProcessed) {
@@ -439,10 +442,25 @@ exports.main = async (event, context) => {
             data: orderUpdateData
           });
           
-          // 异步记录订单操作日志，不影响主流程
-          setImmediate(async () => {
+          // 异步记录订单操作日志，不阻塞主流程
+          const logPromise = (async () => {
             try {
-              const action = actionResult.action === 'intercept' ? 'auto_start_intercepting' : 'auto_process_after_sales';
+              let action = '';
+              let reason = '';
+              
+              if (actionResult.action === 'intercept') {
+                action = 'auto_start_intercepting';
+                reason = '系统自动拦截快递';
+              } else if (actionResult.action === 'auto_process') {
+                const isExchange = EXCHANGE_TYPES.includes(String(caseRecord.primaryAfterSalesType || caseRecord.type || ''));
+                const afterSalesTypeName = isExchange ? '换货' : '退款';
+                action = `auto_approve_${isExchange ? 'exchange' : 'refund'}`;
+                reason = `系统自动同意${afterSalesTypeName}申请`;
+              } else {
+                action = 'auto_process_after_sales';
+                reason = '系统自动处理售后';
+              }
+              
               await logOrderOperation(db, {
                 orderId: order._id,
                 orderNumber: order.orderNumber,
@@ -453,14 +471,15 @@ exports.main = async (event, context) => {
                 operatorType: 'system',
                 operatorId: '',
                 operatorName: '',
-                reason: '系统自动处理售后',
+                reason,
                 remark: '',
-                detail: { caseId: caseRecord._id, jobId: instanceId }
+                detail: { caseId: caseRecord._id, jobId: instanceId, afterSalesType: caseRecord.primaryAfterSalesType || caseRecord.type }
               });
             } catch (logError) {
               console.error('记录自动处理售后日志失败:', order._id, logError);
             }
-          });
+          })();
+          logPromises.push(logPromise);
         }
 
         await sendNotification(latestCase, notificationAction);
@@ -480,6 +499,11 @@ exports.main = async (event, context) => {
           console.error('清除processing失败:', caseRecord._id, clearError);
         }
       }
+    }
+
+    // 等待所有日志记录完成后再返回
+    if (logPromises.length > 0) {
+      await Promise.allSettled(logPromises);
     }
 
     return {

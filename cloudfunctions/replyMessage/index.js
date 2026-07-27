@@ -18,10 +18,6 @@ exports.main = async (event, context) => {
       status: 'sent'
     };
     
-    // 保存消息
-    await db.collection('messages').add({ data: message });
-    
-    // 更新会话
     const lastMessagePreview = {
       _id: message._id,
       content: message.content,
@@ -31,13 +27,19 @@ exports.main = async (event, context) => {
       status: message.status,
       createTime: message.createTime
     };
-    await db.collection('sessions').doc(sessionId).update({
-      data: {
-        lastMessage: lastMessagePreview,
-        lastMessageTime: new Date(),
-        lastActiveTime: new Date()
-      }
+    
+    await db.runTransaction(async (transaction) => {
+      await transaction.collection('messages').add({ data: message });
+      await transaction.collection('sessions').doc(sessionId).update({
+        data: {
+          lastMessage: lastMessagePreview,
+          lastMessageTime: new Date(),
+          lastActiveTime: new Date()
+        }
+      });
     });
+    
+    console.log('回复消息完成（事务已提交）');
     
     return {
       success: true,

@@ -93,7 +93,15 @@
       </view>
       <view class="meta-info__row">
         <text class="meta-info__label">剩余售后时限</text>
-        <text class="meta-info__value">剩余{{remainingDays}}天</text>
+        <view class="meta-info__value-row">
+          <text class="meta-info__value">
+            <text wx:if="{{remainingNormalDays > 0 && remainingQualityDays > 0}}">常规售后：{{remainingNormalDays}}天，质量售后：{{remainingQualityDays}}天</text>
+            <text wx:elif="{{remainingNormalDays > 0}}">常规售后：{{remainingNormalDays}}天，质量售后：已过期</text>
+            <text wx:elif="{{remainingQualityDays > 0}}">常规售后：已过期，质量售后：{{remainingQualityDays}}天</text>
+            <text wx:else>已过售后时效</text>
+          </text>
+          <text class="meta-info__rule-link" bindtap="showAfterSalesRules">查看规则</text>
+        </view>
       </view>
     </view>
 
@@ -108,8 +116,8 @@
         <text class="upload-section__subtitle">图片凭证<text wx:if="{{requireProof}}" class="upload-section__required">*</text></text>
         <view class="upload-container">
           <view wx:for="{{proofImages}}" wx:key="index" class="upload-item upload-item--image">
-            <image src="{{item}}" class="upload-item__image"></image>
-            <view class="upload-item__delete" bindtap="deleteImage" data-index="{{index}}">×</view>
+            <image src="{{item}}" class="upload-item__image" bindtap="previewImage" data-index="{{index}}"></image>
+            <view class="upload-item__delete" catchtap="deleteImage" data-index="{{index}}">×</view>
           </view>
           <view wx:if="{{proofImages.length < 9}}" class="upload-item upload-item--add" bindtap="chooseImage">
             <text class="upload-item__add-icon">+</text>
@@ -117,12 +125,31 @@
         </view>
       </view>
 
+      <view class="upload-section__images">
+        <text class="upload-section__subtitle">视频凭证（最多1个，60秒内）</text>
+        <view class="upload-container">
+          <view wx:if="{{proofVideos.length > 0}}" class="upload-item upload-item--video">
+            <view class="upload-item__video-cover" bindtap="previewVideo">
+              <image wx:if="{{proofVideoThumbs[0]}}" src="{{proofVideoThumbs[0]}}" class="upload-item__image" mode="aspectFill"></image>
+              <video wx:else src="{{proofVideos[0]}}" class="upload-item__image" object-fit="cover" muted controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}"></video>
+              <view class="upload-item__play-btn">
+                <text class="upload-item__play-icon">▶</text>
+              </view>
+            </view>
+            <view class="upload-item__delete" catchtap="deleteVideo" data-index="0">×</view>
+          </view>
+          <view wx:if="{{proofVideos.length < 1}}" class="upload-item upload-item--add" bindtap="chooseVideo">
+            <text class="upload-item__add-icon">📹</text>
+          </view>
+        </view>
+      </view>
+
       <view class="upload-section__description">
         <text class="upload-section__subtitle">详细说明<text wx:if="{{requireProof}}" class="upload-section__required">*</text></text>
-        <textarea class="upload-section__textarea" 
-                  value="{{description}}" 
+        <textarea class="upload-section__textarea"
+                  value="{{description}}"
                   bindinput="onDescriptionInput"
-                  placeholder="请详细描述问题，便于商家快速处理" 
+                  placeholder="请详细描述问题，便于商家快速处理"
                   placeholder-style="color: #999;"></textarea>
       </view>
     </view>
@@ -231,6 +258,60 @@
         <view wx:for="{{currentReasons}}" wx:key="value" class="modal__item" bindtap="selectReason" data-reason="{{JSON.stringify(item)}}">
           <text class="modal__item-name">{{item.label}}</text>
           <view class="modal__item-check">✓</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 售后时限规则弹窗 -->
+  <view wx:if="{{showRulesModal}}" class="modal">
+    <view class="modal__mask" bindtap="closeRulesModal"></view>
+    <view class="modal__content modal__content--large">
+      <view class="modal__header">
+        <text class="modal__title">售后时限规则</text>
+        <view class="modal__close" bindtap="closeRulesModal">×</view>
+      </view>
+      <view class="modal__body">
+        <view class="rules-section">
+          <view class="rules-section__title">交易成功前（未确认收货）</view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">时效起点：</text>
+            <text class="rules-section__item-value">商家发货时间</text>
+          </view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">常规售后：</text>
+            <text class="rules-section__item-value">发货后10天内</text>
+          </view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">质量售后：</text>
+            <text class="rules-section__item-value">发货后15天内</text>
+          </view>
+        </view>
+        <view class="rules-section">
+          <view class="rules-section__title">交易成功后（已确认收货）</view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">时效起点：</text>
+            <text class="rules-section__item-value">物流签收时间</text>
+          </view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">常规售后：</text>
+            <text class="rules-section__item-value">签收后7天内（无理由退货）</text>
+          </view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">质量售后：</text>
+            <text class="rules-section__item-value">签收后15天内</text>
+          </view>
+        </view>
+        <view class="rules-section">
+          <view class="rules-section__title">特殊说明</view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">未收到货：</text>
+            <text class="rules-section__item-value">无时间限制，可随时申请退款</text>
+          </view>
+          <view class="rules-section__item">
+            <text class="rules-section__item-label">时效计算：</text>
+            <text class="rules-section__item-value">签收/发货次日0点开始计算，到期日当天24点截止</text>
+          </view>
         </view>
       </view>
     </view>

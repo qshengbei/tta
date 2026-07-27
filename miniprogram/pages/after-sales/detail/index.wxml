@@ -136,6 +136,42 @@
       </view>
     </view>
     
+    <!-- 退货物流信息 -->
+    <view class="section" wx:if="{{afterSales.returnLogisticsInfo && afterSales.returnLogisticsInfo.trackingNumber}}">
+      <view class="section__title">退货物流</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">快递公司：</text>
+          <text class="info-item__value">{{afterSales.returnLogisticsInfo.companyName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">运单号：</text>
+          <text class="info-item__value">{{afterSales.returnLogisticsInfo.trackingNumber}}</text>
+        </view>
+        <view class="info-item" wx:if="{{afterSales.returnLogisticsInfo.stateName}}">
+          <text class="info-item__label">物流状态：</text>
+          <text class="info-item__value" style="color: {{afterSales.returnLogisticsInfo.state === '3' ? '#52c41a' : afterSales.returnLogisticsInfo.state === '2' ? '#1890ff' : afterSales.returnLogisticsInfo.state === '1' ? '#faad14' : afterSales.returnLogisticsInfo.state === '4' ? '#ff4d4f' : '#999'}}">
+            {{afterSales.returnLogisticsInfo.stateName}}
+          </text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 商家寄回物流信息 -->
+    <view class="section" wx:if="{{afterSales.sellerReturnLogistics && afterSales.sellerReturnLogistics.trackingNumber}}">
+      <view class="section__title">商家寄回物流</view>
+      <view class="section__content">
+        <view class="info-item">
+          <text class="info-item__label">快递公司：</text>
+          <text class="info-item__value">{{afterSales.sellerReturnLogistics.companyName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-item__label">运单号：</text>
+          <text class="info-item__value">{{afterSales.sellerReturnLogistics.trackingNumber}}</text>
+        </view>
+      </view>
+    </view>
+    
     <!-- 处理信息 -->
     <view class="section" wx:if="{{afterSales.processInfo}}">
       <view class="section__title">处理信息</view>
@@ -147,6 +183,37 @@
         <view class="info-item" wx:if="{{afterSales.processInfo.processTimeText}}">
           <text class="info-item__label">处理时间：</text>
           <text class="info-item__value">{{afterSales.processInfo.processTimeText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 验货凭证（验货不通过时显示） -->
+    <view class="section" wx:if="{{afterSales.inspectEvidence && (afterSales.inspectEvidence.images.length > 0 || afterSales.inspectEvidence.videos.length > 0)}}">
+      <view class="section__title">验货凭证</view>
+      <view class="section__content">
+        <view wx:if="{{afterSales.inspectEvidence.images.length > 0}}" class="proof-media">
+          <text class="proof-media__label">图片凭证：</text>
+          <view class="media-grid">
+            <block wx:for="{{afterSales.inspectEvidence.images}}" wx:key="index">
+              <view class="media-grid__item media-grid__item--image">
+                <image src="{{item}}" class="media-grid__item-image" bindtap="previewInspectImage" data-index="{{index}}"></image>
+              </view>
+            </block>
+          </view>
+        </view>
+        <view wx:if="{{afterSales.inspectEvidence.videos.length > 0}}" class="proof-media">
+          <text class="proof-media__label">视频凭证：</text>
+          <view class="media-grid">
+            <view class="media-grid__item media-grid__item--video">
+              <view class="media-grid__video-cover" bindtap="previewInspectVideo">
+                <image wx:if="{{afterSales.inspectEvidence.videoThumbs[0]}}" src="{{afterSales.inspectEvidence.videoThumbs[0]}}" class="media-grid__item-image" mode="aspectFill"></image>
+                <video wx:else src="{{afterSales.inspectEvidence.videos[0]}}" class="media-grid__item-image" object-fit="cover" muted controls="{{false}}" show-center-play-btn="{{false}}" show-play-btn="{{false}}" show-fullscreen-btn="{{false}}"></video>
+                <view class="media-grid__item-play">
+                  <text class="media-grid__item-play-icon">▶</text>
+                </view>
+              </view>
+            </view>
+          </view>
         </view>
       </view>
     </view>
@@ -180,9 +247,126 @@
       </view>
     </view>
     
+    <!-- 操作记录 -->
+    <view class="section" wx:if="{{operationLogs.length > 0}}">
+      <view class="section__title">操作记录</view>
+      <view class="section__content">
+        <view class="operation-logs">
+          <view wx:for="{{operationLogs}}" wx:key="_id" class="operation-log-item">
+            <view class="operation-log-item__line"></view>
+            <view class="operation-log-item__dot"></view>
+            <view class="operation-log-item__content">
+              <view class="operation-log-item__header">
+                <text class="operation-log-item__action">{{item.actionText}}</text>
+                <text class="operation-log-item__operator">{{item.operatorText}}</text>
+              </view>
+              <view wx:if="{{item.note}}" class="operation-log-item__note">
+                <text>{{item.note}}</text>
+              </view>
+              <text class="operation-log-item__time">{{item.createdAtText}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    
     <!-- 底部按钮 -->
     <view class="footer" wx:if="{{afterSales.status === 'submitted' || afterSales.status === 'reviewing' || afterSales.status === 'pending'}}">
       <button class="footer__btn footer__btn--cancel" bindtap="cancelAfterSales">取消申请</button>
     </view>
+    
+    <!-- 待买家寄回：显示填写退货单号按钮和取消申请 -->
+    <view class="footer" wx:if="{{afterSales.status === 'waiting_buyer_return'}}">
+      <button class="footer__btn footer__btn--cancel" bindtap="cancelAfterSales">取消申请</button>
+      <button class="footer__btn footer__btn--primary" bindtap="goToReturnTracking">填写退货单号</button>
+    </view>
+    
+    <!-- 待商家收货：显示退货物流信息、取消售后、修改退货单号 -->
+    <view class="footer" wx:if="{{afterSales.status === 'waiting_seller_receive'}}">
+      <button class="footer__btn footer__btn--cancel" bindtap="cancelAfterSales">取消申请</button>
+      <button wx:if="{{afterSales.returnLogisticsInfo && afterSales.returnLogisticsInfo.trackingNumber}}" class="footer__btn" bindtap="goToReturnTracking">修改退货单号</button>
+      <button wx:if="{{afterSales.returnLogisticsInfo && afterSales.returnLogisticsInfo.trackingNumber}}" class="footer__btn footer__btn--primary" bindtap="showReturnLogistics">查看退货物流</button>
+    </view>
+    
+    <!-- 售后完成：显示查看退货物流按钮 -->
+    <view class="footer" wx:if="{{afterSales.status === 'completed' && afterSales.returnLogisticsInfo && afterSales.returnLogisticsInfo.trackingNumber}}">
+      <button class="footer__btn footer__btn--primary" bindtap="showReturnLogistics">查看退货物流</button>
+    </view>
+
+    <!-- 商家寄回中：显示查看寄回物流按钮（买家等待商家寄回） -->
+    <view class="footer" wx:if="{{afterSales.status === 'seller_returning' && afterSales.sellerReturnLogistics && afterSales.sellerReturnLogistics.trackingNumber}}">
+      <button class="footer__btn footer__btn--primary" bindtap="showSellerReturnLogistics">查看寄回物流</button>
+    </view>
+
+    <!-- 待买家收货：显示查看寄回物流和确认收到寄回商品按钮 -->
+    <view class="footer" wx:if="{{afterSales.status === 'buyer_receiving'}}">
+      <button wx:if="{{afterSales.sellerReturnLogistics && afterSales.sellerReturnLogistics.trackingNumber}}" class="footer__btn" bindtap="showSellerReturnLogistics">查看寄回物流</button>
+      <button class="footer__btn footer__btn--primary" bindtap="handleConfirmReturnReceived">确认收到寄回商品</button>
+    </view>
+
+    <!-- 售后完成（商家寄回流程）：显示查看寄回物流按钮 -->
+    <view class="footer" wx:if="{{afterSales.status === 'completed' && afterSales.sellerReturnLogistics && afterSales.sellerReturnLogistics.trackingNumber}}">
+      <button class="footer__btn footer__btn--primary" bindtap="showSellerReturnLogistics">查看寄回物流</button>
+    </view>
+  </view>
+  
+  <!-- 物流信息弹窗 -->
+  <view wx:if="{{showLogistics}}" class="logistics-modal">
+    <view class="logistics-modal__mask" bindtap="closeLogistics" catchtouchmove="preventTouchMove"></view>
+    <scroll-view class="logistics-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="logistics-modal__header">
+        <text class="logistics-modal__title">{{logisticsModalTitle || '退货物流信息'}}</text>
+      </view>
+      
+      <view class="logistics-modal__info">
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">快递公司：</text>
+          <text class="logistics-modal__info-value">{{logisticsMapData.companyName || logisticsData.com}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">运单号：</text>
+          <text class="logistics-modal__info-value">{{logisticsData.nu || logisticsMapData.trackingNumber}}</text>
+        </view>
+        <view class="logistics-modal__info-item">
+          <text class="logistics-modal__info-label">物流状态：</text>
+          <text class="logistics-modal__info-value" style="color: {{logisticsData.state === '3' ? '#52c41a' : logisticsData.state === '2' ? '#1890ff' : logisticsData.state === '1' ? '#faad14' : logisticsData.state === '4' ? '#ff4d4f' : '#999'}}">
+            {{logisticsData.displayStateText || logisticsData.stateName || (logisticsData.state === '0' ? '无轨迹' : logisticsData.state === '1' ? '已揽收' : logisticsData.state === '2' ? '在途中' : logisticsData.state === '3' ? '已签收' : logisticsData.state === '4' ? '问题件' : '待发货')}}
+          </text>
+        </view>
+      </view>
+      
+      <view class="logistics-modal__track">
+        <view class="logistics-modal__track-title">物流轨迹</view>
+        <view class="logistics-modal__track-list">
+          <view wx:for="{{logisticsData.data}}" wx:key="{{index}}" class="logistics-modal__track-item">
+            <view class="logistics-modal__track-dot" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-line" wx:if="{{index < logisticsData.data.length - 1}}" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
+            <view class="logistics-modal__track-content">
+              <text class="logistics-modal__track-text">{{item.context}}</text>
+              <text class="logistics-modal__track-time">{{item.time}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view wx:if="{{logisticsTrackPoints.length > 0}}" class="logistics-modal__map-section">
+        <view class="logistics-modal__map-title">地图轨迹</view>
+        <view class="logistics-modal__map-container">
+          <map class="logistics-modal__map"
+               id="logisticsMap"
+               longitude="{{logisticsMapCenter.longitude}}"
+               latitude="{{logisticsMapCenter.latitude}}"
+               scale="{{logisticsMapScale}}"
+               markers="{{logisticsTrackPoints}}"
+               show-location="true"
+               style="width: 100%; height: 100%;">
+          </map>
+        </view>
+        <view class="logistics-modal__map-buttons">
+          <button class="logistics-modal__map-btn" bindtap="resetMap">重置地图</button>
+          <button class="logistics-modal__map-btn" bindtap="fullScreenMap">全屏</button>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 </view>

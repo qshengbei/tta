@@ -1,0 +1,225 @@
+.return-tracking {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.return-tracking__content {
+  padding: 32rpx;
+}
+
+.return-tracking__section {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+}
+
+.return-tracking__section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 32rpx;
+}
+
+.return-tracking__form-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.return-tracking__form-item:last-child {
+  border-bottom: none;
+}
+
+.return-tracking__form-label {
+  font-size: 28rpx;
+  color: #333333;
+  width: 160rpx;
+}
+
+.return-tracking__form-input {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333333;
+  text-align: right;
+}
+
+.return-tracking__form-select {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.return-tracking__form-select-value {
+  font-size: 28rpx;
+  color: #333333;
+  margin-right: 16rpx;
+}
+
+.return-tracking__form-select-value--placeholder {
+  font-size: 28rpx;
+  color: #999999;
+  margin-right: 16rpx;
+}
+
+.return-tracking__form-select-arrow {
+  font-size: 20rpx;
+  color: #999999;
+}
+
+.return-tracking__tips {
+  font-size: 24rpx;
+  color: #999999;
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.return-tracking__detect-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 32rpx;
+  border-radius: 8rpx;
+  margin-bottom: 32rpx;
+}
+
+.return-tracking__detect-status--success {
+  background-color: #f0f9ff;
+}
+
+.return-tracking__detect-status--fail {
+  background-color: #fff7ed;
+}
+
+.return-tracking__detect-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+}
+
+.return-tracking__detect-status--success .return-tracking__detect-icon {
+  color: #10b981;
+}
+
+.return-tracking__detect-status--fail .return-tracking__detect-icon {
+  color: #f59e0b;
+}
+
+.return-tracking__detect-text {
+  font-size: 26rpx;
+}
+
+.return-tracking__detect-status--success .return-tracking__detect-text {
+  color: #10b981;
+}
+
+.return-tracking__detect-status--fail .return-tracking__detect-text {
+  color: #f59e0b;
+}
+
+.return-tracking__common-companies {
+  background-color: #ffffff;
+  border-radius: 16rpx;
+  padding: 24rpx 32rpx;
+  margin-bottom: 32rpx;
+}
+
+.return-tracking__common-title {
+  font-size: 26rpx;
+  color: #999999;
+  margin-bottom: 20rpx;
+}
+
+.return-tracking__common-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.return-tracking__common-item {
+  padding: 16rpx 32rpx;
+  background-color: #f5f5f5;
+  border-radius: 24rpx;
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.return-tracking__common-item--active {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+.return-tracking__submit-btn {
+  width: 100%;
+  height: 88rpx;
+  background-color: #000000;
+  color: #ffffff;
+  font-size: 32rpx;
+  font-weight: 600;
+  border-radius: 44rpx;
+  border: none;
+  margin-top: 32rpx;
+}
+
+.return-tracking__submit-btn[disabled] {
+  background-color: #cccccc;
+  color: #999999;
+}
+
+.return-tracking__picker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.return-tracking__picker-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.return-tracking__picker-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #ffffff;
+  border-radius: 24rpx 24rpx 0 0;
+}
+
+.return-tracking__picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88rpx;
+  padding: 0 32rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.return-tracking__picker-cancel {
+  font-size: 30rpx;
+  color: #999999;
+}
+
+.return-tracking__picker-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333333;
+}
+
+.return-tracking__picker-confirm {
+  font-size: 30rpx;
+  color: #000000;
+}
+
+.return-tracking__picker-view {
+  background-color: #ffffff;
+}

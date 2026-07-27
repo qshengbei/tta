@@ -136,7 +136,18 @@ Page({
             statusText = '已取消';
             break;
           case 'refund':
-            statusText = '退款/售后';
+            statusText = '售后处理中';
+            break;
+          case 'refund_completed':
+            if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
+              statusText = '部分退款';
+            } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
+              statusText = '换货完成';
+            } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
+              statusText = '退款完成';
+            } else {
+              statusText = '退款完成';
+            }
             break;
           default:
             statusText = '未知状态';
