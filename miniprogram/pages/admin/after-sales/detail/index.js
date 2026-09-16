@@ -83,6 +83,22 @@ const STATUS_CLASS_MAP = {
 
 const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'pending_refund', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
+const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
+
+// 换货流程中 seller_returning/buyer_receiving 文案区分
+function getExchangeStatusText(status, type, defaultText) {
+  if (!EXCHANGE_TYPES.includes(type)) return defaultText;
+  if (status === 'seller_returning') return '待商家发新货';
+  if (status === 'buyer_receiving') return '待买家收新货';
+  return defaultText;
+}
+
+function getExchangeStatusDesc(status, type, defaultDesc) {
+  if (!EXCHANGE_TYPES.includes(type)) return defaultDesc;
+  if (status === 'seller_returning') return '即将寄出换新商品，请填写物流信息';
+  if (status === 'buyer_receiving') return '已寄出换新商品，等待买家确认收货';
+  return defaultDesc;
+}
 
 function parseDate(value) {
   if (!value) {
@@ -398,8 +414,8 @@ Page({
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
       caseStatus: status,
-      statusText: STATUS_TEXT_MAP[status] || status,
-      statusDesc: STATUS_DESC_MAP[status] || '',
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
+      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       reason: record.applyReasonText || '',
@@ -442,8 +458,8 @@ Page({
       type,
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
-      statusText: STATUS_TEXT_MAP[status] || status,
-      statusDesc: STATUS_DESC_MAP[status] || '',
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
+      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundAmount || 0) || 0,
       reason: record.reason || '',
@@ -477,7 +493,7 @@ Page({
       applyQty: Number(item.applyQty || 0) || 0,
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
-      statusText: STATUS_TEXT_MAP[status] || status,
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
       shippingResponsibilityText: getShippingResponsibilityText(item.shippingResponsibility),
       productSupports7DayReturn: item.productSupports7DayReturn || false,
       canApprove: !['approved', 'completed', 'rejected', 'cancelled'].includes(status),
@@ -1385,6 +1401,53 @@ Page({
     });
   },
 
+  /**
+   * 买家已拒签、物流确认退回：跳过拦截流程，直接同意并整单退款。
+   * 是否真的已拒收由管理员核实物流轨迹，操作会写入日志便于追溯。
+   */
+  handleApproveRefusedDelivery() {
+    if (this.data.processing) return;
+    const that = this;
+
+    wx.showModal({
+      title: '买家拒签，同意退款',
+      content: '请先确认物流轨迹已显示"拒收/退回"。确认后本订单全部商品将一并退款，无需等待包裹退回入库。是否继续？',
+      confirmText: '确认退款',
+      confirmColor: '#1890ff',
+      success: (res) => {
+        if (!res.confirm) return;
+        that.setData({ processing: true });
+        wx.showLoading({ title: '处理中...' });
+        wx.cloud.callFunction({
+          name: 'updateOrderStatus',
+          data: {
+            operation: 'approveRefusedDelivery',
+            orderId: that.data.afterSales.orderId,
+            params: {
+              caseId: that.caseId,
+              operatorType: 'admin'
+            }
+          }
+        }).then((callRes) => {
+          wx.hideLoading();
+          that.setData({ processing: false });
+          if (callRes.result?.success) {
+            wx.showToast({ title: '已同意，进入退款', icon: 'success' });
+            setTimeout(() => that.fetchAfterSalesDetail(that.caseId), 1500);
+          } else {
+            const errorMsg = callRes.result?.error || callRes.result?.message || '处理失败';
+            wx.showToast({ title: errorMsg, icon: 'none', duration: 3000 });
+          }
+        }).catch((err) => {
+          wx.hideLoading();
+          that.setData({ processing: false });
+          console.error('拒签同意退款失败:', err);
+          wx.showToast({ title: err.message || '处理失败', icon: 'none', duration: 3000 });
+        });
+      }
+    });
+  },
+
   fetchOperationLogs(caseId) {
     if (!caseId) return;
 
@@ -1409,6 +1472,7 @@ Page({
           'start_intercepting': '开始拦截快递',
           'approve_intercepting': '拦截成功',
           'reject_intercepting': '拦截失败',
+          'refused_delivery_approved': '买家拒签，同意退款',
           'submit_return_tracking': '填写退货单号',
           'modify_return_tracking': '修改退货单号',
           'confirm_receipt_refund': '确认收货',
@@ -1422,7 +1486,11 @@ Page({
           'confirm_return_received_refund': '确认收到寄回商品',
           'confirm_return_received_exchange': '确认收到寄回商品',
           'auto_confirm_return_received_refund': '系统自动确认寄回收货',
-          'auto_confirm_return_received_exchange': '系统自动确认寄回收货'
+          'auto_confirm_return_received_exchange': '系统自动确认寄回收货',
+          'after_sales_rejected': '售后已关闭',
+          'after_sales_cancelled': '售后已取消',
+          'after_sales_pending_refund': '售后进入待退款',
+          'after_sales_completed': '售后已完成'
         };
 
         const logs = (res.data || []).map(log => {

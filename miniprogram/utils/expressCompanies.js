@@ -4,6 +4,7 @@ const EXPRESS_COMPANIES = [
   { name: '中通快递', code: 'zhongtong' },
   { name: '韵达快递', code: 'yunda' },
   { name: '申通快递', code: 'shentong' },
+  { name: '极兔速递', code: 'jitu' },
   { name: 'EMS', code: 'ems' },
   { name: '京东物流', code: 'jd' },
   { name: '邮政包裹', code: 'youzhengguonei' },
@@ -19,6 +20,7 @@ const COMMON_EXPRESS_COMPANIES = [
   { name: '中通快递', code: 'zhongtong' },
   { name: '韵达快递', code: 'yunda' },
   { name: '申通快递', code: 'shentong' },
+  { name: '极兔速递', code: 'jitu' },
   { name: 'EMS', code: 'ems' },
   { name: '京东物流', code: 'jd' },
   { name: '德邦快递', code: 'debangwuliu' }

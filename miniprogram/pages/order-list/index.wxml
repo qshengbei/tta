@@ -129,31 +129,62 @@
             <text class="order-item__total-price">合计：¥{{item.totalPrice || '0.00'}}</text>
           </view>
           <view class="order-item__actions">
-            <button wx:if="{{item.status === 'pending' || (item.status === 'paid' && item.canCancel)}}" class="order-item__btn" catchtap="cancelOrder" data-order-id="{{item._id}}">
-              取消订单
-            </button>
-            <button wx:elif="{{item.status === 'paid' && !item.canCancel}}" class="order-item__btn" catchtap="contactService" data-order-id="{{item._id}}">
-              联系客服
-            </button>
-            <button wx:if="{{item.status === 'pending'}}" class="order-item__btn" catchtap="goToPayment" data-order-id="{{item._id}}">
-              去支付
-            </button>
-            <button wx:if="{{item.status === 'shipping' || item.status === 'delivered' || (item.deliveryType === 'express' && (item.status === 'completed' || item.status === 'refund_completed'))}}" class="order-item__btn" catchtap="viewLogistics" data-order-id="{{item._id}}">
-              查看物流
-            </button>
-            <button wx:if="{{item.status === 'delivered' || item.status === 'shipping'}}" class="order-item__btn order-item__btn--primary" catchtap="confirmReceipt" data-order-id="{{item._id}}">
-              确认收货
-            </button>
+            <!-- 待支付状态 -->
+            <block wx:if="{{item.status === 'pending'}}">
+              <button class="order-item__btn" catchtap="cancelOrder" data-order-id="{{item._id}}">
+                取消订单
+              </button>
+              <button class="order-item__btn order-item__btn--primary" catchtap="goToPayment" data-order-id="{{item._id}}">
+                去支付
+              </button>
+            </block>
 
-            <button wx:if="{{item.status === 'refund'}}" class="order-item__btn" catchtap="viewOrderDetail" data-order-id="{{item._id}}">
-              查看售后
-            </button>
-            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn" catchtap="buyAgain" data-order-id="{{item._id}}">
-              再次购买
-            </button>
-            <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn order-item__btn--delete" catchtap="deleteOrder" data-order-id="{{item._id}}">
-              删除订单
-            </button>
+            <!-- 待发货状态 -->
+            <block wx:elif="{{item.status === 'paid'}}">
+              <button wx:if="{{item.canUrge}}" class="order-item__btn order-item__btn--urge" catchtap="urgeShipping" data-order-id="{{item._id}}">
+                催发货
+              </button>
+              <button class="order-item__btn" catchtap="cancelOrder" data-order-id="{{item._id}}">
+                取消订单
+              </button>
+              <button class="order-item__btn" catchtap="contactService" data-order-id="{{item._id}}">
+                联系客服
+              </button>
+            </block>
+
+            <!-- 待收货/已签收/已完成状态 -->
+            <block wx:else>
+              <!-- 运输中(shipping)：只显示查看物流 -->
+              <block wx:if="{{item.status === 'shipping'}}">
+                <button class="order-item__btn" catchtap="viewLogistics" data-order-id="{{item._id}}">
+                  查看物流
+                </button>
+              </block>
+              <!-- 已签收(delivered)：显示查看物流+确认收货 -->
+              <block wx:elif="{{item.status === 'delivered'}}">
+                <button class="order-item__btn" catchtap="viewLogistics" data-order-id="{{item._id}}">
+                  查看物流
+                </button>
+                <button class="order-item__btn order-item__btn--primary" catchtap="confirmReceipt" data-order-id="{{item._id}}">
+                  确认收货
+                </button>
+              </block>
+              <!-- 已完成/退款完成：显示查看物流 -->
+              <block wx:elif="{{(item.status === 'completed' || item.status === 'refund_completed') && item.deliveryType === 'express'}}">
+                <button class="order-item__btn" catchtap="viewLogistics" data-order-id="{{item._id}}">
+                  查看物流
+                </button>
+              </block>
+              <button wx:if="{{item.status === 'refund'}}" class="order-item__btn" catchtap="viewOrderDetail" data-order-id="{{item._id}}">
+                查看售后
+              </button>
+              <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn" catchtap="buyAgain" data-order-id="{{item._id}}">
+                再次购买
+              </button>
+              <button wx:if="{{item.status === 'completed' || item.status === 'cancelled' || item.status === 'refund_completed'}}" class="order-item__btn order-item__btn--delete" catchtap="deleteOrder" data-order-id="{{item._id}}">
+                删除订单
+              </button>
+            </block>
           </view>
         </view>
       </view>

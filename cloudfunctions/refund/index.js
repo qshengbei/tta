@@ -157,52 +157,42 @@ async function handleProcessRefund({ refundId }) {
     }
   }
   
-  let success = true
-  let result = '退款成功'
-  let message = '退款已原路退回，预计1-3个工作日到账'
+  const result = '退款受理成功'
+  let message = '退款已受理，预计1-3个工作日到账'
   
   if (refundRecord.bankType === 'CFT') {
-    message = '退款已原路退回微信零钱，实时到账'
+    message = '退款已受理，微信零钱预计实时到账'
   } else if (refundRecord.bankType) {
-    message = '退款已原路退回银行卡，预计1-3个工作日到账'
+    message = '退款已受理，银行卡预计1-3个工作日到账'
   }
   
   await db.runTransaction(async (transaction) => {
     await transaction.collection('refund_records').doc(refundId).update({
       data: {
-        status: success ? 'success' : 'failed',
+        status: 'processing',
         result: result,
         message: message,
-        completeTime: now,
+        processingTime: now,
         retryCount: refundRecord.retryCount + 1,
         lastRetryTime: now
       }
     })
-    
-    if (success && refundRecord.orderId) {
-      await transaction.collection('orders').doc(refundRecord.orderId).update({
-        data: {
-          refundStatus: 'refunded',
-          updatedAt: now,
-          updatedAtTs: now.getTime()
-        }
-      })
-    }
   })
   
-  console.log('=== 退款处理完成 ===')
+  console.log('=== 退款受理完成，等待回调 ===')
   console.log('result:', result)
+  console.log('status: processing (等待微信退款回调)')
   
   return {
-    success: success,
-    message: message,
+    success: true,
+    message: '退款受理成功，等待回调',
     data: {
       refundId,
       amount: refundRecord.amount,
-      status: success ? 'success' : 'failed',
+      status: 'processing',
       refundNo: refundRecord.refundNo,
       message: message,
-      completeTime: now
+      processingTime: now
     }
   }
 }

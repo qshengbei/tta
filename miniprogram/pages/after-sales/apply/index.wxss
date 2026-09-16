@@ -93,6 +93,41 @@
   margin-top: 8rpx;
   text-align: right;
 }
+
+/* 部分退款补差提示 */
+.amount-section__partial-tip {
+  margin-top: 12rpx;
+  padding: 12rpx 20rpx;
+  background: #fff7e6;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #fa8c16;
+  line-height: 1.5;
+}
+
+.amount-section__shipping-tip {
+  margin-top: 12rpx;
+  padding: 12rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.amount-section__shipping-tip--include {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.amount-section__shipping-tip--exclude {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* 买家责任整单退：扣除原运费（包邮差额） */
+.amount-section__shipping-tip--deduct {
+  background: #fff7e6;
+  color: #fa8c16;
+}
 /* pages/after-sales/apply/index.wxss */
 .page-root {
   min-height: 100vh;

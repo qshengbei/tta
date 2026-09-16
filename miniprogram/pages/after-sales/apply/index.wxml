@@ -95,9 +95,7 @@
         <text class="meta-info__label">剩余售后时限</text>
         <view class="meta-info__value-row">
           <text class="meta-info__value">
-            <text wx:if="{{remainingNormalDays > 0 && remainingQualityDays > 0}}">常规售后：{{remainingNormalDays}}天，质量售后：{{remainingQualityDays}}天</text>
-            <text wx:elif="{{remainingNormalDays > 0}}">常规售后：{{remainingNormalDays}}天，质量售后：已过期</text>
-            <text wx:elif="{{remainingQualityDays > 0}}">常规售后：已过期，质量售后：{{remainingQualityDays}}天</text>
+            <text wx:if="{{remainingNormalDays > 0 || remainingQualityDays > 0}}">常规售后：{{normalText}}，质量售后：{{qualityText}}</text>
             <text wx:else>已过售后时效</text>
           </text>
           <text class="meta-info__rule-link" bindtap="showAfterSalesRules">查看规则</text>
@@ -177,6 +175,8 @@
           </view>
           <text class="amount-section__hint-taobao">最多可退 ¥{{maxRefundAmount}}</text>
         </view>
+        <view wx:if="{{partialRefundTip}}" class="amount-section__partial-tip">{{partialRefundTip}}</view>
+        <view wx:if="{{shippingRefundTip}}" class="amount-section__shipping-tip amount-section__shipping-tip--{{shippingRefundTipType}}">{{shippingRefundTip}}</view>
       </view>
 
       <view class="contact-section">
@@ -294,8 +294,12 @@
             <text class="rules-section__item-value">物流签收时间</text>
           </view>
           <view class="rules-section__item">
+            <text class="rules-section__item-label">7天无理由退货：</text>
+            <text class="rules-section__item-value">签收后7天内（仅适用标注"7天无理由"的商品）</text>
+          </view>
+          <view class="rules-section__item">
             <text class="rules-section__item-label">常规售后：</text>
-            <text class="rules-section__item-value">签收后7天内（无理由退货）</text>
+            <text class="rules-section__item-value">签收后7天内（需提供理由）</text>
           </view>
           <view class="rules-section__item">
             <text class="rules-section__item-label">质量售后：</text>

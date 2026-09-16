@@ -181,7 +181,7 @@ Page({
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   },
 
-  getItemStatusText(status) {
+  getItemStatusText(status, afterSalesType) {
     const statusMap = {
       submitted: '待审核',
       reviewing: '审核中',
@@ -199,7 +199,14 @@ Page({
       pending_refund: '待退款',
       intercepting: '拦截中'
     };
-    return statusMap[status] || status || '待处理';
+    let text = statusMap[status] || status || '待处理';
+    // 换货流程中 seller_returning/buyer_receiving 文案区分
+    const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
+    if (EXCHANGE_TYPES.includes(afterSalesType)) {
+      if (status === 'seller_returning') text = '待商家发新货';
+      if (status === 'buyer_receiving') text = '待买家收新货';
+    }
+    return text;
   },
 
   normalizeCaseItem(item) {
@@ -207,7 +214,7 @@ Page({
     return {
       ...item,
       typeText: this.getItemTypeText(item.afterSalesType),
-      statusText: this.getItemStatusText(item.itemStatus),
+      statusText: this.getItemStatusText(item.itemStatus, item.afterSalesType),
       applyQtyText: Number(item.applyQty || 0) || 0,
       applyRefundAmountText: Number(item.applyRefundAmount || 0) || 0,
       canApprove: !['approved', 'completed', 'rejected', 'cancelled'].includes(status),
@@ -462,7 +469,15 @@ Page({
           default:
             statusText = '未知状态';
         }
-        
+
+        // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
+        if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
+          statusText = `${statusText}（部分退款）`;
+        } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
+          // 拦截成功等整单退款场景：退款到账前显示"售后处理中（整单退款）"
+          statusText = `${statusText}（整单退款）`;
+        }
+
         // 配送类型文本
         let deliveryTypeText = '';
         switch (order.deliveryType) {

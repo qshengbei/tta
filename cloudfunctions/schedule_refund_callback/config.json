@@ -1,10 +1,9 @@
 {
   "triggers": [
     {
-      "name": "process_refunds",
+      "name": "process_refund_callbacks",
       "type": "timer",
       "config": "0 */5 * * * * *"
     }
-  ],
-  "timeout": 60
+  ]
 }

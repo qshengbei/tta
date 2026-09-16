@@ -177,6 +177,12 @@
   width: auto;
 }
 
+.order-detail__btn--urge {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1rpx solid #ffd591;
+}
+
 .order-detail__section-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -1011,6 +1017,51 @@
   font-size: 24rpx;
   color: #1890ff;
   margin-left: 16rpx;
+}
+
+.after-sales-reason__restart-tip {
+  padding: 16rpx 24rpx;
+  margin: -8rpx 0 24rpx;
+  background: #e6f7ff;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #1890ff;
+  line-height: 1.5;
+}
+
+/* 部分退款补差提示 */
+.after-sales-form__partial-tip {
+  margin: 12rpx 0 0;
+  padding: 12rpx 20rpx;
+  background: #fff7e6;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #fa8c16;
+  line-height: 1.5;
+}
+
+.after-sales-form__shipping-tip {
+  margin: 12rpx 0 0;
+  padding: 12rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.after-sales-form__shipping-tip--include {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.after-sales-form__shipping-tip--exclude {
+  background: #f5f5f5;
+  color: #999;
+}
+
+/* 买家责任整单退：扣除原运费（包邮差额） */
+.after-sales-form__shipping-tip--deduct {
+  background: #fff7e6;
+  color: #fa8c16;
 }
 
 .after-sales-reason__expired-tip {
@@ -2128,6 +2179,16 @@
   color: #333;
 }
 
+.operation-log-item__seq-tag {
+  margin-left: 8rpx;
+  margin-right: auto;
+  padding: 2rpx 12rpx;
+  background: #fff4e6;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  color: #ff7a45;
+}
+
 .operation-log-item__operator {
   font-size: 24rpx;
   color: #999;
@@ -2148,6 +2209,53 @@
 .operation-log-item__time {
   font-size: 24rpx;
   color: #999;
+}
+
+.operation-log-item__expand {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #576b95;
+}
+
+.operation-log-item__items {
+  margin-bottom: 12rpx;
+  padding: 12rpx 16rpx;
+  background-color: #f9f9f9;
+  border-radius: 8rpx;
+}
+
+.operation-log-item__item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 24rpx;
+  color: #666;
+  line-height: 1.6;
+}
+
+.operation-log-item__item-name {
+  color: #333;
+  font-weight: 500;
+}
+
+.operation-log-item__item-sku {
+  color: #999;
+  margin-left: 8rpx;
+}
+
+.operation-log-item__item-type {
+  color: #ff6b00;
+  background: #fff3e8;
+  padding: 2rpx 10rpx;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+  margin-left: 8rpx;
+  flex-shrink: 0;
+}
+
+.operation-log-item__item-qty {
+  color: #666;
+  margin-left: 8rpx;
 }
 
 .after-sales-rules-modal {

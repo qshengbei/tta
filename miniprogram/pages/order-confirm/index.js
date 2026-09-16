@@ -22,6 +22,7 @@ Page({
     pickupTime: "10:00",
     distance: null,
     deliveryFee: null,
+    originalDeliveryFee: 0, // 原运费（规则运费，包邮时仍有值，用于买家责任整单退款扣减）
     freeShippingThreshold: 40, // 包邮门槛
     isOutOfRange: false, // 是否超出配送范围
     showDeliverySelectorModal: false,
@@ -782,6 +783,7 @@ Page({
     const province = address.provinceName;
     let totalPrice = 0;
     let shippingFee = 0;
+    let originalDeliveryFee = 0;
     let freeShippingThreshold = 0;
     
     if (products && products.length > 0) {
@@ -821,6 +823,8 @@ Page({
           // 获取包邮门槛和运费
           freeShippingThreshold = provinceRule.freeShipping || provinceRule.freeShippingThreshold || provinceRule.freeshipping || 0;
           const fee = provinceRule.fee || 0;
+          // 原运费：无论是否包邮都记录规则运费，用于买家责任整单退款时扣减
+          originalDeliveryFee = fee;
           
           console.log('多商品运费计算:', {
             subtotal: subtotal,
@@ -841,9 +845,10 @@ Page({
       totalPrice = subtotal + shippingFee;
     } else if (product) {
       // 单个商品情况
-      const { shippingFee: itemShippingFee, freeShippingThreshold: itemThreshold } = calculateShippingFee(expressRules, province, product, quantity);
+      const { shippingFee: itemShippingFee, freeShippingThreshold: itemThreshold, originalFee } = calculateShippingFee(expressRules, province, product, quantity);
       shippingFee = itemShippingFee;
       freeShippingThreshold = itemThreshold;
+      originalDeliveryFee = originalFee;
       totalPrice = product.price * quantity + shippingFee;
       console.log('单个商品运费计算:', {
         productPrice: product.price,
@@ -857,6 +862,7 @@ Page({
     
     this.setData({
       deliveryFee: shippingFee,
+      originalDeliveryFee,
       freeShippingThreshold,
       totalPrice
     });
@@ -938,6 +944,7 @@ Page({
       deliveryType: tempDeliveryType,
       distance: null,
       deliveryFee: 0,
+      originalDeliveryFee: 0,
       isOutOfRange: false
     });
     
@@ -1227,6 +1234,8 @@ Page({
     // 准备订单数据
     const orderData = {
       totalPrice: this.data.totalPrice,
+      deliveryFee: Number(this.data.deliveryFee) || 0,
+      originalDeliveryFee: Number(this.data.originalDeliveryFee) || 0,
       deliveryType: deliveryType,
       address: this.data.address,
       pickupCode: this.data.pickupCode,

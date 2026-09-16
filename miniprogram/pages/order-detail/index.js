@@ -53,6 +53,7 @@ Page({
     afterSalesDescription: '', // 售后描述
     refundAmount: '', // 退款金额
     applyQty: 1, // 申请售后数量
+    applyQtyHint: '', // 售后数量提示文案（动态生成，体现已售后/剩余可申请）
     amountInputWidth: 0, // 退款金额输入框宽度
     contactName: '', // 联系人
     contactPhone: '', // 联系电话
@@ -62,9 +63,22 @@ Page({
     remainingAfterSalesDays: 7, // 剩余售后时限（天）
     remainingNormalAfterSalesDays: 7, // 剩余常规售后时限（7天）
     remainingQualityAfterSalesDays: 15, // 剩余质量售后时限（15天）
+    afterSalesWindowRestart: false, // 当前选中商品是否按换货新货收货时间重新起算售后期
+    afterSalesNormalDeadline: 0, // 常规售后截止时间戳（0=无基准时间，按满额展示）
+    afterSalesQualityDeadline: 0, // 质量售后截止时间戳
+    afterSalesNormalMaxDays: 7, // 常规售后满额天数（无基准时间时展示用）
+    afterSalesQualityMaxDays: 15, // 质量售后满额天数
+    afterSalesNormalText: '', // 常规售后剩余时间分级文案（如"7天"/"1天5小时"/"20分45秒"/"已过期"）
+    afterSalesQualityText: '', // 质量售后剩余时间分级文案
+    partialRefundTip: '', // 部分退款补差提示（该商品已退¥X，本次最多可退¥Y）
+    shippingRefundAmount: 0, // 本次售后预计退还的运费（仅展示，后端自动判定）
+    shippingDeductionAmount: 0, // 本次售后预计扣减的运费（买家责任整单退包邮差额，仅展示）
+    shippingRefundTip: '', // 运费退款提示文案
+    shippingRefundTipType: '', // 提示类型：include=随本次退款 / exclude=不退 / deduct=扣除原运费
     maxRefundAmount: 0, // 最大退款金额
     needProof: false, // 是否需要上传凭证
     operationLogs: [], // 订单操作日志
+    expandedCases: {}, // 已展开的售后单日志分组（caseId -> bool）
     goodsStatusOptions: [ // 货物状态选项
       { value: 'not_received', label: '未收到货' },
       { value: 'received', label: '已收到货' }
@@ -356,6 +370,10 @@ Page({
           // 处理支付时间
           if (order.payTime) {
             const date = new Date(order.payTime);
+            // 催发货按钮：支付满12小时后才显示（不限次数，覆盖前先取时间戳）
+            if (!isNaN(date.getTime()) && order.status === 'paid') {
+              order.canUrge = (Date.now() - date.getTime()) >= 12 * 60 * 60 * 1000;
+            }
             const year = date.getFullYear();
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
@@ -396,9 +414,9 @@ Page({
           
           // 计算商品总金额
           if (order.products && order.products.length > 0) {
-            order.productTotalAmount = order.products.reduce((total, product) => {
+            order.productTotalAmount = Math.round(order.products.reduce((total, product) => {
               return total + (product.price || 0) * (product.quantity || 1);
-            }, 0);
+            }, 0) * 100) / 100;
           } else {
             order.productTotalAmount = 0;
           }
@@ -493,6 +511,14 @@ Page({
               statusText = "未知状态";
           }
 
+          // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
+          if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
+            statusText = `${statusText}（部分退款）`;
+          } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
+            // 拦截成功等整单退款场景：退款到账前显示"售后中（整单退款）"
+            statusText = `${statusText}（整单退款）`;
+          }
+
           order.statusText = statusText;
 
           // 打印订单距离信息
@@ -577,8 +603,8 @@ Page({
             });
           }
 
-          // 判断是否在24小时内，用于显示取消订单按钮
-          const canCancel = order.status === 'paid' && order.createdAt ? (new Date() - new Date(order.createdAt) < 24 * 60 * 60 * 1000) : false;
+          // 待发货状态始终允许取消订单（已发货状态按钮隐藏，走售后流程）
+          const canCancel = order.status === 'paid';
 
           // 判断是否可以发起售后（待收货或已完成订单）
           const canAfterSales = (order.status === 'completed' || order.status === 'delivered' || order.status === 'shipping');
@@ -702,6 +728,11 @@ Page({
             caseStatus: caseStatus,
             statusType: statusType,
             statusText: statusText,
+            // 售后代数/类型/新货标记/完成时间：用于换货新货二次售后的件数释放与售后期重算
+            afterSalesType: item.afterSalesType || '',
+            afterSalesGeneration: Number(item.afterSalesGeneration) || 1,
+            returnGoodsType: item.returnGoodsType || '',
+            completedAt: item.completedAt || null,
             createdAt: item.createdAt || caseInfo.createdAt || new Date() // 保存创建时间用于排序
           };
           productHasAfterSales[keyStr].push(record);
@@ -782,6 +813,11 @@ Page({
           const hasActiveAfterSales = {};
           const hasCompletedAfterSales = {};
           const hasCancelledAfterSales = {};
+          // 每商品剩余可售后数量（buyQty - 已完成/进行中 approvedQty），用于判断是否还能继续申请售后
+          const remainingAfterSalesQtyMap = {};
+          // 每商品最后一次已完成售后的类型描述（如"退款成功"），用于点击按钮时的 toast 文案
+          const lastCompletedAfterSalesTextMap = {};
+          const products = order.products || [];
           
           for (const key in productHasAfterSales) {
             const records = productHasAfterSales[key];
@@ -803,14 +839,218 @@ Page({
               }
             }
           }
+
+          // 汇总每商品已售后消耗数量（active + completed 的 approvedQty 累计）
+          // 仅退款（货留买家/未收到货）少退可补差；退货退款（货已寄回）少退不释放件数、差额不可再申请
+          const REFUND_ONLY_TYPES = ['refund', 'refund_received', 'refund_not_received', 'not_received_refund'];
+          // 单条退款明细的份额金额（判定是否部分金额退款，与后端 calcItemShareAmount 同口径）
+          const calcCaseItemShareAmount = (caseItem) => {
+            const qty = Number(caseItem?.applyQty || 0) || 0;
+            const unitPrice = Number(caseItem?.unitPriceSnapshot || 0) || 0;
+            if (unitPrice > 0) {
+              return Math.round(unitPrice * qty * 100) / 100;
+            }
+            const lineAmount = Number(caseItem?.payableAmountSnapshot || 0) || 0;
+            const itemBuyQty = Number(caseItem?.buyQty || 0) || 0;
+            if (lineAmount > 0 && itemBuyQty > 0) {
+              return Math.round((lineAmount / itemBuyQty) * qty * 100) / 100;
+            }
+            return Math.round((Number(caseItem?.maxRefundAmount || 0) || 0) * 100) / 100;
+          };
+          // 每商品行已承诺退款金额（进行中按申请额、完成按核准额）与已到账金额，支持部分退款补差
+          const committedRefundAmountMap = {};
+          const refundedAmountMap = {};
+          const refundableRemainAmountMap = {};
+          // 退货退款少退的"放弃差额"（货已寄回，不可再申请）
+          const forfeitedAmountMap = {};
+          // 订单级运费数据（与后端 resolveApplyShippingRefund 同口径，仅用于申请页展示）
+          let orderValidAfterSalesQty = 0;   // 有效历史明细件数（cancelled/rejected 除外）
+          let orderHasExchangeHistory = false; // 有效历史明细中是否含换货
+          let orderCommittedShippingRefund = 0; // 已承诺/已到账的运费退款
+          let orderCommittedShippingDeduction = 0; // 已承诺/已生效的运费扣减
+          for (const key in productHasAfterSales) {
+            const records = productHasAfterSales[key] || [];
+            const productIdx = Number(key);
+            const buyQty = products[productIdx] ? (products[productIdx].quantity || 1) : 0;
+            let consumedQty = 0;
+            let lastCompletedText = '';
+            let lastCompletedTime = 0;
+            let committedAmount = 0;
+            let refundedAmount = 0;
+            let forfeitedAmount = 0;
+            records.forEach(r => {
+              // 进行中/已完成的售后会计入占用（cancelled/rejected 不算，用户可重新申请）
+              if (r.statusType === 'active' || r.statusType === 'completed') {
+                // record 里没存 approvedQty，从 afterSalesItems 按 caseItemId 精确取
+                const caseItem = afterSalesItems.find(i => i._id === r.caseItemId);
+                const consumed = Number(caseItem?.approvedQty || caseItem?.applyQty || 0) || 0;
+                const isExchange = ['exchange', 'quality_exchange'].includes(String(caseItem?.afterSalesType || r.afterSalesType || ''));
+                const generation = Number(caseItem?.afterSalesGeneration || r.afterSalesGeneration) || 1;
+                // 第1代换货已完成且交付的是新货（验货不通过寄回原货除外）：
+                // 件数释放占用，允许对新货二次售后；第2代完成后继续占用，防止无限换货
+                const isReleasedExchange = r.statusType === 'completed'
+                  && isExchange
+                  && generation < 2
+                  && String(caseItem?.returnGoodsType || r.returnGoodsType || '') !== 'original';
+                // 已完成退款但金额未退满：
+                // - 仅退款（货留买家）：件数释放，允许在原售后期内补差
+                // - 退货退款（货已寄回商家）：件数照常锁定，少退差额视为放弃，不可再申请
+                const approvedAmount = Number(caseItem?.approvedRefundAmount || 0) || 0;
+                const applyAmount = Number(caseItem?.applyRefundAmount || 0) || 0;
+                const caseType = String(caseItem?.afterSalesType || r.afterSalesType || '');
+                const isRefundOnlyCase = REFUND_ONLY_TYPES.includes(caseType);
+                const shareAmount = calcCaseItemShareAmount(caseItem);
+                const isAmountShortfall = shareAmount > 0 && approvedAmount < shareAmount - 0.01;
+                const isPartialRefundReleased = r.statusType === 'completed'
+                  && !isExchange
+                  && isRefundOnlyCase
+                  && isAmountShortfall;
+                if (!isReleasedExchange && !isPartialRefundReleased) {
+                  consumedQty += consumed;
+                }
+                // 退货退款少退的差额计入"放弃差额"
+                if (r.statusType === 'completed' && !isExchange && !isRefundOnlyCase && isAmountShortfall) {
+                  forfeitedAmount += Math.round((shareAmount - approvedAmount) * 100) / 100;
+                }
+                // 退款金额池：已核准取核准额，进行中尚无核准额取申请额
+                committedAmount += approvedAmount > 0 ? approvedAmount : applyAmount;
+                if (r.statusType === 'completed') {
+                  refundedAmount += approvedAmount;
+                }
+                // 订单级运费聚合：有效历史件数 / 是否含换货明细 / 已承诺运费退款
+                orderValidAfterSalesQty += consumed;
+                if (isExchange) {
+                  orderHasExchangeHistory = true;
+                }
+                const approvedShipping = Number(caseItem?.approvedShippingRefundAmount || 0) || 0;
+                const applyShipping = Number(caseItem?.applyShippingRefundAmount || 0) || 0;
+                orderCommittedShippingRefund += approvedShipping > 0 ? approvedShipping : applyShipping;
+                const approvedShippingDeduction = Number(caseItem?.approvedShippingDeductionAmount || 0) || 0;
+                const applyShippingDeduction = Number(caseItem?.applyShippingDeductionAmount || 0) || 0;
+                orderCommittedShippingDeduction += approvedShippingDeduction > 0 ? approvedShippingDeduction : applyShippingDeduction;
+              }
+              if (r.statusType === 'completed' && r.statusText) {
+                const t = r.createdAt ? new Date(r.createdAt).getTime() : 0;
+                if (t >= lastCompletedTime) {
+                  lastCompletedTime = t;
+                  lastCompletedText = r.statusText;
+                }
+              }
+            });
+            const remaining = Math.max(0, (buyQty || 0) - consumedQty);
+            remainingAfterSalesQtyMap[key] = remaining;
+            lastCompletedAfterSalesTextMap[key] = lastCompletedText;
+            // 商品行可退总额与剩余可退金额（补差申请的金额上限）
+            const lineProduct = products[productIdx];
+            const lineTotal = lineProduct
+              ? Math.round((Number(lineProduct.lineAmount || lineProduct.payableAmount || 0) || Number(lineProduct.price || 0) * (lineProduct.quantity || 1)) * 100) / 100
+              : 0;
+            committedAmount = Math.round(committedAmount * 100) / 100;
+            refundedAmount = Math.round(refundedAmount * 100) / 100;
+            forfeitedAmount = Math.round(forfeitedAmount * 100) / 100;
+            if (lineTotal > 0) {
+              // 剩余可申请金额 = 行总额 − 已承诺退款 − 退货退款少退的放弃差额
+              const remainAmount = Math.round(Math.max(0, lineTotal - committedAmount - forfeitedAmount) * 100) / 100;
+              committedRefundAmountMap[key] = committedAmount;
+              refundedAmountMap[key] = refundedAmount;
+              refundableRemainAmountMap[key] = remainAmount;
+              if (forfeitedAmount > 0) {
+                forfeitedAmountMap[key] = forfeitedAmount;
+              }
+              if (!isNaN(productIdx)) {
+                committedRefundAmountMap[productIdx] = committedAmount;
+                refundedAmountMap[productIdx] = refundedAmount;
+                refundableRemainAmountMap[productIdx] = remainAmount;
+                if (forfeitedAmount > 0) {
+                  forfeitedAmountMap[productIdx] = forfeitedAmount;
+                }
+              }
+            }
+            if (!isNaN(productIdx)) {
+              remainingAfterSalesQtyMap[productIdx] = remaining;
+              lastCompletedAfterSalesTextMap[productIdx] = lastCompletedText;
+            }
+          }
           
+          // 每商品最近一次"已完成换货并收到新货"的时间：新货二次售后期从该时间重新起算（7天/15天）
+          const releasedExchangeBaseTimeMap = {};
+          const setReleasedBaseTime = (productIndex, completedAt) => {
+            if (typeof productIndex !== 'number' || !completedAt) {
+              return;
+            }
+            const parsed = this.parseAfterSalesDate(completedAt);
+            if (!parsed) {
+              return;
+            }
+            const ts = parsed.getTime();
+            const curRaw = releasedExchangeBaseTimeMap[productIndex]
+              ?? releasedExchangeBaseTimeMap[String(productIndex)];
+            const curTs = curRaw ? (this.parseAfterSalesDate(curRaw)?.getTime() || 0) : 0;
+            if (ts >= curTs) {
+              releasedExchangeBaseTimeMap[productIndex] = completedAt;
+              releasedExchangeBaseTimeMap[String(productIndex)] = completedAt;
+            }
+          };
+          afterSalesItems.forEach(item => {
+            const isExchange = ['exchange', 'quality_exchange'].includes(String(item.afterSalesType || ''));
+            const generation = Number(item.afterSalesGeneration) || 1;
+            const isReleasedExchange = isExchange
+              && String(item.itemStatus || '') === 'completed'
+              && String(item.returnGoodsType || '') !== 'original'
+              && generation < 2;
+            if (isReleasedExchange) {
+              setReleasedBaseTime(item.orderItemIndex, item.completedAt);
+            }
+          });
+
           const currentStatus = order.status;
           const originalStatus = this.data.originalOrderStatus;
-          
+
+          // 订单运费：显式字段优先，缺失时用实付总额 − 商品行合计反推（与后端 getOrderShippingFee 同口径）
+          let orderShippingFee = Number(
+            order.shippingFee ?? order.deliveryFee ?? order.expressFee ?? order.postFee ?? order.freight ?? 0
+          ) || 0;
+          if (orderShippingFee <= 0) {
+            const shippingFeeInt = Number(order.shippingFeeInt ?? order.deliveryFeeInt ?? 0) || 0;
+            if (shippingFeeInt > 0) {
+              orderShippingFee = shippingFeeInt / 100;
+            }
+          }
+          if (orderShippingFee <= 0) {
+            const orderPaidTotal = Number(order.totalPrice ?? order.totalAmount ?? 0) || 0;
+            const goodsTotal = (products || []).reduce((sum, p) => {
+              const line = Number(p.lineAmount ?? p.payableAmount ?? 0) || 0
+                || Math.round((Number(p.price ?? p.unitPrice ?? 0) * (Number(p.quantity ?? p.buyQty ?? 0) || 1)) * 100) / 100;
+              return sum + line;
+            }, 0);
+            const inferred = Math.round((orderPaidTotal - goodsTotal) * 100) / 100;
+            orderShippingFee = inferred > 0.01 ? inferred : 0;
+          }
+          orderShippingFee = Math.round(orderShippingFee * 100) / 100;
+          orderCommittedShippingRefund = Math.round(orderCommittedShippingRefund * 100) / 100;
+          orderCommittedShippingDeduction = Math.round(orderCommittedShippingDeduction * 100) / 100;
+
+          // 订单原运费（规则运费，包邮时仍 > 0）：买家责任整单退款时按"原运费 − 实付运费"扣减
+          let orderOriginalShippingFee = Number(
+            order.originalDeliveryFee ?? order.originalShippingFee ?? order.originalFreight ?? 0
+          ) || 0;
+          if (orderOriginalShippingFee <= 0) {
+            const originalShippingFeeInt = Number(order.originalDeliveryFeeInt ?? order.originalShippingFeeInt ?? 0) || 0;
+            if (originalShippingFeeInt > 0) {
+              orderOriginalShippingFee = originalShippingFeeInt / 100;
+            }
+          }
+          // 历史订单无原运费字段：退化为实付运费（等价于不扣减）
+          if (orderOriginalShippingFee <= 0) {
+            orderOriginalShippingFee = orderShippingFee;
+          }
+          orderOriginalShippingFee = Math.round(orderOriginalShippingFee * 100) / 100;
+
           this.setData({
             order: {
               ...order,
               canCancel,
+              canUrge: !!order.canUrge,
               canAfterSales,
               afterSalesCase,
               afterSalesItems,
@@ -818,9 +1058,22 @@ Page({
               hasActiveAfterSales,
               hasCompletedAfterSales,
               hasCancelledAfterSales,
+              remainingAfterSalesQtyMap,
+              lastCompletedAfterSalesTextMap,
+              releasedExchangeBaseTimeMap,
+              committedRefundAmountMap,
+              refundedAmountMap,
+              refundableRemainAmountMap,
+              forfeitedAmountMap,
               hasNonReceivedRefund,
               isLogisticsSigned,
-              blockOtherAfterSales
+              blockOtherAfterSales,
+              shippingFeeAmount: orderShippingFee,
+              originalShippingFeeAmount: orderOriginalShippingFee,
+              committedShippingRefundAmount: orderCommittedShippingRefund,
+              committedShippingDeductionAmount: orderCommittedShippingDeduction,
+              validAfterSalesCoveredQty: orderValidAfterSalesQty,
+              hasExchangeAfterSalesHistory: orderHasExchangeHistory
             },
             originalOrderStatus: originalStatus || currentStatus,
             loading: false
@@ -904,7 +1157,80 @@ Page({
         .orderBy('operatedAtTs', 'desc')
         .get();
       
-      const logs = (logsRes.data || []).map(log => {
+      const filteredLogs = (logsRes.data || [])
+        // 售后过程性操作只显示在售后详情页（拦截、自动同意等），历史遗留记录也一并过滤；
+        // 退款到账后由 schedule_refund_callback 写订单级 complete_refund 日志
+        .filter(log => !['start_intercepting', 'auto_start_intercepting', 'after_sales_pending_refund', 'auto_process_after_sales'].includes(log.action));
+
+      // 按 caseId 分组售后操作日志，每个 caseId 对应一次独立的售后申请；
+      // 同一 caseId 下的申请/取消/完成等操作共享同一序号，便于追踪某次售后的完整生命周期
+      const afterSalesActions = ['apply_after_sales', 'cancel_after_sales', 'complete_refund', 'complete_exchange', 'complete_after_sales'];
+      const getProductKey = log => {
+        const items = (log.detail && log.detail.items) || [];
+        return items.length > 0
+          ? `${items[0].orderItemIndex ?? ''}_${items[0].productName || ''}`
+          : (log.detail && log.detail.orderItemId) || log._id;
+      };
+
+      // 兜底回填：旧版 apply_after_sales 日志 detail 无 caseId（caseId 由后端生成，
+      // 历史未写入 detail），按商品 LIFO 匹配同商品后续 cancel/complete 的 caseId，
+      // 让旧日志也能按 case 折叠。匹配不100%精确，但覆盖绝大多数场景
+      const productApplyStacks = {};
+      const sortedForBackfill = [...filteredLogs].sort((a, b) => {
+        const ta = a.operatedAtTs || (a.operatedAt ? new Date(a.operatedAt).getTime() : 0);
+        const tb = b.operatedAtTs || (b.operatedAt ? new Date(b.operatedAt).getTime() : 0);
+        return ta - tb; // 正序
+      });
+      sortedForBackfill.forEach(log => {
+        if (!afterSalesActions.includes(log.action)) return;
+        const productKey = getProductKey(log);
+        if (!productApplyStacks[productKey]) productApplyStacks[productKey] = [];
+        const hasCaseId = !!(log.detail && log.detail.caseId);
+        if (log.action === 'apply_after_sales' && !hasCaseId) {
+          productApplyStacks[productKey].push(log);
+        } else if (['cancel_after_sales', 'complete_refund', 'complete_exchange', 'complete_after_sales'].includes(log.action) && hasCaseId) {
+          // 最近的 apply 对应最近的 cancel/complete（LIFO）
+          if (productApplyStacks[productKey].length > 0) {
+            const applyLog = productApplyStacks[productKey].pop();
+            if (!applyLog.detail) applyLog.detail = {};
+            applyLog.detail.caseId = log.detail.caseId;
+          }
+        }
+      });
+      // caseMap: caseKey -> { earliestTs, productKey, caseId }
+      const caseMap = {};
+      // productCaseKeys: productKey -> [caseKey]（去重）
+      const productCaseKeys = {};
+      filteredLogs.forEach(log => {
+        if (!afterSalesActions.includes(log.action)) return;
+        const productKey = getProductKey(log);
+        const caseId = (log.detail && log.detail.caseId) || null;
+        // caseKey 优先用 caseId；无 caseId 时用 productKey + 时间兜底，避免不同 case 被合并
+        const caseKey = caseId ? 'case_' + caseId : 'nocase_' + productKey + '_' + (log.operatedAtTs || '');
+        const ts = log.operatedAtTs || (log.operatedAt ? new Date(log.operatedAt).getTime() : 0);
+        if (!caseMap[caseKey]) caseMap[caseKey] = { earliestTs: ts, productKey, caseId };
+        if (ts < caseMap[caseKey].earliestTs) caseMap[caseKey].earliestTs = ts;
+        if (!productCaseKeys[productKey]) productCaseKeys[productKey] = [];
+        if (!productCaseKeys[productKey].includes(caseKey)) productCaseKeys[productKey].push(caseKey);
+      });
+      // 给每个 case 按商品内最早操作时间正序分配序号（第1次、第2次...）
+      const productCaseSeq = {}; // caseKey -> seq
+      Object.keys(productCaseKeys).forEach(productKey => {
+        const caseKeys = productCaseKeys[productKey];
+        caseKeys.sort((a, b) => caseMap[a].earliestTs - caseMap[b].earliestTs);
+        caseKeys.forEach((caseKey, idx) => { productCaseSeq[caseKey] = idx + 1; });
+      });
+      // 给每条售后日志打上序号（同 caseId 共享）
+      filteredLogs.forEach(log => {
+        if (!afterSalesActions.includes(log.action)) return;
+        const productKey = getProductKey(log);
+        const caseId = (log.detail && log.detail.caseId) || null;
+        const caseKey = caseId ? 'case_' + caseId : 'nocase_' + productKey + '_' + (log.operatedAtTs || '');
+        log._afterSalesSeq = productCaseSeq[caseKey] || 0;
+        log._afterSalesProductKey = productKey;
+      });
+
+      const logs = filteredLogs.map(log => {
         let actionText = '';
         let operatorText = '';
         
@@ -920,7 +1246,11 @@ Page({
           'apply_after_sales': '申请售后',
           'complete_refund': '完成退款',
           'complete_exchange': '完成换货',
-          'complete_after_sales': '售后完成'
+          'complete_after_sales': '售后完成',
+          'start_intercepting': '开始拦截快递',
+          'after_sales_rejected': '售后已关闭',
+          'after_sales_pending_refund': '售后进入待退款',
+          'cancel_after_sales': '取消售后申请'
         };
         
         actionText = actionMap[log.action] || log.action;
@@ -945,20 +1275,79 @@ Page({
             operatedAtText = `${year}-${month}-${day} ${hours}:${minutes}`;
           }
         }
-        
+
+        // 为售后相关日志提取商品缩略信息（申请售后/完成退款/完成换货/售后完成）
+        let itemSummaries = [];
+        if (['apply_after_sales', 'cancel_after_sales', 'complete_refund', 'complete_exchange', 'complete_after_sales'].includes(log.action) && log.detail && log.detail.items) {
+          itemSummaries = log.detail.items.map(item => ({
+            productName: item.productName || '',
+            skuName: item.skuName || '',
+            applyQty: item.applyQty || 0,
+            afterSalesTypeName: item.afterSalesTypeName || ''
+          }));
+        }
+
+        // 清洗历史申请售后日志的 reason：去掉 "申请售后：商品名 x1，原因：" 前缀，只保留原因本身
+        let cleanReason = log.reason || '';
+        if (log.action === 'apply_after_sales') {
+          const match = cleanReason.match(/^申请售后：.+，原因：(.+)$/);
+          if (match) {
+            cleanReason = match[1];
+          } else if (cleanReason.startsWith('申请售后：')) {
+            // 无原因只有商品描述的历史记录，清空避免重复
+            cleanReason = '';
+          }
+        }
+
+        // 售后序号：同一商品存在多次售后申请时区分第几次（仅多条时才显示）
+        // 同一 caseId 下的所有操作（申请/取消/完成）共享同一序号
+        const afterSalesSeq = log._afterSalesSeq || 0;
+        const productKeyForCount = log._afterSalesProductKey || '';
+        const totalCasesForProduct = (productKeyForCount && productCaseKeys[productKeyForCount]) ? productCaseKeys[productKeyForCount].length : 0;
+        const showAfterSalesSeq = afterSalesSeq > 0 && totalCasesForProduct > 1;
+
         return {
           ...log,
           actionText,
           operatorText,
-          operatedAtText
+          operatedAtText,
+          itemSummaries,
+          reason: cleanReason,
+          afterSalesSeqLabel: showAfterSalesSeq ? `第${afterSalesSeq}次` : ''
         };
       });
-      
+
+      // 同一售后单的操作记录超过1条就折叠，默认仅显示最新1条，点击可展开更早记录
+      const caseLogGroups = {};
+      logs.forEach(log => {
+        const caseId = log.detail && log.detail.caseId;
+        if (!caseId) return;
+        if (!caseLogGroups[caseId]) caseLogGroups[caseId] = [];
+        caseLogGroups[caseId].push(log);
+      });
+      Object.values(caseLogGroups).forEach(group => {
+        if (group.length <= 1) return;
+        group.forEach((log, idx) => {
+          log._caseId = group[0].detail.caseId;
+          log._hidden = idx >= 1; // 仅保留最新一条（idx=0）
+        });
+        group[0]._showToggle = true;
+        group[0]._hiddenCount = group.length - 1;
+      });
+
       this.setData({ operationLogs: logs });
     } catch (error) {
       console.error('获取订单操作日志失败:', error);
       this.setData({ operationLogs: [] });
     }
+  },
+
+  toggleCaseLogExpand(e) {
+    const caseId = e.currentTarget.dataset.caseId;
+    if (!caseId) return;
+    this.setData({
+      [`expandedCases.${caseId}`]: !this.data.expandedCases[caseId]
+    });
   },
 
   goBack() {
@@ -1016,6 +1405,15 @@ Page({
     // 启动订单监听
     console.log('[订单详情页面] 开始实时监听');
     this.startOrderWatch();
+
+    // 售后弹窗仍开着时（如从后台切回），重启售后剩余时间倒计时
+    if (this.data.showAfterSalesTypeModal && !this.afterSalesCountdownTimer
+      && (this.data.afterSalesNormalDeadline || this.data.afterSalesQualityDeadline)) {
+      this.updateAfterSalesCountdownTick();
+      this.afterSalesCountdownTimer = setInterval(() => {
+        this.updateAfterSalesCountdownTick();
+      }, 1000);
+    }
   },
 
   confirmReceipt(e) {
@@ -1046,9 +1444,13 @@ Page({
 
   cancelOrder(e) {
     const orderId = e.currentTarget.dataset.orderId;
+    // 已付款待发货取消：全额原路退款（含运费）；待支付订单仅关闭订单
+    const cancelContent = this.data.order && this.data.order.status === 'paid'
+      ? '订单尚未发货，取消后将全额原路退款（含运费），确定要取消吗？'
+      : '确定要取消这个订单吗？';
     wx.showModal({
       title: '取消订单',
-      content: '确定要取消这个订单吗？',
+      content: cancelContent,
       success: async (res) => {
         if (res.confirm) {
           try {
@@ -1067,6 +1469,38 @@ Page({
               icon: 'none'
             });
           }
+        }
+      }
+    });
+  },
+
+  // 催发货
+  urgeShipping(e) {
+    const orderId = e.currentTarget.dataset.orderId;
+    wx.showModal({
+      title: '催发货',
+      content: '已提醒商家尽快发货，您可以在订单详情页查看发货进度',
+      showCancel: false,
+      confirmText: '知道了',
+      success: async () => {
+        try {
+          await wx.cloud.callFunction({
+            name: 'sendNotification',
+            data: {
+              notificationType: 'urgeShipping',
+              orderId: orderId
+            }
+          });
+          wx.showToast({
+            title: '已提醒商家',
+            icon: 'success'
+          });
+        } catch (err) {
+          console.error('催发货通知发送失败', err);
+          wx.showToast({
+            title: '提醒失败，请稍后重试',
+            icon: 'none'
+          });
         }
       }
     });
@@ -1328,6 +1762,7 @@ Page({
   onHide() {
     this.setData({ pageVisible: false });
     this.clearCountdown();
+    this.clearAfterSalesCountdown();
     console.log('订单详情页面隐藏，清除倒计时');
     
     // 销毁监听
@@ -1341,6 +1776,7 @@ Page({
   // 页面卸载时清除倒计时
   onUnload() {
     this.clearCountdown();
+    this.clearAfterSalesCountdown();
     if (this.expiredCheckCooldown) {
       this.expiredCheckCooldown.clear();
     }
@@ -1771,17 +2207,77 @@ Page({
   afterSalesByProduct(e) {
     const orderId = e.currentTarget.dataset.orderId;
     const productIndex = e.currentTarget.dataset.productIndex;
-    
-    // 获取商品是否支持7天无理由退换货
-    const products = this.data.order?.products || [];
+    const order = this.data.order || {};
+    const products = order.products || [];
     const product = products[productIndex] || {};
-    const supportNoReason = product.supportNoReasonReturn || false;
     
+    // ========== 方案 B：入口前置校验，避免弹出"没有可选类型"的空弹窗 ==========
+    const remainingQty = order.remainingAfterSalesQtyMap
+      ? (order.remainingAfterSalesQtyMap[productIndex] ?? order.remainingAfterSalesQtyMap[String(productIndex)] ?? (product.quantity || 1))
+      : (product.quantity || 1);
+    if (remainingQty <= 0) {
+      const lastText = order.lastCompletedAfterSalesTextMap
+        ? (order.lastCompletedAfterSalesTextMap[productIndex] || order.lastCompletedAfterSalesTextMap[String(productIndex)] || '售后已完成')
+        : '售后已完成';
+      wx.showToast({
+        title: `该商品已${lastText}，无法再次申请售后`,
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
+    // 当前订单状态下，弹窗 step1 是否会显示任何售后类型（与 WXML step1 判定完全对齐）
+    const status = order.status || '';
+    const hasAnyType = (status === 'shipping')
+      || (status === 'delivered' || status === 'completed' || status === 'refund' || status === 'refund_completed');
+    if (!hasAnyType) {
+      wx.showToast({
+        title: '当前订单状态暂不支持申请售后',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
+    // 常规售后 + 质量售后都过期，不建议进入空弹窗（用户进入后下一步会发现无原因可选）
+    // 按当前商品的售后窗口判断：换货收到新货的件按确认收新货时间重新起算
+    const productWindow = this.getProductAfterSalesWindow(productIndex);
+    // 未收到货退款无时间限制，所以 shipping 状态下即使天数 <=0 仍允许进入
+    if (status !== 'shipping' && productWindow.normal <= 0 && productWindow.quality <= 0) {
+      wx.showToast({
+        title: '已过售后期限，暂不支持申请售后',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
+
+    // 有未收到货退款且物流未签收，其他商品不能申请
+    if (order.blockOtherAfterSales) {
+      wx.showToast({
+        title: '存在未收到货退款申请中，暂不支持其他商品单独申请售后',
+        icon: 'none',
+        duration: 2500
+      });
+      return;
+    }
+    
+    const supportNoReason = product.supportNoReasonReturn || false;
+    // 默认申请数量 = 剩余可售后数量（上面已计算），不超过商品原始数量
+    const defaultApplyQty = Math.max(1, Math.min(remainingQty, product.quantity || 1));
+    // 数量提示：体现已售后/剩余可申请，让用户理解为何数量受限
+    const buyQtyForHint = product.quantity || 1;
+    const consumedQtyForHint = Math.max(0, buyQtyForHint - remainingQty);
+    const applyQtyHint = consumedQtyForHint > 0
+      ? `共${buyQtyForHint}件，已售后${consumedQtyForHint}件，本次最多可申请${remainingQty}件`
+      : `共${buyQtyForHint}件，可选择部分申请`;
+
     // 显示售后类型选择弹窗
     // 使用物流状态名称
-    const logisticsState = this.data.order?.logisticsState || {};
+    const logisticsState = order.logisticsState || {};
     const goodsStatusText = logisticsState.stateName || '';
-    
+
     this.setData({
       showAfterSalesTypeModal: true,
       selectedProductIndex: productIndex,
@@ -1797,7 +2293,9 @@ Page({
       canSubmitAfterSales: false,
       supportNoReason: supportNoReason,
       pendingOrderId: orderId,
-      goodsStatusText: goodsStatusText
+      goodsStatusText: goodsStatusText,
+      applyQty: defaultApplyQty,
+      applyQtyHint: applyQtyHint
     });
   },
 
@@ -1858,7 +2356,7 @@ Page({
       afterSalesVideos: [],
       afterSalesDescription: '',
       refundAmount: '',
-      applyQty: this.data.order.products && this.data.order.products[this.data.selectedProductIndex] ? (this.data.order.products[this.data.selectedProductIndex].quantity || 1) : 1,
+      applyQty: 1,
       contactName: '',
       contactPhone: '',
       contactAddress: '',
@@ -1866,10 +2364,21 @@ Page({
       remainingAfterSalesDays: 7,
       remainingNormalAfterSalesDays: 7,
       remainingQualityAfterSalesDays: 15,
+      afterSalesWindowRestart: false,
+      afterSalesNormalDeadline: 0,
+      afterSalesQualityDeadline: 0,
+      afterSalesNormalText: '',
+      afterSalesQualityText: '',
+      partialRefundTip: '',
+      shippingRefundAmount: 0,
+      shippingDeductionAmount: 0,
+      shippingRefundTip: '',
+      shippingRefundTipType: '',
       maxRefundAmount: 0,
       needProof: false,
       showAfterSalesRulesModal: false
     });
+    this.clearAfterSalesCountdown();
   },
 
   showAfterSalesRules() {
@@ -2106,82 +2615,221 @@ Page({
     this.updateCanSubmit();
   },
 
-  // 计算剩余售后时限（和后端保持一致）
-  calculateRemainingAfterSalesDays() {
-    const { order } = this.data;
-    
+  // 兼容多种时间格式：Date 对象、'YYYY-MM-DD HH[:mm:ss]' 字符串、云数据库 {_seconds} 结构
+  parseAfterSalesDate(value) {
+    if (!value) {
+      return null;
+    }
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    if (typeof value === 'number') {
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (typeof value === 'string') {
+      const parsed = new Date(value.replace(' ', 'T'));
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (typeof value === 'object') {
+      if (value._seconds) {
+        return new Date(value._seconds * 1000);
+      }
+      if (typeof value.toDate === 'function') {
+        const parsed = value.toDate();
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+    }
+    return null;
+  },
+
+  // 售后剩余时间分级格式化：
+  // ≥2天只显示天；1~2天显示天+小时；<1天显示时+分；<1小时显示分+秒；<1分钟显示秒；0显示已过期
+  formatAfterSalesCountdown(remainMs) {
+    if (!Number.isFinite(remainMs) || remainMs <= 0) {
+      return '已过期';
+    }
+    const totalSec = Math.floor(remainMs / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (days >= 2) {
+      return `${days}天`;
+    }
+    if (days >= 1) {
+      return `${days}天${hours}小时`;
+    }
+    if (hours >= 1) {
+      return `${hours}时${mins}分`;
+    }
+    if (mins >= 1) {
+      return `${mins}分${secs}秒`;
+    }
+    return `${secs}秒`;
+  },
+
+  // 计算指定商品当前可享受的售后窗口（和后端双池口径保持一致）：
+  // 换货收到新货后，以确认收新货时间重新起算（普通7天/质量15天）；
+  // 否则按订单签收时间（7天/15天）或发货时间（10天/15天）起算。
+  // 返回常规/质量两条线的截止时间戳（null=缺少基准时间，按满额天数展示）
+  getProductAfterSalesWindow(productIndex) {
+    const order = this.data.order || {};
+    const restartMap = order.releasedExchangeBaseTimeMap || {};
+    let restartRaw = null;
+    if (productIndex !== undefined && productIndex !== null && productIndex >= 0) {
+      restartRaw = restartMap[productIndex] ?? restartMap[String(productIndex)] ?? null;
+    }
+    const restartDate = this.parseAfterSalesDate(restartRaw);
+
     // 判断是否已确认收货（交易成功）
-    const isTransactionCompleted = ['completed', 'refund'].includes(order.status);
-    
-    let remainingNormalDays = isTransactionCompleted ? 7 : 10;
-    let remainingQualityDays = 15;
-    
-    let signTime;
-    if (isTransactionCompleted) {
+    // 用 receiptTime（确认收货时间）判断而非订单状态：
+    // 申请售后会把 delivered 变成 refund，但不代表用户确认了收货
+    const isTransactionCompleted = !!order.receiptTime || ['completed', 'refund_completed'].includes(order.status);
+
+    let baseDate = null;
+    let normalDays;
+    let windowRestarted = false;
+    if (restartDate) {
+      // 换货新货：收新货后重新起算售后期
+      baseDate = restartDate;
+      normalDays = 7;
+      windowRestarted = true;
+    } else if (isTransactionCompleted) {
       // 交易成功后：优先使用签收时间，回退到确认收货时间
-      signTime = order?.logisticsState?.checkTime || order?.receiptTime;
+      baseDate = this.parseAfterSalesDate(order?.logisticsState?.checkTime)
+        || this.parseAfterSalesDate(order?.receiptTime);
+      normalDays = 7;
     } else {
-      // 交易成功前：使用发货时间
-      signTime = order?.shippingTime;
+      // 交易成功前：使用发货时间（发货后10天）
+      baseDate = this.parseAfterSalesDate(order?.shippingTime);
+      normalDays = 10;
     }
-    
-    console.log('=== 售后时效计算调试 ===');
-    console.log('order:', JSON.stringify(order, null, 2));
-    console.log('order.status:', order.status);
-    console.log('isTransactionCompleted:', isTransactionCompleted);
-    console.log('checkTime:', order?.logisticsState?.checkTime);
-    console.log('receiptTime:', order?.receiptTime);
-    console.log('shippingTime:', order?.shippingTime);
-    console.log('signTime:', signTime);
-    
-    if (signTime) {
-      const [datePart, hourPart] = signTime.split(' ');
-      const [year, month, day] = datePart.split('-').map(Number);
-      const hour = parseInt(hourPart) || 0;
-      
-      // checkTime是北京时间，直接用本地时间创建
-      // 格式：2026-05-04 23 → 2026-05-04 23:00:00
-      const deliveryDate = new Date(year, month - 1, day, hour, 0, 0);
-      
-      // 从签收后的第二天0点开始计算
-      const startDate = new Date(year, month - 1, day + 1, 0, 0, 0);
-      
-      const now = new Date();
-      const diff = now.getTime() - startDate.getTime();
-      const daysPassed = Math.floor(diff / (1000 * 60 * 60 * 24));
-      
-      console.log('deliveryDate:', deliveryDate.toISOString());
-      console.log('startDate (签收后第二天):', startDate.toISOString());
-      console.log('now:', now.toISOString());
-      console.log('diff (ms):', diff);
-      console.log('daysPassed:', daysPassed);
-      
-      remainingNormalDays = Math.max(0, remainingNormalDays - daysPassed);
-      remainingQualityDays = Math.max(0, 15 - daysPassed);
-    }
-    
+    const qualityDays = 15;
+
+    const calcDeadline = (days) => {
+      if (!baseDate) {
+        return null;
+      }
+      // 从基准日第二天0点开始计算（和后端保持一致）
+      const startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + 1, 0, 0, 0);
+      return startDate.getTime() + days * 24 * 60 * 60 * 1000;
+    };
+
+    return {
+      normalDeadline: calcDeadline(normalDays),
+      qualityDeadline: calcDeadline(qualityDays),
+      normalDays,
+      qualityDays,
+      windowRestarted
+    };
+  },
+
+  // 每秒刷新售后剩余时间的文本与天数（天数用于售后原因过滤）
+  updateAfterSalesCountdownTick() {
+    const { afterSalesNormalDeadline, afterSalesQualityDeadline } = this.data;
+    const nowMs = Date.now();
+    const buildState = (deadline, maxDays) => {
+      if (!deadline) {
+        // 缺少基准时间：保持满额展示（与历史行为一致）
+        return { days: maxDays, text: `${maxDays}天` };
+      }
+      const remainMs = deadline - nowMs;
+      if (remainMs <= 0) {
+        return { days: 0, text: '已过期' };
+      }
+      return {
+        days: Math.min(maxDays, Math.ceil(remainMs / (24 * 60 * 60 * 1000))),
+        text: this.formatAfterSalesCountdown(remainMs)
+      };
+    };
+    const normalState = buildState(afterSalesNormalDeadline || null, Number(this.data.afterSalesNormalMaxDays) || 7);
+    const qualityState = buildState(afterSalesQualityDeadline || null, Number(this.data.afterSalesQualityMaxDays) || 15);
     this.setData({
-      remainingNormalAfterSalesDays: remainingNormalDays,
-      remainingQualityAfterSalesDays: remainingQualityDays,
-      remainingAfterSalesDays: remainingNormalDays
+      remainingNormalAfterSalesDays: normalState.days,
+      remainingQualityAfterSalesDays: qualityState.days,
+      remainingAfterSalesDays: normalState.days,
+      afterSalesNormalText: normalState.text,
+      afterSalesQualityText: qualityState.text
+    });
+  },
+
+  clearAfterSalesCountdown() {
+    if (this.afterSalesCountdownTimer) {
+      clearInterval(this.afterSalesCountdownTimer);
+      this.afterSalesCountdownTimer = null;
+    }
+  },
+
+  // 计算剩余售后时限（和后端保持一致），优先按当前弹窗选中商品的新货窗口计算；
+  // 保存截止时间戳并启动每秒倒计时（精确到秒，结束显示"已过期"）
+  calculateRemainingAfterSalesDays() {
+    const productIndex = Number(this.data.selectedProductIndex);
+    const windowInfo = this.getProductAfterSalesWindow(productIndex >= 0 ? productIndex : undefined);
+
+    console.log('=== 售后时效计算调试 ===');
+    console.log('selectedProductIndex:', productIndex);
+    console.log('窗口是否按换货新货重新起算:', windowInfo.windowRestarted);
+    console.log('常规截止:', windowInfo.normalDeadline, '质量截止:', windowInfo.qualityDeadline);
+
+    this.clearAfterSalesCountdown();
+    this.setData({
+      afterSalesNormalDeadline: windowInfo.normalDeadline || 0,
+      afterSalesQualityDeadline: windowInfo.qualityDeadline || 0,
+      afterSalesNormalMaxDays: windowInfo.normalDays,
+      afterSalesQualityMaxDays: windowInfo.qualityDays,
+      afterSalesWindowRestart: windowInfo.windowRestarted
+    }, () => {
+      this.updateAfterSalesCountdownTick();
+      this.afterSalesCountdownTimer = setInterval(() => {
+        this.updateAfterSalesCountdownTick();
+      }, 1000);
     });
   },
 
   // 初始化步骤3数据
   initStep3Data() {
-    const { order, selectedProductIndex, selectedReason, selectedAfterSalesType } = this.data;
-    
-    // 获取商品价格作为最大退款金额
+    const { order, selectedProductIndex, selectedReason, selectedAfterSalesType, applyQty } = this.data;
+
+    // 剩余可售后数量（已扣除进行中/已完成的占用）
+    const remainingQtyMap = order.remainingAfterSalesQtyMap || {};
+    const remainingQty = remainingQtyMap[selectedProductIndex] ?? remainingQtyMap[String(selectedProductIndex)] ?? 0;
+
+    // 该商品行剩余可退金额（单件部分金额退款后补差场景，金额可能小于按件数算出的金额）
+    const remainAmountMap = order.refundableRemainAmountMap || {};
+    const remainAmount = Number(remainAmountMap[selectedProductIndex] ?? remainAmountMap[String(selectedProductIndex)] ?? 0) || 0;
+    const refundedMap = order.refundedAmountMap || {};
+    const refundedAmount = Number(refundedMap[selectedProductIndex] ?? refundedMap[String(selectedProductIndex)] ?? 0) || 0;
+
+    // 最大退款金额 = 单价 × 剩余可售后数量
     let maxRefundAmount = 0;
     if (selectedProductIndex >= 0 && order.products[selectedProductIndex]) {
       const product = order.products[selectedProductIndex];
-      maxRefundAmount = (product.price || 0) * (product.quantity || 1);
+      const unitPrice = Number(product.price || 0) || 0;
+      maxRefundAmount = unitPrice * (remainingQty || product.quantity || 1);
     } else if (order.totalAmount) {
       maxRefundAmount = order.totalAmount;
     }
-    
-    // 设置默认退款金额为最大金额
-    const refundAmount = maxRefundAmount.toString();
+    // 金额池封顶：已部分退款时不能超过剩余可退金额
+    if (remainAmount > 0) {
+      maxRefundAmount = Math.min(maxRefundAmount, remainAmount);
+    }
+    maxRefundAmount = Math.round(maxRefundAmount * 100) / 100;
+
+    // 默认退款金额：补差场景默认剩余可退全额；否则按当前 applyQty 计算（与数量选择器一致）
+    let refundAmount;
+    if (remainAmount > 0 && refundedAmount > 0) {
+      refundAmount = Number.isInteger(maxRefundAmount) ? maxRefundAmount.toString() : maxRefundAmount.toFixed(2);
+    } else {
+      const unitPrice = (selectedProductIndex >= 0 && order.products[selectedProductIndex]) ? (Number(order.products[selectedProductIndex].price) || 0) : 0;
+      let rawRefund = Number((unitPrice * (applyQty || 1)).toFixed(2)) || 0;
+      rawRefund = Math.min(rawRefund, maxRefundAmount || rawRefund);
+      refundAmount = Number.isInteger(rawRefund) ? rawRefund.toString() : rawRefund.toFixed(2);
+    }
+    // 部分退款补差提示
+    const partialRefundTip = refundedAmount > 0 && remainAmount > 0
+      ? `该商品已退款 ¥${refundedAmount}，本次最多可退 ¥${remainAmount}`
+      : '';
     
     // 获取联系人信息（从订单地址中获取）
     let contactName = '';
@@ -2200,21 +2848,41 @@ Page({
     
     // 判断是否需要上传凭证
     const needProof = this.needUploadProof(selectedAfterSalesType, '', selectedReason);
-    
+
     // 计算运费归属
     const shippingResponsibility = this.getShippingResponsibility(selectedReason);
-    
+
+    // 运费退款预览：最终售后类型映射与提交逻辑保持一致
+    let previewFinalType = 'return_refund';
+    if (selectedAfterSalesType === 'exchange') {
+      previewFinalType = 'exchange';
+    } else if (selectedAfterSalesType === 'not_received_refund') {
+      previewFinalType = 'refund_not_received';
+    } else if (this.data.selectedRefundType === 'return_refund') {
+      previewFinalType = 'return_refund';
+    } else {
+      previewFinalType = this.data.selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
+    }
+    const shippingPreview = this.resolveShippingRefundPreview(
+      order, previewFinalType, selectedReason, applyQty, refundAmount
+    );
+
     // 计算剩余售后时限
     this.calculateRemainingAfterSalesDays();
-    
+
     this.setData({
       maxRefundAmount: maxRefundAmount,
       refundAmount: refundAmount,
+      partialRefundTip,
       contactName: contactName,
       contactPhone: contactPhone,
       contactAddress: contactAddress,
       needProof: needProof,
       shippingResponsibility: shippingResponsibility,
+      shippingRefundAmount: shippingPreview.shippingRefundAmount,
+      shippingDeductionAmount: shippingPreview.shippingDeductionAmount,
+      shippingRefundTip: shippingPreview.shippingRefundTip,
+      shippingRefundTipType: shippingPreview.shippingRefundTipType,
       afterSalesImages: [],
       afterSalesDescription: ''
     }, () => {
@@ -2242,7 +2910,74 @@ Page({
     ];
     return sellerReasons.includes(reasonValue) ? 'seller' : 'buyer';
   },
-  
+
+  // 售后运费退款/扣减预览（仅展示用，判定口径与后端 resolveApplyShippingRefund 一致；最终以后端为准）
+  // 返回 { shippingRefundAmount, shippingDeductionAmount, shippingRefundTip, shippingRefundTipType: 'include'|'exclude'|'deduct' }
+  resolveShippingRefundPreview(order, finalType, reasonCode, applyQty, goodsRefundAmount) {
+    const fee = Math.round((Number(order?.shippingFeeAmount) || 0) * 100) / 100;
+    const originalFee = Math.round((Number(order?.originalShippingFeeAmount) || 0) * 100) / 100;
+    const empty = { shippingRefundAmount: 0, shippingDeductionAmount: 0, shippingRefundTip: '', shippingRefundTipType: '' };
+    // 无运费（含原运费）/ 换货：不展示运费提示
+    if ((fee <= 0 && originalFee <= 0) || finalType === 'exchange' || finalType === 'quality_exchange') {
+      return empty;
+    }
+    const committed = Math.round((Number(order?.committedShippingRefundAmount) || 0) * 100) / 100;
+    const remaining = Math.round((fee - committed) * 100) / 100;
+    const committedDeduction = Math.round((Number(order?.committedShippingDeductionAmount) || 0) * 100) / 100;
+    // 扣减额 = 原运费 − 实付运费（包邮差额），运费整单只扣一次
+    const deductionRemaining = Math.round((Math.max(0, originalFee - fee) - committedDeduction) * 100) / 100;
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const REFUND_TYPES = ['refund', 'quality_refund', 'return_refund', 'quality_return_refund', 'refund_received', 'refund_not_received'];
+    // 与后端 QUALITY_REASONS 严格对齐（getShippingResponsibility 的列表更宽，不能直接复用）
+    const QUALITY_REASONS = ['size_mismatch', 'color_mismatch', 'material_mismatch', 'fade', 'quality', 'missing', 'damaged', 'wrong_item'];
+    const isSellerResponsible = ['quality_refund', 'quality_return_refund'].includes(finalType)
+      || QUALITY_REASONS.includes(String(reasonCode || ''));
+
+    // 整单判定：历史有效明细 + 本次申请覆盖全部件数，且历史不含换货明细
+    const totalOrderQty = (order.products || []).reduce(
+      (sum, p) => sum + (Number(p.quantity || 0) || 0), 0
+    );
+    const coveredQty = (Number(order.validAfterSalesCoveredQty) || 0) + (Number(applyQty) || 0);
+    const isWholeOrder = coveredQty >= totalOrderQty && !order.hasExchangeAfterSalesHistory;
+    const goodsAmount = Math.round((Number(goodsRefundAmount) || 0) * 100) / 100;
+
+    // 未收到货 / 卖家责任整单：退实付运费（不扣减）
+    const willRefundShipping = finalType === 'refund_not_received'
+      || (REFUND_TYPES.includes(finalType) && isSellerResponsible && isWholeOrder);
+    if (willRefundShipping) {
+      if (remaining <= 0.01) {
+        return empty;
+      }
+      return {
+        shippingRefundAmount: remaining,
+        shippingDeductionAmount: 0,
+        shippingRefundTipType: 'include',
+        shippingRefundTip: `本次退款含运费 ¥${fmt(remaining)}，预计共退 ¥${fmt(Math.round((goodsAmount + remaining) * 100) / 100)}`
+      };
+    }
+
+    // 买家责任整单：不退运费；包邮订单按"原运费 − 实付运费"从退款中扣减
+    if (REFUND_TYPES.includes(finalType) && !isSellerResponsible && isWholeOrder && deductionRemaining > 0.01) {
+      return {
+        shippingRefundAmount: 0,
+        shippingDeductionAmount: deductionRemaining,
+        shippingRefundTipType: 'deduct',
+        shippingRefundTip: `买家承担原运费 ¥${fmt(deductionRemaining)}，将从本次退款中扣除，预计实退 ¥${fmt(Math.max(0, Math.round((goodsAmount - deductionRemaining) * 100) / 100))}`
+      };
+    }
+
+    // 买家责任 / 部分退款：商品款照退，运费不退
+    if (remaining <= 0.01) {
+      return empty;
+    }
+    return {
+      shippingRefundAmount: 0,
+      shippingDeductionAmount: 0,
+      shippingRefundTipType: 'exclude',
+      shippingRefundTip: `运费 ¥${fmt(remaining)} 不在本次退款范围内`
+    };
+  },
+
   // 获取视频缩略图（当thumbTempFilePath为空时使用）
   getVideoThumbnail(item) {
     // 优先使用微信返回的封面图
@@ -2443,7 +3178,19 @@ Page({
       });
     }
     
-    this.setData({ refundAmount: value }, () => {
+    // 含运费退款 / 扣减运费时，"预计共退（实退）"金额随用户编辑的商品退款额联动
+    const patchData = { refundAmount: value };
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    if (this.data.shippingRefundTipType === 'include' && Number(this.data.shippingRefundAmount) > 0) {
+      const shippingPart = Math.round((Number(this.data.shippingRefundAmount) || 0) * 100) / 100;
+      const total = Math.round((Number(value || 0) + shippingPart) * 100) / 100;
+      patchData.shippingRefundTip = `本次退款含运费 ¥${fmt(shippingPart)}，预计共退 ¥${fmt(total)}`;
+    } else if (this.data.shippingRefundTipType === 'deduct' && Number(this.data.shippingDeductionAmount) > 0) {
+      const deductionPart = Math.round((Number(this.data.shippingDeductionAmount) || 0) * 100) / 100;
+      const net = Math.max(0, Math.round((Number(value || 0) - deductionPart) * 100) / 100);
+      patchData.shippingRefundTip = `买家承担原运费 ¥${fmt(deductionPart)}，将从本次退款中扣除，预计实退 ¥${fmt(net)}`;
+    }
+    this.setData(patchData, () => {
       setTimeout(() => this.updateAmountInputWidth(), 0);
     });
     this.updateCanSubmit();
@@ -2542,8 +3289,7 @@ Page({
   
   // 减少售后数量
   decreaseApplyQty() {
-    const { applyQty, selectedProductIndex, order } = this.data;
-    const maxQty = order.products && order.products[selectedProductIndex] ? (order.products[selectedProductIndex].quantity || 1) : 1;
+    const { applyQty } = this.data;
     if (applyQty > 1) {
       this.setData({
         applyQty: applyQty - 1
@@ -2555,7 +3301,9 @@ Page({
   // 增加售后数量
   increaseApplyQty() {
     const { applyQty, selectedProductIndex, order } = this.data;
-    const maxQty = order.products && order.products[selectedProductIndex] ? (order.products[selectedProductIndex].quantity || 1) : 1;
+    // 上限为剩余可售后数量（已扣除进行中/已完成的占用）
+    const remainingQtyMap = order.remainingAfterSalesQtyMap || {};
+    const maxQty = remainingQtyMap[selectedProductIndex] ?? remainingQtyMap[String(selectedProductIndex)] ?? (order.products && order.products[selectedProductIndex] ? (order.products[selectedProductIndex].quantity || 1) : 1);
     if (applyQty < maxQty) {
       this.setData({
         applyQty: applyQty + 1
@@ -2566,15 +3314,43 @@ Page({
 
   // 根据售后数量更新退款金额
   updateRefundAmount() {
-    const { applyQty, selectedProductIndex, order } = this.data;
+    const { applyQty, selectedProductIndex, order, maxRefundAmount } = this.data;
     if (selectedProductIndex >= 0 && order.products[selectedProductIndex]) {
       const product = order.products[selectedProductIndex];
-      const unitPrice = product.price || 0;
-      const maxAmount = (unitPrice * applyQty).toFixed(2);
+      const unitPrice = Number(product.price || 0) || 0;
+      // 封顶：部分退款补差时不超过剩余可退金额
+      let rawAmount = Math.min(Number((unitPrice * applyQty).toFixed(2)) || 0, Number(maxRefundAmount) || Infinity);
+      rawAmount = Math.round(rawAmount * 100) / 100;
+      // 与 initStep3Data 保持一致：整数不补小数位，非整数保留两位，避免 28 / 28.00 混用
+      const amountText = Number.isInteger(rawAmount) ? rawAmount.toString() : rawAmount.toFixed(2);
       this.setData({
-        refundAmount: maxAmount
+        refundAmount: amountText
       });
+      // 数量变化影响"整单退款"判定，同步刷新运费提示
+      this.recomputeShippingTip(amountText);
     }
+  },
+
+  // 依据当前弹窗选择重算运费提示（数量增减后调用；原因/类型在进入步骤3时已定）
+  recomputeShippingTip(goodsRefundAmount) {
+    const { order, selectedAfterSalesType, selectedRefundType, selectedGoodsStatus, selectedReason, applyQty } = this.data;
+    let finalType = 'return_refund';
+    if (selectedAfterSalesType === 'exchange') {
+      finalType = 'exchange';
+    } else if (selectedAfterSalesType === 'not_received_refund') {
+      finalType = 'refund_not_received';
+    } else if (selectedRefundType === 'return_refund') {
+      finalType = 'return_refund';
+    } else {
+      finalType = selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
+    }
+    const preview = this.resolveShippingRefundPreview(order, finalType, selectedReason, applyQty, goodsRefundAmount);
+    this.setData({
+      shippingRefundAmount: preview.shippingRefundAmount,
+      shippingDeductionAmount: preview.shippingDeductionAmount,
+      shippingRefundTip: preview.shippingRefundTip,
+      shippingRefundTipType: preview.shippingRefundTipType
+    });
   },
 
   // 设置换货原因
@@ -2624,7 +3400,9 @@ Page({
       afterSalesDescription,
       order
     } = this.data;
-    
+
+    // 未收到货退款的规则（整单退款金额、拦截/拒签处理）已在申请表单页面内统一提示，
+    // 此处不再二次弹窗，直接提交
     // 显示加载提示
     wx.showLoading({
       title: '提交中...'
@@ -2669,9 +3447,8 @@ Page({
       // 构造 orderItemId
       const orderItemId = `${pendingOrderId}_${selectedProductIndex}`;
       
-      // 获取申请数量
-      const selectedProduct = order?.products?.[selectedProductIndex];
-      const applyQty = selectedProduct?.quantity || 1;
+      // 提交售后申请：使用用户在数量选择器上选择的 applyQty，而非商品原始数量
+      const applyQty = Number(this.data.applyQty) || 1;
 
       // 上传文件到云存储，获取 cloud:// fileID
       const uploadCloudFile = async (filePath, cloudFolder, ext = 'jpg') => {

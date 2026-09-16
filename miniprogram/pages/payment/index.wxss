@@ -77,6 +77,20 @@
   border-bottom: 1rpx solid #f0f0f0;
 }
 
+.payment__method-item--main {
+  border-bottom: none;
+}
+
+.payment__method-left {
+  display: flex;
+  align-items: center;
+}
+
+.payment__method-right {
+  display: flex;
+  align-items: center;
+}
+
 .payment__method-icon {
   width: 48rpx;
   height: 48rpx;
@@ -84,9 +98,65 @@
 }
 
 .payment__method-name {
-  flex: 1;
   font-size: 28rpx;
   color: #333;
+}
+
+.payment__method-selected {
+  font-size: 26rpx;
+  color: #999;
+  margin-right: 12rpx;
+}
+
+.payment__method-arrow {
+  font-size: 32rpx;
+  color: #999;
+  transform: rotate(90deg);
+  transition: transform 0.3s ease;
+}
+
+.payment__method-arrow--up {
+  transform: rotate(-90deg);
+}
+
+.payment__method-sublist {
+  background-color: #fafafa;
+  border-radius: 12rpx;
+  padding: 8rpx 16rpx;
+  margin-top: 8rpx;
+}
+
+.payment__method-subitem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 8rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+
+.payment__method-subitem:last-child {
+  border-bottom: none;
+}
+
+.payment__method-subitem--active {
+  background-color: #f0f7ff;
+  border-radius: 8rpx;
+}
+
+.payment__method-subicon {
+  font-size: 32rpx;
+  margin-right: 16rpx;
+}
+
+.payment__method-subname {
+  font-size: 28rpx;
+  color: #333;
+}
+
+.payment__method-check {
+  font-size: 28rpx;
+  color: #0066cc;
+  font-weight: bold;
 }
 
 /* 订单信息 */

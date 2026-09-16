@@ -562,7 +562,15 @@ Page({
         };
         // 添加类型信息
         latestNotification.type = type;
-        latestNotification.categoryTitle = type;
+        // 优先使用通知本身的 title（如"催发货通知"），而不是分类标签（"订单状态变更"）
+        // 只有当 title 为空或是兜底文案时才使用分类标签
+        const rawTitle = latestNotification.title;
+        const fallbackTitles = ['订单状态变更', '订单通知', '订单状态更新通知'];
+        if (rawTitle && !fallbackTitles.some(t => rawTitle.includes(t))) {
+          latestNotification.categoryTitle = rawTitle;
+        } else {
+          latestNotification.categoryTitle = type;
+        }
         // 计算未读消息数量
         latestNotification.unreadCount = typeNotifications.filter(notification => notification.status === 'unread').length;
         // 存储该类型的总通知数量

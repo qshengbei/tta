@@ -22,6 +22,11 @@ Page({
     processingExpired: false,
     fromDetail: false,
     isSwitchingStatus: false,
+
+    // 订单列表加载策略开关
+    // 1 = 直接拉取数据库（数据准确，无闪烁）
+    // 2 = 缓存先显示 + 后台异步对比（秒开，但可能闪烁）
+    orderListLoadStrategy: 1,
     
     // 游标分页相关字段
     pageSize: 18,
@@ -198,32 +203,65 @@ Page({
       return;
     }
 
-    if (this.data.hasNavigatedAway) {
-      this.setData({ hasNavigatedAway: false });
-      console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
-      return;
-    }
+    // 加载策略分流
+    const loadStrategy = this.data.orderListLoadStrategy;
+    console.log(`[订单列表] 加载策略: ${loadStrategy === 1 ? '直接拉取数据库' : '缓存+异步对比'}`);
 
-    if (this.data.isSwitchingStatus) {
-      this.setData({ isSwitchingStatus: false });
-      return;
-    }
-
-    if (hasFilters) {
-      if (this.data.orders.length > 0) {
-        console.log('[订单列表] 搜索筛选模式已有数据，保持不变');
-      } else {
-        console.log('[订单列表] 搜索筛选模式无数据，查询数据库');
-        this.fetchSearchFilterOrders();
+    if (loadStrategy === 2) {
+      // === 策略2：缓存先显示 + 后台异步对比（原逻辑） ===
+      if (this.data.hasNavigatedAway) {
+        this.setData({ hasNavigatedAway: false });
+        console.log(`[订单列表] onShow 耗时: ${Date.now() - startTime}ms`);
+        return;
       }
-    } else if (this.data.orders.length > 0) {
-      console.log('[订单列表] 普通列表已有数据，直接显示');
+
+      if (this.data.isSwitchingStatus) {
+        this.setData({ isSwitchingStatus: false });
+        return;
+      }
+
+      if (hasFilters) {
+        if (this.data.orders.length > 0) {
+          console.log('[订单列表] 搜索筛选模式已有数据，保持不变');
+        } else {
+          console.log('[订单列表] 搜索筛选模式无数据，查询数据库');
+          this.fetchSearchFilterOrders();
+        }
+      } else if (this.data.orders.length > 0) {
+        console.log('[订单列表] 普通列表已有数据，直接显示');
+      } else {
+        console.log('[订单列表] 页面无数据，快速显示缓存');
+        this._quickShowFromCache();
+      }
+
+      this._asyncCheckAndUpdate(isFirstEntry);
     } else {
-      console.log('[订单列表] 页面无数据，快速显示缓存');
-      this._quickShowFromCache();
+      // === 策略1：直接拉取数据库（默认） ===
+      if (hasFilters) {
+        if (this.data.orders.length > 0) {
+          console.log('[订单列表] 搜索筛选模式已有数据，保持不变');
+        } else {
+          console.log('[订单列表] 搜索筛选模式无数据，查询数据库');
+          this.fetchSearchFilterOrders();
+        }
+      } else if (this.data.isSwitchingStatus) {
+        // 切换标签后不重复拉取（fetchOrders 已在 switchStatus 中调用）
+        this.setData({ isSwitchingStatus: false });
+      } else if (this.data.hasNavigatedAway) {
+        // 从详情页返回，强制刷新
+        this.setData({ hasNavigatedAway: false });
+        console.log('[订单列表] 从详情页返回，直接拉取数据库');
+        this.fetchOrders();
+      } else if (isFirstEntry || this.data.orders.length === 0) {
+        // 首次进入或无数据，直接拉取
+        console.log('[订单列表] 首次进入或无数据，直接拉取数据库');
+        this.fetchOrders();
+      } else {
+        // 已有数据且非首次，直接拉取（确保数据准确）
+        console.log('[订单列表] 已有数据，直接拉取数据库刷新');
+        this.fetchOrders();
+      }
     }
-    
-    this._asyncCheckAndUpdate(isFirstEntry);
 
     if (wasHidden) {
       console.log('[订单列表] 页面之前隐藏，重新连接监听器');
@@ -1065,13 +1103,40 @@ Page({
         default:
           statusText = "未知状态";
       }
-      
+
+      // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
+      if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
+        statusText = `${statusText}（部分退款）`;
+      } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
+        // 拦截成功等整单退款场景：退款到账前显示"售后处理中（整单退款）"
+        statusText = `${statusText}（整单退款）`;
+      }
+
+      // 催发货按钮：支付满12小时后才显示（不限次数，刚下单时商家需要备货时间，催发无意义）
+      let canUrge = false;
+      if (order.status === 'paid' && order.payTime) {
+        let payTs = 0;
+        try {
+          if (typeof order.payTime.getTime === 'function') {
+            payTs = order.payTime.getTime(); // Date对象
+          } else if (typeof order.payTime === 'object' && order.payTime.$date) {
+            payTs = new Date(order.payTime.$date).getTime(); // MongoDB日期格式
+          } else {
+            payTs = new Date(order.payTime).getTime(); // 字符串
+          }
+        } catch (e) { payTs = 0; }
+        if (payTs && !isNaN(payTs)) {
+          canUrge = Date.now() - payTs >= 12 * 60 * 60 * 1000;
+        }
+      }
+
       // 确保时间字段被正确处理
       const processedOrder = {
         ...order,
         statusText, // 强制覆盖数据库中的statusText
-        // 判断是否在24小时内，用于显示取消订单按钮
-        canCancel: order.status === 'paid' && order.createdAt ? (new Date() - new Date(order.createdAt) < 24 * 60 * 60 * 1000) : false
+        // 待发货状态始终允许取消订单（已发货状态按钮隐藏，走售后流程）
+        canCancel: order.status === 'paid',
+        canUrge
       };
       
       // 处理时间字段，确保它们不是空对象
@@ -1591,8 +1656,13 @@ Page({
         this.fetchSearchFilterOrders();
       }
     } else {
-      if (cached && cached.data && cached.data.length > 0 && !loading) {
-        console.log(`[订单列表] 切换标签使用缓存，状态: ${status}, 订单数: ${cached.data.length}`);
+      if (this.data.orderListLoadStrategy === 1) {
+        // 策略1：切换标签直接拉取数据库，跳过缓存，确保数据准确
+        console.log(`[订单列表] 策略1切换标签，直接拉取数据库，状态: ${status}`);
+        this.fetchOrders();
+      } else if (cached && cached.data && cached.data.length > 0 && !loading) {
+        // 策略2：缓存优先显示 + 后台异步校验
+        console.log(`[订单列表] 策略2切换标签使用缓存，状态: ${status}, 订单数: ${cached.data.length}`);
         const cursor = cached.cursor || {};
         this.setData({
           loading: false,
@@ -1640,13 +1710,18 @@ Page({
 
   confirmReceipt(e) {
     const orderId = e.currentTarget.dataset.orderId;
+    console.log('=== confirmReceipt 开始 ===');
+    console.log('订单ID:', orderId);
+    
     wx.showModal({
       title: '确认收货',
       content: '确认已收到商品吗？',
       success: async (res) => {
         if (res.confirm) {
           try {
-            await this.callUpdateOrderStatus(orderId, 'confirm');
+            console.log('调用 updateOrderStatus 云函数，操作: confirm');
+            const result = await this.callUpdateOrderStatus(orderId, 'confirm');
+            console.log('确认收货成功，返回结果:', result);
             wx.showToast({
               title: '确认收货成功',
               icon: 'success'
@@ -1654,9 +1729,13 @@ Page({
             // 重新加载订单列表
             this.fetchOrders();
           } catch (err) {
+            console.error('=== 确认收货失败 ===');
+            console.error('错误信息:', err);
+            console.error('错误详情:', JSON.stringify(err));
             wx.showToast({
-              title: '确认收货失败',
-              icon: 'none'
+              title: err.message || '确认收货失败',
+              icon: 'none',
+              duration: 3000
             });
           }
         }
@@ -1684,6 +1763,38 @@ Page({
               title: '取消订单失败',
               icon: 'none'
             });
+          });
+        }
+      }
+    });
+  },
+
+  // 催发货
+  urgeShipping(e) {
+    const orderId = e.currentTarget.dataset.orderId;
+    wx.showModal({
+      title: '催发货',
+      content: '已提醒商家尽快发货，您可以在订单详情页查看发货进度',
+      showCancel: false,
+      confirmText: '知道了',
+      success: async () => {
+        try {
+          await wx.cloud.callFunction({
+            name: 'sendNotification',
+            data: {
+              notificationType: 'urgeShipping',
+              orderId: orderId
+            }
+          });
+          wx.showToast({
+            title: '已提醒商家',
+            icon: 'success'
+          });
+        } catch (err) {
+          console.error('催发货通知发送失败', err);
+          wx.showToast({
+            title: '提醒失败，请稍后重试',
+            icon: 'none'
           });
         }
       }

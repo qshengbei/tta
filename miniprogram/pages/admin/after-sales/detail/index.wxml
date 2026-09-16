@@ -234,10 +234,12 @@
     </view>
     
     <!-- 底部按钮（管理员端） -->
-    <!-- 待处理/审核中：显示同意/拒绝/开始拦截 -->
+    <!-- 待处理/审核中：显示拒绝/开始拦截；未收到货退款额外显示"买家已拒签，同意退款" -->
     <view class="footer" wx:if="{{afterSales.status === 'submitted' || afterSales.status === 'reviewing' || afterSales.status === 'pending'}}">
       <button class="footer__btn footer__btn--reject" bindtap="handleReject">拒绝</button>
       <button class="footer__btn footer__btn--secondary" bindtap="handleStartIntercepting">开始拦截</button>
+      <!-- 物流已显示拒收/退回时直接同意退款，无需等待包裹退回入库 -->
+      <button wx:if="{{afterSales.isNotReceivedRefund}}" class="footer__btn footer__btn--primary footer__btn--refused" bindtap="handleApproveRefusedDelivery">买家已拒签，同意退款</button>
       <button wx:if="{{!afterSales.isNotReceivedRefund}}" class="footer__btn footer__btn--primary" bindtap="handleApprove">同意</button>
     </view>
     <!-- 拦截中：显示完成拦截按钮 -->
@@ -279,25 +281,20 @@
       <view class="intercept-modal__body">
         <text class="intercept-modal__desc">请根据拦截结果选择处理方式</text>
         <view class="intercept-modal__buttons">
+          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="物流拦截失败，请在派件时拒签">
+            <text class="intercept-modal-btn__icon">✗</text>
+            <text class="intercept-modal-btn__text">拦截失败</text>
+            <text class="intercept-modal-btn__desc">拒绝申请（请拒签）</text>
+          </button>
+          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="快递已签收，请发起退货退款">
+            <text class="intercept-modal-btn__icon">✗</text>
+            <text class="intercept-modal-btn__text">已签收</text>
+            <text class="intercept-modal-btn__desc">拒绝申请（请走退货退款）</text>
+          </button>
           <button class="intercept-modal-btn intercept-modal-btn--success" bindtap="handleCompleteIntercepting" data-action="approve" data-reason="拦截物流成功，同意申请">
             <text class="intercept-modal-btn__icon">✓</text>
             <text class="intercept-modal-btn__text">拦截成功</text>
             <text class="intercept-modal-btn__desc">同意申请</text>
-          </button>
-          <button class="intercept-modal-btn intercept-modal-btn--warning" bindtap="handleCompleteIntercepting" data-action="approve" data-reason="拦截物流失败，同意申请，请在签收后将申请退款的商品寄回">
-            <text class="intercept-modal-btn__icon">⚠</text>
-            <text class="intercept-modal-btn__text">拦截失败</text>
-            <text class="intercept-modal-btn__desc">同意申请（请寄回）</text>
-          </button>
-          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="物流拦截失败，请在快递送达后拒签或退回">
-            <text class="intercept-modal-btn__icon">✗</text>
-            <text class="intercept-modal-btn__text">拦截失败</text>
-            <text class="intercept-modal-btn__desc">拒绝申请（请拒签）</text>
-          </button>
-          <button class="intercept-modal-btn intercept-modal-btn--danger" bindtap="handleCompleteIntercepting" data-action="reject" data-reason="快递已送达，请拒签或退回">
-            <text class="intercept-modal-btn__icon">✗</text>
-            <text class="intercept-modal-btn__text">已送达</text>
-            <text class="intercept-modal-btn__desc">拒绝申请（请拒签）</text>
           </button>
         </view>
       </view>

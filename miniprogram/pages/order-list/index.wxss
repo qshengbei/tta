@@ -288,6 +288,12 @@
   width: auto;
 }
 
+.order-item__btn--urge {
+  background-color: #fff7e6;
+  color: #fa8c16;
+  border: 1rpx solid #ffd591;
+}
+
 /* 按钮样式 */
 .btn {
   padding: 16rpx 32rpx;

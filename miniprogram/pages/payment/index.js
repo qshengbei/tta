@@ -10,7 +10,17 @@ Page({
     orderId: '',
     createTime: '',
     orderData: null,
-    checkStatusTimer: null // 用于定时检查订单状态的定时器
+    checkStatusTimer: null,
+    selectedBankType: 'CFT',
+    selectedBankTypeText: '微信零钱',
+    showPaymentMethods: false,
+    bankTypeMap: {
+      'CFT': '微信零钱',
+      'ICBC': '工商银行储蓄卡',
+      'ABC': '农业银行储蓄卡',
+      'BOC': '中国银行储蓄卡',
+      'CCB': '建设银行储蓄卡'
+    }
   },
 
   onLoad(options) {
@@ -238,9 +248,7 @@ Page({
               // 确保订单ID存在
               console.log('支付成功时的订单ID:', orderId);
               if (orderId) {
-                // 模拟支付方式：随机选择零钱或银行卡
-                const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB'];
-                const bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)];
+                const bankType = this.data.selectedBankType;
                 const tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
                 
                 // 先更新订单的支付方式和交易号
@@ -429,6 +437,8 @@ Page({
         status: status,
         statusText: status === 'pending' ? '待支付' : '已支付',
         totalPrice: this.data.totalPrice,
+        deliveryFee: Number(this.data.orderData?.deliveryFee) || 0,
+        originalDeliveryFee: Number(this.data.orderData?.originalDeliveryFee) || 0,
         deliveryType: this.data.orderData?.deliveryType || "express",
         address: this.data.orderData?.address,
         pickupCode: this.data.orderData?.pickupCode,
@@ -470,9 +480,7 @@ Page({
       // 如果是已支付状态，添加支付时间和支付方式
       if (status === 'paid') {
         orderData.payTime = createTime;
-        // 模拟支付方式：随机选择零钱或银行卡
-        const bankTypes = ['CFT', 'ICBC', 'ABC', 'BOC', 'CCB'];
-        orderData.bankType = bankTypes[Math.floor(Math.random() * bankTypes.length)];
+        orderData.bankType = this.data.selectedBankType;
         orderData.tradeNo = `TN${Date.now()}${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
       }
       
@@ -625,12 +633,19 @@ Page({
     }
   },
 
-  // 选择支付方式
-  selectPaymentMethod() {
-    // 这里可以添加支付方式选择逻辑
-    wx.showToast({
-      title: '暂仅支持微信支付',
-      icon: 'none'
+  togglePaymentMethods() {
+    this.setData({
+      showPaymentMethods: !this.data.showPaymentMethods
+    });
+  },
+
+  selectBankType(e) {
+    const type = e.currentTarget.dataset.type;
+    const typeText = this.data.bankTypeMap[type] || type;
+    this.setData({
+      selectedBankType: type,
+      selectedBankTypeText: typeText,
+      showPaymentMethods: false
     });
   },
 

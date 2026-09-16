@@ -6,6 +6,8 @@ cloud.init({
 
 const db = cloud.database()
 
+const { logOrderOperation } = require('./common/orderLogHelper')
+
 // 售后明细的"进行中"状态（含换货发新货/寄回原货环节），任一明细处于这些状态时订单保持售后中
 const ACTIVE_AFTER_SALES_ITEM_STATUSES = [
   'submitted', 'pending', 'approved', 'reviewing',
@@ -13,7 +15,7 @@ const ACTIVE_AFTER_SALES_ITEM_STATUSES = [
   'seller_received', 'seller_reviewing',
   'seller_returning', 'buyer_receiving',
   'pending_refund', 'intercepting'
-]
+];
 const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
 const REFUND_TYPES = ['refund', 'quality_refund', 'return_refund', 'quality_return_refund', 'refund_received', 'refund_not_received'];
 
@@ -276,100 +278,110 @@ function buildOrderUpdateForAfterSales(order, allOrderCaseItems, now) {
   return updateData;
 }
 
+const BANK_CARD_DELAY_MS = 30 * 1000 // 模拟银行卡到账延迟：30秒
+
 exports.main = async (event, context) => {
-  console.log('=== 定时任务：处理待退款记录 ===')
+  console.log('=== 定时任务：模拟微信退款回调 ===')
   
   try {
-    const pendingRefunds = await db.collection('refund_records')
+    const processingRefunds = await db.collection('refund_records')
       .where({
-        status: 'pending'
+        status: 'processing'
       })
-      .orderBy('createTime', 'asc')
+      .orderBy('processingTime', 'asc')
       .limit(100)
       .get()
     
-    const records = pendingRefunds.data || []
-    console.log(`找到 ${records.length} 条待退款记录`)
+    const records = processingRefunds.data || []
+    console.log(`找到 ${records.length} 条处理中退款记录`)
     
     if (records.length === 0) {
-      console.log('没有待退款记录，任务结束')
+      console.log('没有处理中的退款记录，任务结束')
       return {
         success: true,
-        message: '没有待退款记录',
+        message: '没有处理中的退款记录',
         processedCount: 0
       }
     }
     
     let successCount = 0
     let failCount = 0
-    const processedRecords = [] // 本次成功受理（pending→processing）的退款记录
-
+    const now = new Date()
+    
     for (const record of records) {
-      console.log(`处理退款记录: ${record._id}, 金额: ${record.amount}`)
-
+      console.log(`处理退款记录: ${record._id}, 银行类型: ${record.bankType}`)
+      
       try {
-        const result = await cloud.callFunction({
-          name: 'refund',
-          data: {
-            action: 'process',
-            refundId: record._id
-          }
-        })
-
-        if (result.result?.success) {
-          successCount++
-          processedRecords.push(record)
-          console.log(`退款受理成功: ${record._id}，状态已更新为 processing，等待回调`)
-        } else {
-          failCount++
-          console.error(`退款处理失败: ${record._id}, 错误: ${result.result?.error}`)
+        const shouldCallback = shouldTriggerCallback(record, now)
+        
+        if (!shouldCallback) {
+          console.log(`退款记录 ${record._id} 尚未到回调时间，跳过`)
+          continue
         }
+        
+        let message = '退款已原路退回，预计1-3个工作日到账'
+        if (record.bankType === 'CFT') {
+          message = '退款已原路退回微信零钱，实时到账'
+        } else if (record.bankType) {
+          message = '退款已原路退回银行卡，预计1-3个工作日到账'
+        }
+        
+        await db.runTransaction(async (transaction) => {
+          await transaction.collection('refund_records').doc(record._id).update({
+            data: {
+              status: 'success',
+              result: '退款成功',
+              message: message,
+              completeTime: now,
+              callbackTime: now,
+              lastRetryTime: now
+            }
+          })
+        })
+        
+        console.log(`退款回调成功: ${record._id}, 状态更新为 success`)
+        
+        await updateAfterSalesAndOrderStatus(record)
+        
+        successCount++
       } catch (error) {
         failCount++
-        console.error(`处理退款记录异常: ${record._id}, 错误: ${error.message}`)
+        console.error(`退款回调处理失败: ${record._id}, 错误: ${error.message}`)
       }
     }
-
-    // 链式触发回调：处理完成后直接调用 schedule_refund_callback，
-    // 不再等待下一个5分钟定时周期（原最坏要等10分钟）
-    if (processedRecords.length > 0) {
-      // 银行卡退款模拟30秒到账延迟，等待31秒让回调的到账时间判断通过
-      const hasBankCardRefund = processedRecords.some(r => r.bankType && r.bankType !== 'CFT')
-      if (hasBankCardRefund) {
-        console.log('存在银行卡退款，等待31秒模拟到账延迟后再触发回调')
-        await new Promise(resolve => setTimeout(resolve, 31 * 1000))
-      }
-      try {
-        console.log('链式触发 schedule_refund_callback')
-        await cloud.callFunction({
-          name: 'schedule_refund_callback',
-          data: { trigger: 'chained_by_schedule_refund' }
-        })
-        console.log('链式回调触发完成')
-      } catch (callbackError) {
-        // 链式触发失败不影响主流程，下个定时周期（≤5分钟）仍会兜底处理
-        console.error('链式触发回调失败，将由定时任务兜底:', callbackError.message)
-      }
-    }
-
-    console.log(`=== 定时任务完成 ===`)
+    
+    console.log(`=== 模拟回调任务完成 ===`)
     console.log(`成功: ${successCount}, 失败: ${failCount}`)
     
     return {
       success: true,
-      message: `定时任务完成，成功 ${successCount} 条，失败 ${failCount} 条`,
+      message: `回调处理完成，成功 ${successCount} 条，失败 ${failCount} 条`,
       processedCount: records.length,
       successCount,
       failCount
     }
   } catch (error) {
-    console.error('定时任务执行异常:', error)
+    console.error('回调任务执行异常:', error)
     return {
       success: false,
       error: error.message,
       processedCount: 0
     }
   }
+}
+
+function shouldTriggerCallback(record, now) {
+  if (record.bankType === 'CFT') {
+    return true
+  }
+  
+  if (record.processingTime) {
+    const processingTs = new Date(record.processingTime).getTime()
+    const elapsed = now.getTime() - processingTs
+    return elapsed >= BANK_CARD_DELAY_MS
+  }
+  
+  return true
 }
 
 async function updateAfterSalesAndOrderStatus(refundRecord) {
@@ -390,6 +402,19 @@ async function updateAfterSalesAndOrderStatus(refundRecord) {
     }
     
     const now = new Date()
+
+    // 事务前读取订单原状态，用于记录订单操作日志
+    let orderBefore = null
+    if (refundRecord.orderId) {
+      try {
+        const orderRes = await db.collection('orders').doc(refundRecord.orderId).get()
+        orderBefore = orderRes.data
+      } catch (e) {
+        console.warn('读取订单原状态失败:', e)
+      }
+    }
+
+    let finalStatus = orderBefore?.status || ''
 
     await db.runTransaction(async (transaction) => {
       const caseItemsRes = await transaction.collection('after_sales_case_items')
@@ -446,18 +471,80 @@ async function updateAfterSalesAndOrderStatus(refundRecord) {
         // 与 updateOrderStatus 共用同一套聚合规则：换货明细仍在进行时订单保持售后中，
         // 退款+换货混合时结果文案稳定为"部分退款"，避免各云函数各算各的导致文案闪烁
         const orderUpdateData = buildOrderUpdateForAfterSales(orderDoc, allOrderCaseItems, now)
+        finalStatus = orderUpdateData.status
 
         await transaction.collection('orders').doc(refundRecord.orderId).update({
           data: orderUpdateData
         })
 
-        console.log(`订单状态更新为: ${orderUpdateData.status} (${orderUpdateData.afterSalesStatus}/${orderUpdateData.afterSalesResult || ''})`)
+        console.log(`订单状态更新为: ${finalStatus}`)
       }
     })
-    
+
     console.log('售后单和订单状态更新成功')
+
+    // 退款到账同步写售后级日志，售后详情页操作记录从"进入待退款"推进到"完成退款"
+    await db.collection('after_sales_logs').add({
+      data: {
+        caseId: refundRecord.caseId,
+        orderId: refundRecord.orderId || '',
+        operatorId: '',
+        operatorType: 'system',
+        action: 'complete_refund',
+        beforeStatus: afterSalesCase.caseStatus,
+        afterStatus: 'completed',
+        note: refundRecord.message || `退款 ${refundRecord.amount || 0} 元已原路退回`,
+        extra: {
+          caseNo: afterSalesCase.caseNo,
+          refundId: refundRecord._id,
+          amount: refundRecord.amount || 0
+        },
+        createdAt: now
+      }
+    })
+
+    // 退款到账是订单级里程碑事件，写入订单操作日志
+    if (refundRecord.orderId) {
+      // 附带售后商品明细，便于多商品订单区分不同商品的退款记录
+      let refundItems = []
+      if (refundRecord.caseId) {
+        try {
+          const caseItemsRes = await db.collection('after_sales_case_items')
+            .where({ caseId: refundRecord.caseId })
+            .limit(100)
+            .get()
+          refundItems = (caseItemsRes.data || []).map(item => ({
+            // after_sales_case_items 表的商品名/sku 存放在 Snapshot 后缀字段中
+            productName: item.productName || item.productNameSnapshot || '',
+            skuName: item.skuName || item.skuNameSnapshot || '',
+            applyQty: item.applyQty || 0
+          }))
+        } catch (e) {
+          console.warn('获取售后明细用于操作日志失败:', e)
+        }
+      }
+
+      await logOrderOperation(db, {
+        orderId: refundRecord.orderId,
+        orderNumber: orderBefore?.orderNumber || '',
+        openid: orderBefore?._openid || '',
+        action: 'complete_refund',
+        fromStatus: orderBefore?.status || '',
+        toStatus: finalStatus,
+        operatorType: 'system',
+        operatorId: '',
+        operatorName: '系统',
+        reason: refundRecord.message || `退款 ${refundRecord.amount || 0} 元已原路退回`,
+        remark: '',
+        detail: {
+          caseId: refundRecord.caseId,
+          refundId: refundRecord._id,
+          amount: refundRecord.amount || 0,
+          items: refundItems
+        }
+      })
+    }
   } catch (error) {
     console.error('更新售后单和订单状态失败:', error)
   }
 }
-

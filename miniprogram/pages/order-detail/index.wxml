@@ -158,26 +158,35 @@
           <view class="order-detail__product-bottom">
             <text class="order-detail__product-price">¥{{item.price}}</text>
             <view class="order-detail__product-actions">
-              <!-- 售后中：显示查看售后按钮 -->
-              <button wx:if="{{(order.hasActiveAfterSales && (order.hasActiveAfterSales[index] || order.hasActiveAfterSales[String(index)]))}}" 
-                      class="order-detail__product-btn" 
-                      catchtap="viewAfterSalesByProduct" 
-                      data-order-id="{{order._id}}" 
-                      data-product-index="{{index}}"
-                      data-case-id="{{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].caseId) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].caseId)}}">
-                查看售后
-              </button>
-              <!-- 已完成：显示申请售后按钮 + 历史售后入口（淘宝允许同一商品多次申请售后，只要在时效内） -->
-              <block wx:elif="{{(order.hasCompletedAfterSales && (order.hasCompletedAfterSales[index] || order.hasCompletedAfterSales[String(index)]))}}">
-                <button class="order-detail__product-btn" 
-                        catchtap="afterSalesByProduct" 
-                        data-order-id="{{order._id}}" 
+              <!-- 售后中：显示查看售后（覆盖全部记录）+ 申请售后（仍有可售后数量时） -->
+              <block wx:if="{{(order.hasActiveAfterSales && (order.hasActiveAfterSales[index] || order.hasActiveAfterSales[String(index)]))}}">
+                <button class="order-detail__product-btn"
+                        catchtap="viewAfterSalesByProduct"
+                        data-order-id="{{order._id}}"
+                        data-product-index="{{index}}"
+                        data-case-id="{{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].caseId) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].caseId)}}">
+                  查看售后
+                </button>
+                <button wx:if="{{(!order.remainingAfterSalesQtyMap || (order.remainingAfterSalesQtyMap[index] !== 0 && order.remainingAfterSalesQtyMap[String(index)] !== 0))}}"
+                        class="order-detail__product-btn"
+                        catchtap="afterSalesByProduct"
+                        data-order-id="{{order._id}}"
                         data-product-index="{{index}}">
                   申请售后
                 </button>
-                <button class="order-detail__product-btn order-detail__product-btn--history" 
-                        catchtap="viewAfterSalesByProduct" 
-                        data-order-id="{{order._id}}" 
+              </block>
+              <!-- 已完成：仍有可售后数量 → 显示申请售后按钮 + 历史售后入口；否则只显示历史售后（方案 A） -->
+              <block wx:elif="{{(order.hasCompletedAfterSales && (order.hasCompletedAfterSales[index] || order.hasCompletedAfterSales[String(index)]))}}">
+                <button wx:if="{{(!order.remainingAfterSalesQtyMap || (order.remainingAfterSalesQtyMap[index] !== 0 && order.remainingAfterSalesQtyMap[String(index)] !== 0))}}"
+                        class="order-detail__product-btn"
+                        catchtap="afterSalesByProduct"
+                        data-order-id="{{order._id}}"
+                        data-product-index="{{index}}">
+                  申请售后
+                </button>
+                <button class="order-detail__product-btn order-detail__product-btn--history"
+                        catchtap="viewAfterSalesByProduct"
+                        data-order-id="{{order._id}}"
                         data-product-index="{{index}}"
                         data-case-id="{{(order.productHasAfterSales[index] && order.productHasAfterSales[index][0] && order.productHasAfterSales[index][0].caseId) || (order.productHasAfterSales[String(index)] && order.productHasAfterSales[String(index)][0] && order.productHasAfterSales[String(index)][0].caseId)}}">
                   历史售后
@@ -185,15 +194,15 @@
               </block>
               <!-- 已取消/已拒绝：显示申请售后按钮 + 历史售后入口 -->
               <block wx:elif="{{(order.hasCancelledAfterSales && (order.hasCancelledAfterSales[index] || order.hasCancelledAfterSales[String(index)]))}}">
-                <button class="order-detail__product-btn" 
-                        catchtap="afterSalesByProduct" 
-                        data-order-id="{{order._id}}" 
+                <button class="order-detail__product-btn"
+                        catchtap="afterSalesByProduct"
+                        data-order-id="{{order._id}}"
                         data-product-index="{{index}}">
                   申请售后
                 </button>
-                <button class="order-detail__product-btn order-detail__product-btn--history" 
-                        catchtap="viewAfterSalesByProduct" 
-                        data-order-id="{{order._id}}" 
+                <button class="order-detail__product-btn order-detail__product-btn--history"
+                        catchtap="viewAfterSalesByProduct"
+                        data-order-id="{{order._id}}"
                         data-product-index="{{index}}">
                   历史售后
                 </button>
@@ -293,13 +302,23 @@
     <view wx:if="{{operationLogs.length > 0}}" class="order-detail__section">
       <text class="order-detail__section-title">操作记录</text>
       <view class="operation-logs">
-        <view wx:for="{{operationLogs}}" wx:key="_id" class="operation-log-item">
+        <view wx:for="{{operationLogs}}" wx:key="_id" wx:if="{{!item._hidden || expandedCases[item._caseId]}}" class="operation-log-item">
           <view class="operation-log-item__line"></view>
           <view class="operation-log-item__dot"></view>
           <view class="operation-log-item__content">
             <view class="operation-log-item__header">
               <text class="operation-log-item__action">{{item.actionText}}</text>
+              <text wx:if="{{item.afterSalesSeqLabel}}" class="operation-log-item__seq-tag">{{item.afterSalesSeqLabel}}</text>
               <text class="operation-log-item__operator">{{item.operatorText}}</text>
+            </view>
+            <!-- 售后相关日志显示商品信息（申请售后/完成退款/完成换货/售后完成） -->
+            <view wx:if="{{item.itemSummaries && item.itemSummaries.length > 0}}" class="operation-log-item__items">
+              <view wx:for="{{item.itemSummaries}}" wx:for-item="prod" wx:key="index" class="operation-log-item__item">
+                <text class="operation-log-item__item-name">{{prod.productName}}</text>
+                <text wx:if="{{prod.skuName}}" class="operation-log-item__item-sku">{{prod.skuName}}</text>
+                <text wx:if="{{prod.afterSalesTypeName}}" class="operation-log-item__item-type">{{prod.afterSalesTypeName}}</text>
+                <text class="operation-log-item__item-qty">x{{prod.applyQty}}</text>
+              </view>
             </view>
             <view wx:if="{{item.reason}}" class="operation-log-item__reason">
               <text class="operation-log-item__reason-label">原因：</text>
@@ -310,6 +329,10 @@
               <text class="operation-log-item__remark-value">{{item.remark}}</text>
             </view>
             <text class="operation-log-item__time">{{item.operatedAtText}}</text>
+            <!-- 同一售后单日志超过2条时，展开/收起更早的记录 -->
+            <view wx:if="{{item._showToggle}}" class="operation-log-item__expand" bindtap="toggleCaseLogExpand" data-case-id="{{item._caseId}}">
+              <text>{{expandedCases[item._caseId] ? '收起' : '展开更早的记录 (' + item._hiddenCount + '条)'}}</text>
+            </view>
           </view>
         </view>
       </view>
@@ -319,30 +342,69 @@
     <view class="order-detail__footer fixed-bottom">
       <view class="order-detail__total"></view>
       <view class="order-detail__actions">
-        <button wx:if="{{order.status === 'pending' || (order.status === 'paid' && order.canCancel)}}" class="order-detail__btn" bindtap="cancelOrder" data-order-id="{{order._id}}">
-          取消订单
-        </button>
-        <button wx:elif="{{order.status === 'paid' && !order.canCancel}}" class="order-detail__btn" bindtap="contactService" data-order-id="{{order._id}}">
-          联系客服
-        </button>
-        <button wx:if="{{order.status === 'pending'}}" class="order-detail__btn order-detail__btn--primary" bindtap="goToPayment" data-order-id="{{order._id}}">
-          去支付{{countdownText}}
-        </button>
-        <button wx:elif="{{order.status === 'shipping'}}" class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
-          查看物流
-        </button>
-        <button wx:elif="{{order.status === 'delivered'}}" class="order-detail__btn order-detail__btn--primary" bindtap="confirmReceipt" data-order-id="{{order._id}}">
-          确认收货
-        </button>
-        <button wx:if="{{(order.status === 'completed' || order.status === 'refund_completed') && order.deliveryType === 'express'}}" class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
-          查看物流
-        </button>
-        <button wx:if="{{order.status === 'refund' || order.status === 'refund_completed' || (order.status === 'completed' && order.afterSalesItems && order.afterSalesItems.length > 0)}}" class="order-detail__btn" bindtap="viewAfterSales" data-order-id="{{order._id}}">
-          查看售后
-        </button>
-        <button wx:elif="{{order.status === 'cancelled'}}" class="order-detail__btn" bindtap="deleteOrder" data-order-id="{{order._id}}">
-          删除订单
-        </button>
+        <!-- 待支付状态：取消订单 + 去支付 -->
+        <block wx:if="{{order.status === 'pending'}}">
+          <button class="order-detail__btn" bindtap="cancelOrder" data-order-id="{{order._id}}">
+            取消订单
+          </button>
+          <button class="order-detail__btn order-detail__btn--primary" bindtap="goToPayment" data-order-id="{{order._id}}">
+            去支付{{countdownText}}
+          </button>
+        </block>
+
+        <!-- 待发货状态：催发货（支付满12小时后显示）+ 取消订单 + 联系客服 -->
+        <block wx:elif="{{order.status === 'paid'}}">
+          <button wx:if="{{order.canUrge}}" class="order-detail__btn order-detail__btn--urge" bindtap="urgeShipping" data-order-id="{{order._id}}">
+            催发货
+          </button>
+          <button class="order-detail__btn" bindtap="cancelOrder" data-order-id="{{order._id}}">
+            取消订单
+          </button>
+          <button class="order-detail__btn" bindtap="contactService" data-order-id="{{order._id}}">
+            联系客服
+          </button>
+        </block>
+
+        <!-- 待收货状态：查看物流 -->
+        <block wx:elif="{{order.status === 'shipping'}}">
+          <button class="order-detail__btn order-detail__btn--primary" bindtap="viewLogistics" data-order-id="{{order._id}}">
+            查看物流
+          </button>
+        </block>
+
+        <!-- 已签收状态：查看物流 + 确认收货 -->
+        <block wx:elif="{{order.status === 'delivered'}}">
+          <button class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
+            查看物流
+          </button>
+          <button class="order-detail__btn order-detail__btn--primary" bindtap="confirmReceipt" data-order-id="{{order._id}}">
+            确认收货
+          </button>
+        </block>
+
+        <!-- 已完成/退款完成状态：查看物流 + 查看售后 -->
+        <block wx:elif="{{order.status === 'completed' || order.status === 'refund_completed'}}">
+          <button wx:if="{{order.deliveryType === 'express'}}" class="order-detail__btn" bindtap="viewLogistics" data-order-id="{{order._id}}">
+            查看物流
+          </button>
+          <button wx:if="{{order.status === 'refund' || order.status === 'refund_completed' || (order.status === 'completed' && order.afterSalesItems && order.afterSalesItems.length > 0)}}" class="order-detail__btn" bindtap="viewAfterSales" data-order-id="{{order._id}}">
+            查看售后
+          </button>
+        </block>
+
+        <!-- 售后中状态：查看售后 -->
+        <block wx:elif="{{order.status === 'refund'}}">
+          <button class="order-detail__btn" bindtap="viewAfterSales" data-order-id="{{order._id}}">
+            查看售后
+          </button>
+        </block>
+
+        <!-- 已取消状态：删除订单 -->
+        <block wx:elif="{{order.status === 'cancelled'}}">
+          <button class="order-detail__btn" bindtap="deleteOrder" data-order-id="{{order._id}}">
+            删除订单
+          </button>
+        </block>
       </view>
     </view>
   </view>
@@ -393,8 +455,8 @@
               <view class="after-sales-modal__type-check {{selectedAfterSalesType === 'not_received_refund' ? 'after-sales-modal__type-check--active' : ''}}"></view>
             </view>
             
-            <!-- 已签收/已完成/售后中：显示"退货/退款"和"换货" -->
-            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'refund' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="refund">
+            <!-- 已签收/已完成/售后中/退款完成：显示"退货/退款"和"换货" -->
+            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund' || order.status === 'refund_completed'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'refund' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="refund">
               <view class="after-sales-modal__type-left">
                 <text class="after-sales-modal__type-icon">🔄</text>
                 <view class="after-sales-modal__type-info">
@@ -404,7 +466,7 @@
               </view>
               <view class="after-sales-modal__type-check {{selectedAfterSalesType === 'refund' ? 'after-sales-modal__type-check--active' : ''}}"></view>
             </view>
-            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'exchange' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="exchange">
+            <view wx:if="{{order.status === 'delivered' || order.status === 'completed' || order.status === 'refund' || order.status === 'refund_completed'}}" class="after-sales-modal__type-item {{selectedAfterSalesType === 'exchange' ? 'after-sales-modal__type-item--active' : ''}}" bindtap="setAfterSalesType" data-type="exchange">
               <view class="after-sales-modal__type-left">
                 <text class="after-sales-modal__type-icon">🔄</text>
                 <view class="after-sales-modal__type-info">
@@ -422,14 +484,14 @@
       <!-- 剩余售后时限提示 -->
       <view class="after-sales-reason__time-tip">
         <view class="after-sales-reason__time-tip-content">
-          <text wx:if="{{remainingNormalAfterSalesDays > 0 && remainingQualityAfterSalesDays > 0}}">常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：{{remainingQualityAfterSalesDays}}天</text>
-          <text wx:elif="{{remainingNormalAfterSalesDays > 0}}">常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：已过期</text>
-          <text wx:elif="{{remainingQualityAfterSalesDays > 0}}">常规售后：已过期，质量售后：{{remainingQualityAfterSalesDays}}天</text>
+          <text wx:if="{{remainingNormalAfterSalesDays > 0 || remainingQualityAfterSalesDays > 0}}">常规售后：{{afterSalesNormalText}}，质量售后：{{afterSalesQualityText}}</text>
           <text wx:else>已过售后时效</text>
         </view>
         <text class="after-sales-reason__rule-link" bindtap="showAfterSalesRules">查看规则</text>
       </view>
-      
+      <!-- 换货新货二次售后：售后期自确认收到新货起重新计算 -->
+      <view wx:if="{{afterSalesWindowRestarted}}" class="after-sales-reason__restart-tip">该商品为换货收到的新货，售后期限自确认收到新货之日起重新计算</view>
+
       <!-- 退款类型 -->
       <view wx:if="{{displayReasonList.length > 0}}" class="after-sales-reason__tabs">
         <view class="after-sales-reason__tab {{selectedRefundType === 'refund_only' ? 'after-sales-reason__tab--active' : ''}}" bindtap="setRefundType" data-type="refund_only">退款</view>
@@ -480,14 +542,14 @@
           <!-- 剩余售后时限提示 -->
           <view class="after-sales-reason__time-tip">
             <view class="after-sales-reason__time-tip-content">
-              <text wx:if="{{remainingNormalAfterSalesDays > 0 && remainingQualityAfterSalesDays > 0}}">常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：{{remainingQualityAfterSalesDays}}天</text>
-              <text wx:elif="{{remainingNormalAfterSalesDays > 0}}">常规售后：{{remainingNormalAfterSalesDays}}天，质量售后：已过期</text>
-              <text wx:elif="{{remainingQualityAfterSalesDays > 0}}">常规售后：已过期，质量售后：{{remainingQualityAfterSalesDays}}天</text>
+              <text wx:if="{{remainingNormalAfterSalesDays > 0 || remainingQualityAfterSalesDays > 0}}">常规售后：{{afterSalesNormalText}}，质量售后：{{afterSalesQualityText}}</text>
               <text wx:else>已过售后时效</text>
             </view>
             <text class="after-sales-reason__rule-link" bindtap="showAfterSalesRules">查看规则</text>
           </view>
-          
+          <!-- 换货新货二次售后：售后期自确认收到新货起重新计算 -->
+          <view wx:if="{{afterSalesWindowRestarted}}" class="after-sales-reason__restart-tip">该商品为换货收到的新货，售后期限自确认收到新货之日起重新计算</view>
+
           <!-- 换货原因列表 -->
           <view wx:if="{{displayReasonList.length > 0}}" class="after-sales-reason__list">
             <view wx:for="{{displayReasonList}}" wx:key="value" class="after-sales-reason__item {{selectedExchangeReason === item.value ? 'after-sales-reason__item--active' : ''}}" bindtap="setExchangeReason" data-value="{{item.value}}" data-label="{{item.label}}">
@@ -549,10 +611,12 @@
         <view wx:if="{{afterSalesStep === 4}}" class="after-sales-form">
           <!-- 未收到货退款提示 -->
           <view wx:if="{{selectedAfterSalesType === 'not_received_refund'}}" class="after-sales-form__notice">
-            <view class="after-sales-form__notice-icon">⚠️</view>
+            <view class="after-sales-form__notice-icon">⚠️提交后商家将拦截快递</view>
             <view class="after-sales-form__notice-text">
-              <text wx:if="{{order.products && order.products.length > 1}}">由于您选择未收到货退款，</text>
-              申请后将进入"拦截物流中"状态，拦截成功后才会退款<text wx:if="{{order.products && order.products.length > 1}}">（订单中所有商品将一起退款，其他商品将不再支持单独申请售后）</text>，拦截失败则售后取消。
+              拦截成功：本订单所有商品将一并退款<text wx:if="{{order.products && order.products.length > 1}}">（其他商品不再支持单独申请售后）</text>，预计退款 ¥{{order.productTotalAmount}}；
+            </view>
+            <view class="after-sales-form__notice-text">
+              拦截失败：本次申请关闭。请在快递派件时拒签，包裹退回后可重新申请，商家确认物流显示拒收退回后将直接为您退款，无需等待包裹寄回商家。若已签收，请改发"退货退款"。
             </view>
           </view>
 
@@ -582,7 +646,7 @@
                 <text class="after-sales-form__quantity-btn-text">+</text>
               </view>
             </view>
-            <text class="after-sales-form__quantity-hint">共{{order.products[selectedProductIndex].quantity || 1}}件，可选择部分申请</text>
+            <text class="after-sales-form__quantity-hint">{{applyQtyHint}}</text>
           </view>
 
           <!-- 退款原因 -->
@@ -610,7 +674,7 @@
                 <text class="after-sales-form__product-spec">{{order.products[selectedProductIndex].skuName || order.products[selectedProductIndex].spec || ''}}</text>
                 <text class="after-sales-form__product-price after-sales-form__product-price--black">¥{{order.products[selectedProductIndex].price}}</text>
               </view>
-              <text class="after-sales-form__product-count">x{{order.products[selectedProductIndex].quantity || 1}}</text>
+              <text class="after-sales-form__product-count">x{{applyQty}}</text>
             </view>
             
             <!-- 凭证/说明（换货时显示） -->
@@ -637,6 +701,10 @@
               </view>
               <text class="after-sales-form__amount-hint">最多可退 ¥{{maxRefundAmount}}</text>
             </view>
+            <!-- 部分退款补差提示 -->
+            <view wx:if="{{partialRefundTip}}" class="after-sales-form__partial-tip">{{partialRefundTip}}</view>
+            <!-- 运费提示：include=运费随本次退款；exclude=运费不退；deduct=扣除原运费（包邮差额） -->
+            <view wx:if="{{shippingRefundTip}}" class="after-sales-form__shipping-tip after-sales-form__shipping-tip--{{shippingRefundTipType}}">{{shippingRefundTip}}</view>
           </view>
 
           <!-- 凭证/说明（非换货类型时显示） -->
@@ -872,8 +940,12 @@
           <text class="after-sales-rules-modal__item-value">物流签收时间</text>
         </view>
         <view class="after-sales-rules-modal__item">
+          <text class="after-sales-rules-modal__item-label">7天无理由退货：</text>
+          <text class="after-sales-rules-modal__item-value">签收后7天内（仅适用标注"7天无理由"的商品）</text>
+        </view>
+        <view class="after-sales-rules-modal__item">
           <text class="after-sales-rules-modal__item-label">常规售后：</text>
-          <text class="after-sales-rules-modal__item-value">签收后7天内（无理由退货）</text>
+          <text class="after-sales-rules-modal__item-value">签收后7天内（需提供理由）</text>
         </view>
         <view class="after-sales-rules-modal__item">
           <text class="after-sales-rules-modal__item-label">质量售后：</text>

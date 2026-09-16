@@ -26,7 +26,7 @@ export const DEFAULT_EXPRESS_RULES = [
  */
 export function calculateShippingFee(expressRules, currentProvince, product, quantity) {
   if (!expressRules || expressRules.length === 0 || !product.price) {
-    return { shippingFee: 0, freeShippingThreshold: 0 };
+    return { shippingFee: 0, freeShippingThreshold: 0, originalFee: 0 };
   }
 
   // 查找对应省份的运费规则，处理省份名称的匹配
@@ -76,13 +76,13 @@ export function calculateShippingFee(expressRules, currentProvince, product, qua
     
     // 检查是否满足包邮条件
     if (totalPrice >= freeShippingThreshold) {
-      return { shippingFee: 0, freeShippingThreshold };
+      return { shippingFee: 0, freeShippingThreshold, originalFee: fee };
     } else {
-      return { shippingFee: fee, freeShippingThreshold };
+      return { shippingFee: fee, freeShippingThreshold, originalFee: fee };
     }
   }
-  
-  return { shippingFee: 0, freeShippingThreshold: 0 };
+
+  return { shippingFee: 0, freeShippingThreshold: 0, originalFee: 0 };
 }
 
 /**

@@ -1,0 +1,9 @@
+{
+  "name": "schedule_refund_callback",
+  "version": "1.0.0",
+  "description": "模拟微信退款回调，将处理中退款更新为成功状态",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

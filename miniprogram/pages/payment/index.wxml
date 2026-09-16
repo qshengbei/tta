@@ -7,9 +7,54 @@
     
     <view class="payment__method">
       <text class="payment__method-title">支付方式</text>
-      <view class="payment__method-item" bindtap="selectPaymentMethod">
-        <image src="/images/icons/wechat-pay.png" class="payment__method-icon" />
-        <text class="payment__method-name">微信支付</text>
+      <view class="payment__method-group">
+        <view class="payment__method-item payment__method-item--main" bindtap="togglePaymentMethods">
+          <view class="payment__method-left">
+            <image src="/images/icons/wechat-pay.png" class="payment__method-icon" />
+            <text class="payment__method-name">微信支付</text>
+          </view>
+          <view class="payment__method-right">
+            <text class="payment__method-selected">{{selectedBankTypeText}}</text>
+            <text class="payment__method-arrow {{showPaymentMethods ? 'payment__method-arrow--up' : ''}}">›</text>
+          </view>
+        </view>
+        <view wx:if="{{showPaymentMethods}}" class="payment__method-sublist">
+          <view class="payment__method-subitem {{selectedBankType === 'CFT' ? 'payment__method-subitem--active' : ''}}" bindtap="selectBankType" data-type="CFT">
+            <view class="payment__method-left">
+              <text class="payment__method-subicon">💰</text>
+              <text class="payment__method-subname">微信零钱</text>
+            </view>
+            <view wx:if="{{selectedBankType === 'CFT'}}" class="payment__method-check">✓</view>
+          </view>
+          <view class="payment__method-subitem {{selectedBankType === 'ICBC' ? 'payment__method-subitem--active' : ''}}" bindtap="selectBankType" data-type="ICBC">
+            <view class="payment__method-left">
+              <text class="payment__method-subicon">💳</text>
+              <text class="payment__method-subname">工商银行储蓄卡</text>
+            </view>
+            <view wx:if="{{selectedBankType === 'ICBC'}}" class="payment__method-check">✓</view>
+          </view>
+          <view class="payment__method-subitem {{selectedBankType === 'ABC' ? 'payment__method-subitem--active' : ''}}" bindtap="selectBankType" data-type="ABC">
+            <view class="payment__method-left">
+              <text class="payment__method-subicon">💳</text>
+              <text class="payment__method-subname">农业银行储蓄卡</text>
+            </view>
+            <view wx:if="{{selectedBankType === 'ABC'}}" class="payment__method-check">✓</view>
+          </view>
+          <view class="payment__method-subitem {{selectedBankType === 'BOC' ? 'payment__method-subitem--active' : ''}}" bindtap="selectBankType" data-type="BOC">
+            <view class="payment__method-left">
+              <text class="payment__method-subicon">💳</text>
+              <text class="payment__method-subname">中国银行储蓄卡</text>
+            </view>
+            <view wx:if="{{selectedBankType === 'BOC'}}" class="payment__method-check">✓</view>
+          </view>
+          <view class="payment__method-subitem {{selectedBankType === 'CCB' ? 'payment__method-subitem--active' : ''}}" bindtap="selectBankType" data-type="CCB">
+            <view class="payment__method-left">
+              <text class="payment__method-subicon">💳</text>
+              <text class="payment__method-subname">建设银行储蓄卡</text>
+            </view>
+            <view wx:if="{{selectedBankType === 'CCB'}}" class="payment__method-check">✓</view>
+          </view>
+        </view>
       </view>
     </view>
     

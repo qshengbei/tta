@@ -83,6 +83,22 @@ const STATUS_CLASS_MAP = {
 
 const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
+const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
+
+// 根据售后类型动态调整状态文案（换货流程中 seller_returning/buyer_receiving 文案区分）
+function getExchangeStatusText(status, type, defaultText) {
+  if (!EXCHANGE_TYPES.includes(type)) return defaultText;
+  if (status === 'seller_returning') return '待商家发新货';
+  if (status === 'buyer_receiving') return '待买家收新货';
+  return defaultText;
+}
+
+function getExchangeStatusDesc(status, type, defaultDesc) {
+  if (!EXCHANGE_TYPES.includes(type)) return defaultDesc;
+  if (status === 'seller_returning') return '商家即将寄出换新商品，请留意物流信息';
+  if (status === 'buyer_receiving') return '商家已寄出换新商品，请注意查收并确认收货';
+  return defaultDesc;
+}
 
 function parseDate(value) {
   if (!value) {
@@ -322,8 +338,8 @@ Page({
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
       caseStatus: status,
-      statusText: STATUS_TEXT_MAP[status] || status,
-      statusDesc: STATUS_DESC_MAP[status] || '',
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
+      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       reason: record.applyReasonText || '',
@@ -365,8 +381,8 @@ Page({
       type,
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
-      statusText: STATUS_TEXT_MAP[status] || status,
-      statusDesc: STATUS_DESC_MAP[status] || '',
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
+      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundAmount || 0) || 0,
       reason: record.reason || '',
@@ -400,7 +416,7 @@ Page({
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
       itemStatus: status,
-      statusText: STATUS_TEXT_MAP[status] || status,
+      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
       shippingResponsibilityText: getShippingResponsibilityText(item.shippingResponsibility),
       productSupports7DayReturn: item.productSupports7DayReturn || false
     };
@@ -1233,6 +1249,7 @@ Page({
           'start_intercepting': '开始拦截快递',
           'approve_intercepting': '拦截成功',
           'reject_intercepting': '拦截失败',
+          'refused_delivery_approved': '买家拒签，同意退款',
           'submit_return_tracking': '填写退货单号',
           'modify_return_tracking': '修改退货单号',
           'confirm_receipt_refund': '确认收货',
@@ -1246,7 +1263,11 @@ Page({
           'confirm_return_received_refund': '确认收到寄回商品',
           'confirm_return_received_exchange': '确认收到寄回商品',
           'auto_confirm_return_received_refund': '系统自动确认寄回收货',
-          'auto_confirm_return_received_exchange': '系统自动确认寄回收货'
+          'auto_confirm_return_received_exchange': '系统自动确认寄回收货',
+          'after_sales_rejected': '售后已关闭',
+          'after_sales_cancelled': '售后已取消',
+          'after_sales_pending_refund': '售后进入待退款',
+          'after_sales_completed': '售后已完成'
         };
 
         const logs = (res.data || []).map(log => {

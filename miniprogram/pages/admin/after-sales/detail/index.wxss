@@ -355,6 +355,14 @@
   border: 1rpx solid #1890ff;
 }
 
+/* "买家已拒签，同意退款"文案较长：三个按钮并排时占更多宽度并缩小字号 */
+.footer__btn--refused {
+  flex: 1.7;
+  font-size: 24rpx;
+  padding: 0 8rpx;
+  white-space: nowrap;
+}
+
 .intercept-modal-mask {
   position: fixed;
   top: 0;

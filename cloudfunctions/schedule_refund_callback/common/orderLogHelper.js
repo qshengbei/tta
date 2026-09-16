@@ -40,7 +40,7 @@ async function logOrderOperation(db, {
     return true;
   } catch (error) {
     console.error('[OrderLogHelper] 记录订单操作日志失败:', action, orderNumber, error);
-    
+
     try {
       await db.collection('errorMessage').add({
         data: {
@@ -50,7 +50,7 @@ async function logOrderOperation(db, {
           message: error.message || '记录订单操作日志失败',
           stack: error.stack || '',
           code: error.code || '',
-          functionName: 'logOrderOperation',
+          functionName: 'schedule_refund_callback',
           inputParams: JSON.stringify({
             orderId,
             orderNumber,
@@ -68,7 +68,7 @@ async function logOrderOperation(db, {
     } catch (logErr) {
       console.error('[OrderLogHelper] 写入 errorMessage 失败:', logErr);
     }
-    
+
     return false;
   }
 }

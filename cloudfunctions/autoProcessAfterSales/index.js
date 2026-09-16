@@ -6,12 +6,11 @@ const _ = db.command;
 
 const LOCK_TIMEOUT_MS = 2 * 60 * 1000;
 const EXPIRE_GRACE_MS = 1000;
-const AUTO_PROCESS_TIMEOUT_HOURS = 48;
+const AUTO_PROCESS_TIMEOUT_HOURS = 48;        // 普通售后超时：管理员有2天处理窗口
+const INTERCEPT_TIMEOUT_HOURS = 6;           // 未收到货退款超时：6小时未处理即自动拦截，趁快递仍在运输途中
 
 const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
 const REFUND_TYPES = ['refund', 'quality_refund', 'return_refund', 'quality_return_refund', 'refund_received', 'refund_not_received'];
-
-const { logOrderOperation } = require('./common/orderLogHelper');
 
 function normalizeDate(value) {
   if (!value) {
@@ -86,12 +85,12 @@ function hasActiveLock(caseRecord, now) {
   return now.getTime() - lockTime.getTime() < LOCK_TIMEOUT_MS;
 }
 
-function isExpiredAtSecondLevel(createdAt, now) {
+function isExpiredAtSecondLevel(createdAt, now, timeoutHours = AUTO_PROCESS_TIMEOUT_HOURS) {
   if (!createdAt) {
     return false;
   }
 
-  const deadline = new Date(createdAt.getTime() + AUTO_PROCESS_TIMEOUT_HOURS * 60 * 60 * 1000);
+  const deadline = new Date(createdAt.getTime() + timeoutHours * 60 * 60 * 1000);
   return deadline.getTime() <= now.getTime() + EXPIRE_GRACE_MS;
 }
 
@@ -130,16 +129,22 @@ function isCancelableCase(caseRecord, now) {
     return false;
   }
 
-  const isExpired = isExpiredAtSecondLevel(createdAt, now);
-  const deadline = new Date(createdAt.getTime() + AUTO_PROCESS_TIMEOUT_HOURS * 60 * 60 * 1000);
+  // 未收到货退款类型用更短的超时（6小时），趁快递仍在运输途中拦截
+  const isInterceptType = NOT_RECEIVED_TYPES.includes(caseRecord.primaryAfterSalesType);
+  const timeoutHours = isInterceptType ? INTERCEPT_TIMEOUT_HOURS : AUTO_PROCESS_TIMEOUT_HOURS;
+
+  const isExpired = isExpiredAtSecondLevel(createdAt, now, timeoutHours);
+  const deadline = new Date(createdAt.getTime() + timeoutHours * 60 * 60 * 1000);
   console.log('  过期检查结果:', {
     isExpired,
+    timeoutHours,
+    isInterceptType,
     createdAt: createdAt.toISOString(),
     deadline: deadline.toISOString(),
     now: now.toISOString(),
     hoursDiff: (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60)
   });
-  
+
   return isExpired;
 }
 
@@ -157,7 +162,11 @@ function isStillExpiredPending(caseRecord, now) {
     return false;
   }
 
-  return isExpiredAtSecondLevel(createdAt, now);
+  // 与 isCancelableCase 保持一致：未收到货退款类型用更短的超时
+  const isInterceptType = NOT_RECEIVED_TYPES.includes(caseRecord.primaryAfterSalesType);
+  const timeoutHours = isInterceptType ? INTERCEPT_TIMEOUT_HOURS : AUTO_PROCESS_TIMEOUT_HOURS;
+
+  return isExpiredAtSecondLevel(createdAt, now, timeoutHours);
 }
 
 async function sendNotification(caseRecord, action) {
@@ -226,6 +235,23 @@ async function processImmediateApproval(caseRecord, now) {
       autoProcessedAt: now,
       updatedAt: now,
       autoProcessAction: 'immediate_approve'
+    }
+  });
+
+  // 自动同意是售后过程性操作，只写 after_sales_logs（售后详情页展示），不写订单日志
+  const isExchange = EXCHANGE_TYPES.includes(String(caseRecord.primaryAfterSalesType || caseRecord.type || ''));
+  await db.collection('after_sales_logs').add({
+    data: {
+      caseId: caseRecord._id,
+      orderId: caseRecord.orderId || '',
+      operatorId: '',
+      operatorType: 'system',
+      action: isExchange ? 'approve_exchange' : 'approve_refund',
+      beforeStatus: caseRecord.caseStatus,
+      afterStatus: 'approved',
+      note: isExchange ? '系统自动同意换货申请' : '系统自动同意退款申请',
+      extra: { caseNo: caseRecord.caseNo },
+      createdAt: now
     }
   });
 
@@ -442,41 +468,28 @@ exports.main = async (event, context) => {
             data: orderUpdateData
           });
           
-          // 异步记录订单操作日志，不阻塞主流程
+          // 异步记录日志，不阻塞主流程
+          // 系统自动处理均为售后过程性操作，只写 after_sales_logs（售后详情页展示），不写订单日志
           const logPromise = (async () => {
             try {
-              let action = '';
-              let reason = '';
-              
               if (actionResult.action === 'intercept') {
-                action = 'auto_start_intercepting';
-                reason = '系统自动拦截快递';
-              } else if (actionResult.action === 'auto_process') {
-                const isExchange = EXCHANGE_TYPES.includes(String(caseRecord.primaryAfterSalesType || caseRecord.type || ''));
-                const afterSalesTypeName = isExchange ? '换货' : '退款';
-                action = `auto_approve_${isExchange ? 'exchange' : 'refund'}`;
-                reason = `系统自动同意${afterSalesTypeName}申请`;
-              } else {
-                action = 'auto_process_after_sales';
-                reason = '系统自动处理售后';
+                await db.collection('after_sales_logs').add({
+                  data: {
+                    caseId: caseRecord._id,
+                    orderId: order._id,
+                    operatorId: '',
+                    operatorType: 'system',
+                    action: 'start_intercepting',
+                    beforeStatus: caseRecord.caseStatus,
+                    afterStatus: 'intercepting',
+                    note: '系统自动拦截快递',
+                    extra: { caseNo: caseRecord.caseNo },
+                    createdAt: now
+                  }
+                });
               }
-              
-              await logOrderOperation(db, {
-                orderId: order._id,
-                orderNumber: order.orderNumber,
-                openid: order._openid,
-                action,
-                fromStatus: order.status,
-                toStatus: 'refund',
-                operatorType: 'system',
-                operatorId: '',
-                operatorName: '',
-                reason,
-                remark: '',
-                detail: { caseId: caseRecord._id, jobId: instanceId, afterSalesType: caseRecord.primaryAfterSalesType || caseRecord.type }
-              });
             } catch (logError) {
-              console.error('记录自动处理售后日志失败:', order._id, logError);
+              console.error('记录售后操作日志失败:', order._id, logError);
             }
           })();
           logPromises.push(logPromise);

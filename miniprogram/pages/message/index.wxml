@@ -30,7 +30,7 @@
           <view style="display: flex; align-items: flex-start; width: 100%; box-sizing: border-box;">
             <view style="flex: 1; box-sizing: border-box; overflow: hidden;">
               <view style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8rpx; width: 100%; box-sizing: border-box; overflow: hidden;">
-                <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{item.categoryTitle || item.type}}</text>
+                <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{item.title || item.categoryTitle || item.type}}</text>
                 <text style="font-size: 18rpx; color: #9ca3af; white-space: nowrap;">{{item.formattedTime}}</text>
               </view>
               <view style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; overflow: hidden;">

@@ -127,13 +127,31 @@ Page({
     refundAmount: '',
     amountInputWidth: 0,
     maxRefundAmount: 0,
-    
+    partialRefundTip: '', // 部分退款补差提示（该商品已退¥X，本次最多可退¥Y）
+
+    shippingFeeAmount: 0, // 订单运费（显式字段或差额反推）
+    originalShippingFeeAmount: 0, // 订单原运费（规则运费，包邮时仍>0）
+    committedShippingRefundAmount: 0, // 已在其他售后中承诺/到账的运费
+    committedShippingDeductionAmount: 0, // 已在其他售后中承诺/生效的运费扣减
+    validAfterSalesCoveredQty: 0, // 历史有效售后明细件数
+    hasExchangeAfterSalesHistory: false, // 历史有效明细是否含换货
+    shippingRefundAmount: 0, // 本次预计退还的运费（仅展示）
+    shippingDeductionAmount: 0, // 本次预计扣减的运费（买家责任整单退包邮差额，仅展示）
+    shippingRefundTip: '', // 运费退款提示文案
+    shippingRefundTipType: '', // include=随本次退款 / exclude=不退 / deduct=扣除原运费
+
     contactName: '',
     contactPhone: '',
     
     shippingResponsibility: 'buyer',
     remainingDays: 0,
-    
+    normalDeadline: 0, // 常规售后截止时间戳（0=无基准时间，按满额展示）
+    qualityDeadline: 0, // 质量售后截止时间戳
+    normalMaxDays: 7,
+    qualityMaxDays: 15,
+    normalText: '', // 常规售后剩余时间分级文案
+    qualityText: '', // 质量售后剩余时间分级文案
+
     showConfirmPage: false,
     step: 1
   },
@@ -143,6 +161,102 @@ Page({
     this.setData({ refundAmount: value }, () => {
       setTimeout(() => this.updateAmountInputWidth(), 0);
     });
+    // 含运费退款 / 扣减运费时"预计共退（实退）"随输入联动
+    if (this.data.shippingRefundTipType === 'include' && Number(this.data.shippingRefundAmount) > 0) {
+      const tip = this.buildShippingRefundTip(Number(value || 0), Number(this.data.shippingRefundAmount));
+      this.setData({ shippingRefundTip: tip });
+    } else if (this.data.shippingRefundTipType === 'deduct' && Number(this.data.shippingDeductionAmount) > 0) {
+      const tip = this.buildShippingDeductionTip(Number(value || 0), Number(this.data.shippingDeductionAmount));
+      this.setData({ shippingRefundTip: tip });
+    }
+  },
+
+  // 运费退款/扣减预览（判定口径与后端 resolveApplyShippingRefund 一致，仅展示，最终以后端为准）
+  updateShippingTip() {
+    const {
+      shippingFeeAmount, originalShippingFeeAmount, committedShippingRefundAmount,
+      committedShippingDeductionAmount, validAfterSalesCoveredQty,
+      hasExchangeAfterSalesHistory, refundType, goodsStatus, reasonValue,
+      currentProduct, orderProducts, refundAmount
+    } = this.data;
+    const fee = Math.round((Number(shippingFeeAmount) || 0) * 100) / 100;
+    const originalFee = Math.round((Number(originalShippingFeeAmount) || 0) * 100) / 100;
+    const empty = { shippingRefundAmount: 0, shippingDeductionAmount: 0, shippingRefundTip: '', shippingRefundTipType: '' };
+    if (fee <= 0 && originalFee <= 0) {
+      this.setData(empty);
+      return;
+    }
+    const remaining = Math.round((fee - (Number(committedShippingRefundAmount) || 0)) * 100) / 100;
+    const deductionRemaining = Math.round(
+      (Math.max(0, originalFee - fee) - (Number(committedShippingDeductionAmount) || 0)) * 100
+    ) / 100;
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    // 最终售后类型映射（与提交参数一致）
+    let finalType = 'return_refund';
+    if (refundType === 'refund_only') {
+      finalType = goodsStatus === 'not_received' ? 'refund_not_received' : 'refund_received';
+    }
+    // 与后端 QUALITY_REASONS 严格对齐（本页 isQualityReason 列表更宽，不能直接复用）
+    const QUALITY_REASONS = ['size_mismatch', 'color_mismatch', 'material_mismatch', 'fade', 'quality', 'missing', 'damaged', 'wrong_item'];
+    const isSellerResponsible = QUALITY_REASONS.includes(String(reasonValue || ''));
+    const applyQty = Number(currentProduct?.quantity || currentProduct?.buyQty || 0) || 0;
+    const totalOrderQty = (orderProducts || []).reduce(
+      (sum, p) => sum + (Number(p.quantity || p.buyQty || 0) || 0), 0
+    );
+    const isWholeOrder = (Number(validAfterSalesCoveredQty) || 0) + applyQty >= totalOrderQty
+      && !hasExchangeAfterSalesHistory;
+
+    // 未收到货 / 卖家责任整单：退实付运费（不扣减）
+    const willRefundShipping = finalType === 'refund_not_received'
+      || (isSellerResponsible && isWholeOrder);
+    if (willRefundShipping) {
+      if (remaining <= 0.01) {
+        this.setData(empty);
+        return;
+      }
+      this.setData({
+        shippingRefundAmount: remaining,
+        shippingDeductionAmount: 0,
+        shippingRefundTipType: 'include',
+        shippingRefundTip: this.buildShippingRefundTip(Number(refundAmount || 0), remaining)
+      });
+      return;
+    }
+
+    // 买家责任整单：不退运费；包邮订单按"原运费 − 实付运费"从退款中扣减
+    if (!isSellerResponsible && isWholeOrder && deductionRemaining > 0.01) {
+      this.setData({
+        shippingRefundAmount: 0,
+        shippingDeductionAmount: deductionRemaining,
+        shippingRefundTipType: 'deduct',
+        shippingRefundTip: this.buildShippingDeductionTip(Number(refundAmount || 0), deductionRemaining)
+      });
+      return;
+    }
+
+    // 买家责任 / 部分退款：运费整单只退一次
+    if (remaining <= 0.01) {
+      this.setData(empty);
+      return;
+    }
+    this.setData({
+      shippingRefundAmount: 0,
+      shippingDeductionAmount: 0,
+      shippingRefundTipType: 'exclude',
+      shippingRefundTip: `运费 ¥${fmt(remaining)} 不在本次退款范围内`
+    });
+  },
+
+  buildShippingRefundTip(goodsAmount, shippingAmount) {
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const total = Math.round((Number(goodsAmount || 0) + Number(shippingAmount || 0)) * 100) / 100;
+    return `本次退款含运费 ¥${fmt(shippingAmount)}，预计共退 ¥${fmt(total)}`;
+  },
+
+  buildShippingDeductionTip(goodsAmount, deductionAmount) {
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const net = Math.max(0, Math.round((Number(goodsAmount || 0) - Number(deductionAmount || 0)) * 100) / 100);
+    return `买家承担原运费 ¥${fmt(deductionAmount)}，将从本次退款中扣除，预计实退 ¥${fmt(net)}`;
   },
 
   updateAmountInputWidth() {
@@ -210,20 +324,20 @@ Page({
       const order = res.data;
       let currentProduct = null;
       let maxRefundAmount = 0;
-      
+
       const products = Array.isArray(order.productsList) && order.productsList.length > 0
         ? order.productsList
         : Array.isArray(order.products)
           ? order.products
           : [];
 
-      if (this.productIndex >= 0 && this.productIndex < products.length) {
-        currentProduct = products[this.productIndex];
-        const price = Number(currentProduct.price || currentProduct.productPrice || 0);
-        const quantity = Number(currentProduct.quantity || currentProduct.buyQty || 1);
-        maxRefundAmount = price * quantity;
-      } else if (products.length === 1) {
-        currentProduct = products[0];
+      // 实际商品索引：指定下标优先；单商品订单回退到 0
+      const targetProductIndex = (this.productIndex >= 0 && this.productIndex < products.length)
+        ? this.productIndex
+        : (products.length === 1 ? 0 : -1);
+
+      if (targetProductIndex >= 0) {
+        currentProduct = products[targetProductIndex];
         const price = Number(currentProduct.price || currentProduct.productPrice || 0);
         const quantity = Number(currentProduct.quantity || currentProduct.buyQty || 1);
         maxRefundAmount = price * quantity;
@@ -248,7 +362,146 @@ Page({
         contactPhone = order.address.phone;
       }
 
-      const remainingDaysInfo = this.calculateRemainingDays(order);
+      // 若该商品存在"换货已完成并收到新货"的记录，售后期按确认收新货时间重新起算；
+      // 同时统计已承诺/已到账退款金额，支持单件部分金额退款后的补差申请
+      let restartBaseDate = null;
+      let committedAmount = 0;
+      let refundedAmount = 0;
+      let forfeitedAmount = 0;
+      // 仅退款（货留买家/未收到货）少退可补差；退货退款（货已寄回）少退差额不可再申请
+      const refundOnlyTypes = ['refund', 'refund_received', 'refund_not_received', 'not_received_refund'];
+      if (targetProductIndex >= 0) {
+        try {
+          const db = wx.cloud.database();
+          const itemsRes = await db.collection('after_sales_case_items').where({
+            orderId,
+            orderItemIndex: targetProductIndex
+          }).limit(50).get();
+          const allItems = itemsRes.data || [];
+          const releasedItems = allItems.filter(item =>
+            ['exchange', 'quality_exchange'].includes(String(item.afterSalesType || ''))
+            && String(item.itemStatus || '') === 'completed'
+            && String(item.returnGoodsType || '') !== 'original'
+            && (Number(item.afterSalesGeneration) || 1) < 2
+            && item.completedAt);
+          if (releasedItems.length > 0) {
+            releasedItems.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime());
+            restartBaseDate = parseFlexibleDate(releasedItems[0].completedAt);
+          }
+          // 金额累计：仅有效明细（排除取消/拒绝）；已核准取核准额，进行中取申请额
+          allItems.forEach(item => {
+            const status = String(item.itemStatus || '');
+            if (status === 'cancelled' || status === 'rejected') {
+              return;
+            }
+            const type = String(item.afterSalesType || '');
+            const approved = Number(item.approvedRefundAmount || 0) || 0;
+            const applied = Number(item.applyRefundAmount || 0) || 0;
+            committedAmount += approved > 0 ? approved : applied;
+            if (status === 'completed') {
+              refundedAmount += approved;
+              // 退货退款少退的差额：份额金额 − 核准额（货已寄回，不可再申请）
+              if (!refundOnlyTypes.includes(type) && !['exchange', 'quality_exchange'].includes(type)) {
+                const qty = Number(item.applyQty || 0) || 0;
+                const unitPrice = Number(item.unitPriceSnapshot || 0) || 0;
+                let share = 0;
+                if (unitPrice > 0) {
+                  share = unitPrice * qty;
+                } else {
+                  const lineAmount = Number(item.payableAmountSnapshot || 0) || 0;
+                  const itemBuyQty = Number(item.buyQty || 0) || 0;
+                  share = lineAmount > 0 && itemBuyQty > 0 ? (lineAmount / itemBuyQty) * qty : (Number(item.maxRefundAmount || 0) || 0);
+                }
+                if (share > 0 && approved < share - 0.01) {
+                  forfeitedAmount += share - approved;
+                }
+              }
+            }
+          });
+        } catch (err) {
+          console.error('查询售后明细失败', err);
+        }
+      }
+
+      // 订单级运费数据（仅用于运费退款提示，最终以后端判定为准）
+      let shippingFeeAmount = Number(
+        order.shippingFee ?? order.deliveryFee ?? order.expressFee ?? order.postFee ?? order.freight ?? 0
+      ) || 0;
+      let orderValidAfterSalesQty = 0;
+      let orderHasExchangeHistory = false;
+      let committedShippingRefund = 0;
+      let committedShippingDeduction = 0;
+      try {
+        const db = wx.cloud.database();
+        const orderItemsRes = await db.collection('after_sales_case_items').where({ orderId }).limit(100).get();
+        (orderItemsRes.data || []).forEach(item => {
+          const status = String(item.itemStatus || '');
+          if (status === 'cancelled' || status === 'rejected') {
+            return;
+          }
+          orderValidAfterSalesQty += Number(item.applyQty || 0) || 0;
+          if (['exchange', 'quality_exchange'].includes(String(item.afterSalesType || ''))) {
+            orderHasExchangeHistory = true;
+          }
+          const approvedShipping = Number(item.approvedShippingRefundAmount || 0) || 0;
+          const applyShipping = Number(item.applyShippingRefundAmount || 0) || 0;
+          committedShippingRefund += approvedShipping > 0 ? approvedShipping : applyShipping;
+          const approvedShippingDeduction = Number(item.approvedShippingDeductionAmount || 0) || 0;
+          const applyShippingDeduction = Number(item.applyShippingDeductionAmount || 0) || 0;
+          committedShippingDeduction += approvedShippingDeduction > 0 ? approvedShippingDeduction : applyShippingDeduction;
+        });
+      } catch (err) {
+        console.error('查询订单售后明细失败', err);
+      }
+      if (shippingFeeAmount <= 0) {
+        const shippingFeeInt = Number(order.shippingFeeInt ?? order.deliveryFeeInt ?? 0) || 0;
+        if (shippingFeeInt > 0) {
+          shippingFeeAmount = shippingFeeInt / 100;
+        }
+      }
+      if (shippingFeeAmount <= 0) {
+        // 无显式运费字段时用实付总额 − 商品行合计反推（与后端 getOrderShippingFee 同口径）
+        const orderPaidTotal = Number(order.totalPrice ?? order.totalAmount ?? 0) || 0;
+        const goodsTotal = products.reduce((sum, p) => {
+          const line = Number(p.lineAmount ?? p.payableAmount ?? 0) || 0
+            || Math.round((Number(p.price || p.productPrice || 0) * (Number(p.quantity || p.buyQty || 0) || 1)) * 100) / 100;
+          return sum + line;
+        }, 0);
+        const inferred = Math.round((orderPaidTotal - goodsTotal) * 100) / 100;
+        shippingFeeAmount = inferred > 0.01 ? inferred : 0;
+      }
+      shippingFeeAmount = Math.round(shippingFeeAmount * 100) / 100;
+      committedShippingRefund = Math.round(committedShippingRefund * 100) / 100;
+      committedShippingDeduction = Math.round(committedShippingDeduction * 100) / 100;
+
+      // 订单原运费（规则运费，包邮时仍 > 0）：买家责任整单退款时按"原运费 − 实付运费"扣减
+      let originalShippingFeeAmount = Number(
+        order.originalDeliveryFee ?? order.originalShippingFee ?? order.originalFreight ?? 0
+      ) || 0;
+      if (originalShippingFeeAmount <= 0) {
+        const originalShippingFeeInt = Number(order.originalDeliveryFeeInt ?? order.originalShippingFeeInt ?? 0) || 0;
+        if (originalShippingFeeInt > 0) {
+          originalShippingFeeAmount = originalShippingFeeInt / 100;
+        }
+      }
+      // 历史订单无原运费字段：退化为实付运费（等价于不扣减）
+      if (originalShippingFeeAmount <= 0) {
+        originalShippingFeeAmount = shippingFeeAmount;
+      }
+      originalShippingFeeAmount = Math.round(originalShippingFeeAmount * 100) / 100;
+
+      // 金额池封顶：可退金额 = 商品行金额 - 已承诺退款金额 - 退货退款少退的放弃差额
+      committedAmount = Math.round(committedAmount * 100) / 100;
+      refundedAmount = Math.round(refundedAmount * 100) / 100;
+      forfeitedAmount = Math.round(forfeitedAmount * 100) / 100;
+      const lineTotal = Math.round(maxRefundAmount * 100) / 100;
+      const remainRefundAmount = Math.round(Math.max(0, lineTotal - committedAmount - forfeitedAmount) * 100) / 100;
+      maxRefundAmount = remainRefundAmount;
+      const partialRefundTip = refundedAmount > 0 && remainRefundAmount > 0
+        ? `该商品已退款 ¥${refundedAmount}，本次最多可退 ¥${remainRefundAmount}`
+        : '';
+
+      const remainingDaysInfo = this.calculateRemainingDays(order, restartBaseDate);
 
       this.setData({
         order,
@@ -257,11 +510,26 @@ Page({
         currentProduct,
         maxRefundAmount: Math.round(maxRefundAmount * 100) / 100,
         refundAmount: Math.round(maxRefundAmount * 100) / 100,
+        partialRefundTip,
+        shippingFeeAmount,
+        originalShippingFeeAmount,
+        committedShippingRefundAmount: committedShippingRefund,
+        committedShippingDeductionAmount: committedShippingDeduction,
+        validAfterSalesCoveredQty: orderValidAfterSalesQty,
+        hasExchangeAfterSalesHistory: orderHasExchangeHistory,
+        shippingRefundAmount: 0,
+        shippingDeductionAmount: 0,
+        shippingRefundTip: '',
+        shippingRefundTipType: '',
         contactName,
         contactPhone,
-        remainingNormalDays: remainingDaysInfo.normal,
-        remainingQualityDays: remainingDaysInfo.quality,
-        remainingDays: remainingDaysInfo.normal
+        normalDeadline: remainingDaysInfo.normalDeadline || 0,
+        qualityDeadline: remainingDaysInfo.qualityDeadline || 0,
+        normalMaxDays: remainingDaysInfo.normalDays,
+        qualityMaxDays: remainingDaysInfo.qualityDays
+      }, () => {
+        this.updateCountdownTick();
+        this.countdownTimer = setInterval(() => this.updateCountdownTick(), 1000);
       });
 
       wx.hideLoading();
@@ -273,14 +541,18 @@ Page({
     }
   },
 
-  calculateRemainingDays(order) {
+  calculateRemainingDays(order, restartBaseDate) {
     // 判断是否已确认收货（交易成功）
     const isTransactionCompleted = ['completed', 'refund'].includes(order.status);
-    
+
     let receiptTime;
     let normalDays;
-    
-    if (isTransactionCompleted) {
+
+    if (restartBaseDate) {
+      // 换货新货：售后期自确认收到新货起重新起算（普通7天/质量15天）
+      receiptTime = restartBaseDate;
+      normalDays = 7;
+    } else if (isTransactionCompleted) {
       // 交易成功后：优先使用签收时间，回退到确认收货时间（签收后7天/15天）
       receiptTime = parseFlexibleDate(order.logisticsState?.checkTime) || parseFlexibleDate(order.receiptTime);
       normalDays = 7;
@@ -289,19 +561,88 @@ Page({
       receiptTime = parseFlexibleDate(order.shippingTime);
       normalDays = 10;
     }
-    
-    if (!receiptTime) return { normal: normalDays, quality: 15 };
-    
-    const now = new Date();
-    
+    const qualityDays = 15;
+
+    // 无基准时间：截止戳为 null，页面按满额天数展示
+    if (!receiptTime) {
+      return { normalDeadline: null, qualityDeadline: null, normalDays, qualityDays };
+    }
+
+    // 从基准日第二天0点开始计算（和后端保持一致）
     const startDate = new Date(receiptTime.getFullYear(), receiptTime.getMonth(), receiptTime.getDate() + 1, 0, 0, 0);
-    const diff = now.getTime() - startDate.getTime();
-    const daysPassed = Math.floor(diff / (24 * 60 * 60 * 1000));
-    
-    const remainingNormalDays = Math.max(0, normalDays - daysPassed);
-    const remainingQualityDays = Math.max(0, 15 - daysPassed);
-    
-    return { normal: remainingNormalDays, quality: remainingQualityDays };
+    return {
+      normalDeadline: startDate.getTime() + normalDays * 24 * 60 * 60 * 1000,
+      qualityDeadline: startDate.getTime() + qualityDays * 24 * 60 * 60 * 1000,
+      normalDays,
+      qualityDays
+    };
+  },
+
+  // 售后剩余时间分级格式化：
+  // ≥2天只显示天；1~2天显示天+小时；<1天显示时+分；<1小时显示分+秒；<1分钟显示秒；0显示已过期
+  formatCountdown(remainMs) {
+    if (!Number.isFinite(remainMs) || remainMs <= 0) {
+      return '已过期';
+    }
+    const totalSec = Math.floor(remainMs / 1000);
+    const days = Math.floor(totalSec / 86400);
+    const hours = Math.floor((totalSec % 86400) / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    if (days >= 2) return `${days}天`;
+    if (days >= 1) return `${days}天${hours}小时`;
+    if (hours >= 1) return `${hours}时${mins}分`;
+    if (mins >= 1) return `${mins}分${secs}秒`;
+    return `${secs}秒`;
+  },
+
+  // 每秒刷新剩余时间文案与天数（天数仅用于过期判断）
+  updateCountdownTick() {
+    const nowMs = Date.now();
+    const buildState = (deadline, maxDays) => {
+      if (!deadline) {
+        return { days: maxDays, text: `${maxDays}天` };
+      }
+      const remainMs = deadline - nowMs;
+      if (remainMs <= 0) {
+        return { days: 0, text: '已过期' };
+      }
+      return {
+        days: Math.min(maxDays, Math.ceil(remainMs / (24 * 60 * 60 * 1000))),
+        text: this.formatCountdown(remainMs)
+      };
+    };
+    const normalState = buildState(this.data.normalDeadline || null, Number(this.data.normalMaxDays) || 7);
+    const qualityState = buildState(this.data.qualityDeadline || null, Number(this.data.qualityMaxDays) || 15);
+    this.setData({
+      remainingNormalDays: normalState.days,
+      remainingQualityDays: qualityState.days,
+      remainingDays: normalState.days,
+      normalText: normalState.text,
+      qualityText: qualityState.text
+    });
+  },
+
+  onUnload() {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  },
+
+  onHide() {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  },
+
+  onShow() {
+    // 从售后详情页返回时重启倒计时
+    if (!this.countdownTimer && (this.data.normalDeadline || this.data.qualityDeadline)) {
+      this.updateCountdownTick();
+      this.countdownTimer = setInterval(() => this.updateCountdownTick(), 1000);
+    }
   },
 
   showRefundTypeModal() {
@@ -404,6 +745,8 @@ Page({
     } else {
       this.setData({ step: 5 });
     }
+    // 类型/货物状态/原因已定，刷新运费退款提示
+    this.updateShippingTip();
   },
 
   chooseImage() {

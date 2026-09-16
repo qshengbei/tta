@@ -26,7 +26,8 @@ const STATUS_TEXT_MAP = {
   approved: '已通过',
   seller_reviewing: '商家验货中',
   seller_returning: '商家寄回中',
-  intercepting: '拦截中'
+  intercepting: '拦截中',
+  pending_refund: '待退款'
 };
 
 const STATUS_CLASS_MAP = {
@@ -42,7 +43,8 @@ const STATUS_CLASS_MAP = {
   approved: 'after-sales-item__status--approved',
   seller_reviewing: 'after-sales-item__status--pending',
   seller_returning: 'after-sales-item__status--processing',
-  intercepting: 'after-sales-item__status--pending'
+  intercepting: 'after-sales-item__status--pending',
+  pending_refund: 'after-sales-item__status--approved'
 };
 
 const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'processing', 'approved'];
@@ -276,6 +278,12 @@ Page({
   normalizeCaseRecord(item, isLegacy) {
     const type = item.primaryAfterSalesType || item.type || 'refund';
     const status = item.caseStatus || item.status || 'submitted';
+    const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
+    const isExchange = EXCHANGE_TYPES.includes(type);
+    let statusText = STATUS_TEXT_MAP[status] || status;
+    // 换货流程中 seller_returning/buyer_receiving 文案区分
+    if (isExchange && status === 'seller_returning') statusText = '待商家发新货';
+    if (isExchange && status === 'buyer_receiving') statusText = '待买家收新货';
     return {
       _id: item._id,
       orderId: item.orderId,
@@ -283,7 +291,7 @@ Page({
       type,
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
-      statusText: STATUS_TEXT_MAP[status] || status,
+      statusText,
       statusClass: STATUS_CLASS_MAP[status] || '',
       reason: item.applyReasonText || item.reason || '',
       refundAmount: Number(item.totalApplyAmount ?? item.refundAmount ?? 0) || 0,
@@ -448,6 +456,8 @@ Page({
       }
       wx.hideLoading();
       wx.showToast({ title: '取消成功', icon: 'success' });
+      // 通知订单详情页刷新（取消售后后剩余可申请数量会变化）
+      getApp().globalData.needRefreshOrderDetail = true;
       this.fetchAfterSalesList(true);
     }).catch((err) => {
       wx.hideLoading();
