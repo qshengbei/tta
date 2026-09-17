@@ -167,6 +167,12 @@ Page({
     showInspectFailModal: false,
     inspectFailReason: '',
     inspectImages: [],
+    // 同意售后时调整寄回运费补偿（卖家责任退货/换货）
+    showCompensationModal: false,
+    compensationSuggestAmount: 0, // 申请建议补偿额
+    compensationInputAmount: '', // 弹窗中商家输入的核准补偿额
+    compensationOpinion: '', // 弹窗中同步填写的审核意见
+    compensationItemId: '', // 本次审核的目标明细
     inspectVideos: [],
     inspectVideoThumbs: [],
     operationLogs: []
@@ -406,11 +412,18 @@ Page({
     const status = record.caseStatus || 'submitted';
     const type = record.primaryAfterSalesType || 'refund';
     const isNotReceivedRefund = type === 'refund_not_received' || type === 'not_received_refund' || record.goodsStatus === 'not_received';
+    // 寄回运费补偿：核准字段存在（含0）即为已核准；缺失回退申请建议额（兼容自动审核/历史数据）
+    const compApprovedRaw = record.approvedReturnShippingCompensationAmount;
+    const compApprovedExists = !(compApprovedRaw === undefined || compApprovedRaw === null || compApprovedRaw === '');
+    const returnShippingCompensationAmount = Math.round(
+      ((compApprovedExists ? Number(compApprovedRaw) : Number(record.applyReturnShippingCompensationAmount)) || 0) * 100
+    ) / 100;
     return {
       _id: record._id,
       orderId: record.orderId,
       orderNo: record.orderNumber || record.orderId,
       type,
+      isExchange: type === 'exchange' || type === 'quality_exchange',
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
       caseStatus: status,
@@ -418,6 +431,9 @@ Page({
       statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
+      applyReturnShippingCompensationAmount: Math.round((Number(record.applyReturnShippingCompensationAmount) || 0) * 100) / 100,
+      returnShippingCompensationAmount,
+      returnShippingCompensationApproved: compApprovedExists && (Number(compApprovedRaw) || 0) > 0,
       reason: record.applyReasonText || '',
       autoProcessed: record.autoProcessed || false,
       createdAt: record.createdAt,
@@ -493,6 +509,10 @@ Page({
       applyQty: Number(item.applyQty || 0) || 0,
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
+      applyReturnShippingCompensationAmount: Math.round((Number(item.applyReturnShippingCompensationAmount) || 0) * 100) / 100,
+      approvedReturnShippingCompensationAmount: (item.approvedReturnShippingCompensationAmount === undefined || item.approvedReturnShippingCompensationAmount === null || item.approvedReturnShippingCompensationAmount === '')
+        ? null
+        : Math.round((Number(item.approvedReturnShippingCompensationAmount) || 0) * 100) / 100,
       statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
       shippingResponsibilityText: getShippingResponsibilityText(item.shippingResponsibility),
       productSupports7DayReturn: item.productSupports7DayReturn || false,
@@ -1172,6 +1192,19 @@ Page({
   },
 
   handleApprove() {
+    // 卖家责任且需寄回的售后：申请带寄回运费补偿建议额时，先弹自定义弹窗让商家确认/调整补偿额与意见
+    const targetItem = this.data.afterSalesItems[0];
+    const suggestAmount = Math.round((Number(targetItem?.applyReturnShippingCompensationAmount) || 0) * 100) / 100;
+    if (suggestAmount > 0 && targetItem?.approvedReturnShippingCompensationAmount === null) {
+      this.setData({
+        showCompensationModal: true,
+        compensationSuggestAmount: suggestAmount,
+        compensationInputAmount: Number.isInteger(suggestAmount) ? String(suggestAmount) : suggestAmount.toFixed(2),
+        compensationOpinion: '',
+        compensationItemId: targetItem._id || ''
+      });
+      return;
+    }
     wx.showModal({
       title: '同意售后申请',
       editable: true,
@@ -1183,6 +1216,38 @@ Page({
         }
       }
     });
+  },
+
+  // 寄回运费补偿弹窗：金额/意见输入
+  onCompensationAmountInput(e) {
+    this.setData({ compensationInputAmount: e.detail.value });
+  },
+  onCompensationOpinionInput(e) {
+    this.setData({ compensationOpinion: e.detail.value });
+  },
+  cancelCompensationModal() {
+    if (this.data.processing) return;
+    this.setData({ showCompensationModal: false });
+  },
+  confirmCompensationModal() {
+    const raw = this.data.compensationInputAmount;
+    const amount = Math.round((Number(raw) || 0) * 100) / 100;
+    if (raw === '' || raw === undefined || raw === null || !Number.isFinite(Number(raw)) || Number(raw) < 0) {
+      wx.showToast({ title: '请输入不小于0的补偿金额', icon: 'none' });
+      return;
+    }
+    if (amount > 1000) {
+      wx.showToast({ title: '补偿金额不能超过1000元', icon: 'none' });
+      return;
+    }
+    this.setData({ showCompensationModal: false });
+    this.processAfterSales(
+      'approve',
+      this.data.compensationOpinion || '',
+      {},
+      this.data.compensationItemId || null,
+      amount
+    );
   },
 
   handleReject() {
@@ -1203,7 +1268,7 @@ Page({
     });
   },
 
-  processAfterSales(action, opinion, inspectEvidence = {}, itemId = null) {
+  processAfterSales(action, opinion, inspectEvidence = {}, itemId = null, approvedCompensationAmount = null) {
     if (this.data.processing) return;
 
     const targetItemId = itemId || this.data.afterSalesItems[0]?._id;
@@ -1214,7 +1279,8 @@ Page({
       itemId: targetItemId,
       action: action,
       opinion: opinion,
-      inspectEvidence: inspectEvidence
+      inspectEvidence: inspectEvidence,
+      approvedCompensationAmount: approvedCompensationAmount
     });
 
     this.setData({ processing: true });
@@ -1231,6 +1297,11 @@ Page({
       inspectVideos: inspectEvidence.videos || [],
       inspectVideoThumbs: inspectEvidence.thumbs || []
     };
+
+    // 同意时携带商家核准的寄回运费补偿额（仅在弹窗显式确认时透传；缺省由后端回退申请建议额）
+    if (action === 'approve' && approvedCompensationAmount !== null && Number.isFinite(Number(approvedCompensationAmount))) {
+      params.approvedReturnShippingCompensationAmount = Math.round(Number(approvedCompensationAmount) * 100) / 100;
+    }
 
     // 寄回物流信息
     if (inspectEvidence.trackingNumber) {

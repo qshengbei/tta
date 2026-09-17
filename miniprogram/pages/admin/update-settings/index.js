@@ -76,6 +76,7 @@ Page({
       noReasonReturnDays: 7, // 无理由售后天数
       normalAfterSalesDays: 7, // 常规售后天数
       qualityAfterSalesDays: 15, // 质量售后天数
+      returnShippingCompensationAmount: 10, // 寄回运费补偿兜底额（元）：正常订单按本单寄出规则运费补偿；订单无运费信息时用此值，0=不补偿
       customerServiceMethod: 'official', // 客服方法：official=官方客服，custom=自定义客服
       wechatId: '', // 微信号
       wechatPicture: '', // 微信二维码图片
@@ -198,6 +199,12 @@ Page({
         settings.qualityAfterSalesDays = Number(
           afterSalesTimeConfig.qualityAfterSalesDays ?? settings.qualityAfterSalesDays ?? 15
         ) || 15;
+        settings.returnShippingCompensationAmount = (() => {
+          const raw = Number(
+            afterSalesTimeConfig.returnShippingCompensationAmount ?? settings.returnShippingCompensationAmount ?? 10
+          );
+          return Number.isFinite(raw) && raw >= 0 ? Math.round(raw * 100) / 100 : 10;
+        })();
         
         // 确保 customerServiceMethod 字段存在，默认值为 'official'
         if (settings.customerServiceMethod === undefined) {
@@ -853,12 +860,23 @@ Page({
   },
 
   /**
+   * 输入卖家责任退货运费补偿额
+   */
+  inputReturnShippingCompensation(e) {
+    const value = parseFloat(e.detail.value);
+    this.setData({ 'settings.returnShippingCompensationAmount': Number.isFinite(value) ? value : 0 });
+  },
+
+  /**
    * 保存售后时效配置
    */
   async saveServiceTimeConfig() {
     const autoConfirmReceiptDays = Number(this.data.settings.autoConfirmReceiptDays || 0);
     const normalAfterSalesDays = Number(this.data.settings.normalAfterSalesDays || 0);
     const qualityAfterSalesDays = Number(this.data.settings.qualityAfterSalesDays || 0);
+    const returnShippingCompensationAmount = Math.round(
+      (Number(this.data.settings.returnShippingCompensationAmount) || 0) * 100
+    ) / 100;
 
     if (!autoConfirmReceiptDays || autoConfirmReceiptDays < 1 || autoConfirmReceiptDays > 15) {
       wx.showToast({
@@ -892,6 +910,14 @@ Page({
       return;
     }
 
+    if (returnShippingCompensationAmount < 0 || returnShippingCompensationAmount > 1000) {
+      wx.showToast({
+        title: '退货运费补偿需在0-1000元',
+        icon: 'none'
+      });
+      return;
+    }
+
     this.setData({ 'saving.serviceTimeConfig': true });
 
     try {
@@ -902,7 +928,8 @@ Page({
             afterSalesTimeConfig: {
               autoConfirmReceiptDays,
               normalAfterSalesDays,
-              qualityAfterSalesDays
+              qualityAfterSalesDays,
+              returnShippingCompensationAmount
             }
           }
         }

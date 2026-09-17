@@ -48,6 +48,34 @@
             <text class="setting-unit">天</text>
           </view>
         </view>
+
+        <view class="service-time-field">
+          <text class="service-time-field__label">寄回运费补偿兜底额</text>
+          <view class="setting-input-group">
+            <input class="setting-input" type="digit" value="{{settings.returnShippingCompensationAmount}}" bindinput="inputReturnShippingCompensation" placeholder="订单无运费信息时的默认补偿额" />
+            <text class="setting-unit">元</text>
+          </view>
+        </view>
+
+        <view class="service-time-field">
+          <text class="service-time-field__label">运费承担规则</text>
+          <view class="shipping-fee-rules">
+            <view class="shipping-fee-rule-item" wx:for="{{settings.shippingFeeRules}}" wx:key="key" data-index="{{index}}">
+              <view class="shipping-fee-rule-label">{{item.label}}</view>
+              <view class="shipping-fee-rule-switches">
+                <view class="shipping-fee-rule-switch">
+                  <text class="shipping-fee-rule-switch-label">扣除寄出运费</text>
+                  <switch checked="{{item.deductOutbound}}" bindchange="toggleShippingFeeRule" data-index="{{index}}" data-field="deductOutbound" />
+                </view>
+                <view class="shipping-fee-rule-switch">
+                  <text class="shipping-fee-rule-switch-label">补偿寄回运费</text>
+                  <switch checked="{{item.compensateReturn}}" bindchange="toggleShippingFeeRule" data-index="{{index}}" data-field="compensateReturn" />
+                </view>
+              </view>
+            </view>
+          </view>
+          <text class="service-time-field__hint">扣除寄出运费：买家承担商家寄出运费差额（包邮订单的原运费），从商品退款中扣减；补偿寄回运费：商家补偿买家寄回快递费（按本单寄出规则运费，封顶1000元）</text>
+        </view>
       </view>
 
       <button class="save-item-button" bindtap="saveServiceTimeConfig" loading="{{saving.serviceTimeConfig}}">保存售后配置</button>

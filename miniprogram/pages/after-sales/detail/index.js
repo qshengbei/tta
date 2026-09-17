@@ -330,11 +330,18 @@ Page({
   normalizeCaseRecord(record) {
     const status = record.caseStatus || 'submitted';
     const type = record.primaryAfterSalesType || 'refund';
+    const isExchange = type === 'exchange' || type === 'quality_exchange';
+    // 寄回运费补偿：核准后取核准值（含商家调整为0），未核准/历史数据回退申请建议额（与打款口径一致）
+    const compApprovedRaw = record.approvedReturnShippingCompensationAmount;
+    const returnShippingCompensationAmount = (compApprovedRaw === undefined || compApprovedRaw === null || compApprovedRaw === '')
+      ? (Number(record.applyReturnShippingCompensationAmount) || 0)
+      : (Number(compApprovedRaw) || 0);
     return {
       _id: record._id,
       orderId: record.orderId,
       orderNo: record.orderNumber || record.orderId,
       type,
+      isExchange,
       typeText: TYPE_TEXT_MAP[type] || type,
       status,
       caseStatus: status,
@@ -342,6 +349,9 @@ Page({
       statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
+      returnShippingCompensationAmount: Math.round(returnShippingCompensationAmount * 100) / 100,
+      // 商家尚未审核时展示"预计"；审核/验货后金额已确定
+      returnShippingCompensationPending: status === 'submitted',
       reason: record.applyReasonText || '',
       autoProcessed: record.autoProcessed || false,
       createdAt: record.createdAt,

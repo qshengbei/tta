@@ -74,8 +74,13 @@ Page({
     shippingRefundAmount: 0, // 本次售后预计退还的运费（仅展示，后端自动判定）
     shippingDeductionAmount: 0, // 本次售后预计扣减的运费（买家责任整单退包邮差额，仅展示）
     shippingRefundTip: '', // 运费退款提示文案
-    shippingRefundTipType: '', // 提示类型：include=随本次退款 / exclude=不退 / deduct=扣除原运费
-    maxRefundAmount: 0, // 最大退款金额
+    shippingRefundTipType: '', // 提示类型：include=随本次退款 / exclude=不退 / deduct=扣除原运费（内扣到最多可退）/ none=不涉及运费
+    returnShippingCompensationConfig: 0, // 商家配置的寄回运费固定补偿额（来自 settings，0=不补偿）
+    shippingFeeRules: [], // 运费承担规则（4 个场景，来自 settings.afterSalesTimeConfig.shippingFeeRules）
+    returnShippingCompensationAmount: 0, // 本次售后申请预计的寄回运费补偿（仅展示，不占商品可退额）
+    returnShippingCompensationTip: '', // 寄回运费补偿提示文案
+    maxRefundAmount: 0, // 最大退款金额（内扣运费后的净额）
+    goodsMaxRefundAmount: 0, // 商品口径最大可退（未扣运费，用于数量联动重算）
     needProof: false, // 是否需要上传凭证
     operationLogs: [], // 订单操作日志
     expandedCases: {}, // 已展开的售后单日志分组（caseId -> bool）
@@ -195,6 +200,8 @@ Page({
       // 初始化物流状态数据
       this.initLogisticsStateData();
       this.fetchOrderDetail(orderIdValue);
+      // 读取商家配置的寄回运费补偿额（用于售后申请页预计补偿提示）
+      this.loadReturnShippingCompensationConfig();
       
       wx.onWindowResize(() => {
         if (this.data.isScrollLocked) {
@@ -2374,7 +2381,10 @@ Page({
       shippingDeductionAmount: 0,
       shippingRefundTip: '',
       shippingRefundTipType: '',
+      returnShippingCompensationAmount: 0,
+      returnShippingCompensationTip: '',
       maxRefundAmount: 0,
+      goodsMaxRefundAmount: 0,
       needProof: false,
       showAfterSalesRulesModal: false
     });
@@ -2801,34 +2811,67 @@ Page({
     const refundedMap = order.refundedAmountMap || {};
     const refundedAmount = Number(refundedMap[selectedProductIndex] ?? refundedMap[String(selectedProductIndex)] ?? 0) || 0;
 
-    // 最大退款金额 = 单价 × 剩余可售后数量
-    let maxRefundAmount = 0;
+    // 最大退款金额（商品口径，未扣运费）= 单价 × 剩余可售后数量
+    let goodsMaxRefundAmount = 0;
     if (selectedProductIndex >= 0 && order.products[selectedProductIndex]) {
       const product = order.products[selectedProductIndex];
       const unitPrice = Number(product.price || 0) || 0;
-      maxRefundAmount = unitPrice * (remainingQty || product.quantity || 1);
+      goodsMaxRefundAmount = unitPrice * (remainingQty || product.quantity || 1);
     } else if (order.totalAmount) {
-      maxRefundAmount = order.totalAmount;
+      goodsMaxRefundAmount = order.totalAmount;
     }
     // 金额池封顶：已部分退款时不能超过剩余可退金额
     if (remainAmount > 0) {
-      maxRefundAmount = Math.min(maxRefundAmount, remainAmount);
+      goodsMaxRefundAmount = Math.min(goodsMaxRefundAmount, remainAmount);
     }
-    maxRefundAmount = Math.round(maxRefundAmount * 100) / 100;
+    goodsMaxRefundAmount = Math.round(goodsMaxRefundAmount * 100) / 100;
 
-    // 默认退款金额：补差场景默认剩余可退全额；否则按当前 applyQty 计算（与数量选择器一致）
+    // 当前选择数量对应的商品金额（同时被补差金额池封顶）：
+    // "最多可退"必须随数量选择器联动（选2件时=单价×2，而不是全部可申请数量的金额池）
+    const step3UnitPrice = (selectedProductIndex >= 0 && order.products[selectedProductIndex])
+      ? (Number(order.products[selectedProductIndex].price) || 0)
+      : 0;
+    const qtyGoodsAmount = Math.round(
+      Math.min(Number((step3UnitPrice * (applyQty || 1)).toFixed(2)) || 0, goodsMaxRefundAmount) * 100
+    ) / 100;
+
+    // 运费退款预览：最终售后类型映射与提交逻辑保持一致（用当前选择数量的商品金额估算含运费共退）
+    let previewFinalType = 'return_refund';
+    if (selectedAfterSalesType === 'exchange') {
+      previewFinalType = 'exchange';
+    } else if (selectedAfterSalesType === 'not_received_refund') {
+      previewFinalType = 'refund_not_received';
+    } else if (this.data.selectedRefundType === 'return_refund') {
+      previewFinalType = 'return_refund';
+    } else {
+      previewFinalType = this.data.selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
+    }
+    const shippingPreview = this.resolveShippingRefundPreview(
+      order,
+      previewFinalType,
+      selectedAfterSalesType === 'exchange' ? this.data.selectedExchangeReason : selectedReason,
+      applyQty,
+      qtyGoodsAmount
+    );
+
+    // 买家责任整单退款：需承担的原运费（包邮差额）直接内扣，"最多可退"展示净额（与后端净额封顶一致）
+    const shippingDeduction = shippingPreview.shippingRefundTipType === 'deduct'
+      ? (Math.round((Number(shippingPreview.shippingDeductionAmount) || 0) * 100) / 100)
+      : 0;
+    const maxRefundAmount = Math.round(Math.max(0, qtyGoodsAmount - shippingDeduction) * 100) / 100;
+
+    // 默认退款金额：补差场景默认剩余可退全额；否则按当前 applyQty 计算（与数量选择器一致）；
+    // 两者均已被当前选择数量封顶；买家责任整单时金额已是扣除运费后的净额
     let refundAmount;
     if (remainAmount > 0 && refundedAmount > 0) {
       refundAmount = Number.isInteger(maxRefundAmount) ? maxRefundAmount.toString() : maxRefundAmount.toFixed(2);
     } else {
-      const unitPrice = (selectedProductIndex >= 0 && order.products[selectedProductIndex]) ? (Number(order.products[selectedProductIndex].price) || 0) : 0;
-      let rawRefund = Number((unitPrice * (applyQty || 1)).toFixed(2)) || 0;
-      rawRefund = Math.min(rawRefund, maxRefundAmount || rawRefund);
+      const rawRefund = Math.round(Math.max(0, qtyGoodsAmount - shippingDeduction) * 100) / 100;
       refundAmount = Number.isInteger(rawRefund) ? rawRefund.toString() : rawRefund.toFixed(2);
     }
-    // 部分退款补差提示
-    const partialRefundTip = refundedAmount > 0 && remainAmount > 0
-      ? `该商品已退款 ¥${refundedAmount}，本次最多可退 ¥${remainAmount}`
+    // 部分退款补差提示（最多可退为内扣运费后的净额）
+    const partialRefundTip = refundedAmount > 0 && (remainAmount > 0 || maxRefundAmount > 0)
+      ? `该商品已退款 ¥${refundedAmount}，本次最多可退 ¥${maxRefundAmount}`
       : '';
     
     // 获取联系人信息（从订单地址中获取）
@@ -2852,25 +2895,11 @@ Page({
     // 计算运费归属
     const shippingResponsibility = this.getShippingResponsibility(selectedReason);
 
-    // 运费退款预览：最终售后类型映射与提交逻辑保持一致
-    let previewFinalType = 'return_refund';
-    if (selectedAfterSalesType === 'exchange') {
-      previewFinalType = 'exchange';
-    } else if (selectedAfterSalesType === 'not_received_refund') {
-      previewFinalType = 'refund_not_received';
-    } else if (this.data.selectedRefundType === 'return_refund') {
-      previewFinalType = 'return_refund';
-    } else {
-      previewFinalType = this.data.selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
-    }
-    const shippingPreview = this.resolveShippingRefundPreview(
-      order, previewFinalType, selectedReason, applyQty, refundAmount
-    );
-
     // 计算剩余售后时限
     this.calculateRemainingAfterSalesDays();
 
     this.setData({
+      goodsMaxRefundAmount,
       maxRefundAmount: maxRefundAmount,
       refundAmount: refundAmount,
       partialRefundTip,
@@ -2883,6 +2912,8 @@ Page({
       shippingDeductionAmount: shippingPreview.shippingDeductionAmount,
       shippingRefundTip: shippingPreview.shippingRefundTip,
       shippingRefundTipType: shippingPreview.shippingRefundTipType,
+      returnShippingCompensationAmount: shippingPreview.returnShippingCompensationAmount,
+      returnShippingCompensationTip: shippingPreview.returnShippingCompensationTip,
       afterSalesImages: [],
       afterSalesDescription: ''
     }, () => {
@@ -2912,20 +2943,14 @@ Page({
   },
 
   // 售后运费退款/扣减预览（仅展示用，判定口径与后端 resolveApplyShippingRefund 一致；最终以后端为准）
-  // 返回 { shippingRefundAmount, shippingDeductionAmount, shippingRefundTip, shippingRefundTipType: 'include'|'exclude'|'deduct' }
+  // 返回 { shippingRefundAmount, shippingDeductionAmount, shippingRefundTip, shippingRefundTipType: 'include'|'exclude'|'deduct'|'none',
+  //        returnShippingCompensationAmount, returnShippingCompensationTip }
+  // include=运费随本次退款；exclude=运费不在退款范围；deduct=买家承担原运费，已内扣到"最多可退"；none=不涉及运费（说明性文案）
+  // returnShippingCompensation*=卖家责任时买家寄回旧品的固定运费补偿（与发货运费相互独立）
   resolveShippingRefundPreview(order, finalType, reasonCode, applyQty, goodsRefundAmount) {
     const fee = Math.round((Number(order?.shippingFeeAmount) || 0) * 100) / 100;
     const originalFee = Math.round((Number(order?.originalShippingFeeAmount) || 0) * 100) / 100;
     const empty = { shippingRefundAmount: 0, shippingDeductionAmount: 0, shippingRefundTip: '', shippingRefundTipType: '' };
-    // 无运费（含原运费）/ 换货：不展示运费提示
-    if ((fee <= 0 && originalFee <= 0) || finalType === 'exchange' || finalType === 'quality_exchange') {
-      return empty;
-    }
-    const committed = Math.round((Number(order?.committedShippingRefundAmount) || 0) * 100) / 100;
-    const remaining = Math.round((fee - committed) * 100) / 100;
-    const committedDeduction = Math.round((Number(order?.committedShippingDeductionAmount) || 0) * 100) / 100;
-    // 扣减额 = 原运费 − 实付运费（包邮差额），运费整单只扣一次
-    const deductionRemaining = Math.round((Math.max(0, originalFee - fee) - committedDeduction) * 100) / 100;
     const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
     const REFUND_TYPES = ['refund', 'quality_refund', 'return_refund', 'quality_return_refund', 'refund_received', 'refund_not_received'];
     // 与后端 QUALITY_REASONS 严格对齐（getShippingResponsibility 的列表更宽，不能直接复用）
@@ -2939,42 +2964,187 @@ Page({
     );
     const coveredQty = (Number(order.validAfterSalesCoveredQty) || 0) + (Number(applyQty) || 0);
     const isWholeOrder = coveredQty >= totalOrderQty && !order.hasExchangeAfterSalesHistory;
-    const goodsAmount = Math.round((Number(goodsRefundAmount) || 0) * 100) / 100;
 
-    // 未收到货 / 卖家责任整单：退实付运费（不扣减）
-    const willRefundShipping = finalType === 'refund_not_received'
-      || (REFUND_TYPES.includes(finalType) && isSellerResponsible && isWholeOrder);
-    if (willRefundShipping) {
-      if (remaining <= 0.01) {
-        return empty;
+    // 寄回运费补偿：优先按本单寄出规则运费（包邮单取规则运费，与卖家寄出成本对称），
+    // 订单无运费时回退商家配置兜底额；独立于发货运费逻辑先行计算
+    const comp = this.buildReturnShippingCompensationPreview(order, finalType, reasonCode, isWholeOrder);
+    const withComp = (r) => ({
+      ...r,
+      returnShippingCompensationAmount: comp.amount,
+      returnShippingCompensationTip: comp.tip
+    });
+
+    // 无运费（含原运费）/ 换货：不展示发货运费提示（寄回补偿不受影响）
+    if ((fee <= 0 && originalFee <= 0) || finalType === 'exchange' || finalType === 'quality_exchange') {
+      return withComp(empty);
+    }
+    const committed = Math.round((Number(order?.committedShippingRefundAmount) || 0) * 100) / 100;
+    const remaining = Math.round((fee - committed) * 100) / 100;
+    const committedDeduction = Math.round((Number(order?.committedShippingDeductionAmount) || 0) * 100) / 100;
+    // 扣减额 = 原运费 − 实付运费（包邮差额），运费整单只扣一次
+    const deductionRemaining = Math.round((Math.max(0, originalFee - fee) - committedDeduction) * 100) / 100;
+    const goodsAmount = Math.round((Number(goodsRefundAmount) || 0) * 100) / 100;
+    const noneTip = (text) => ({
+      shippingRefundAmount: 0,
+      shippingDeductionAmount: 0,
+      shippingRefundTipType: 'none',
+      shippingRefundTip: text
+    });
+
+    // 未收到货：配送服务未完成，不扣运费；有实付运费则随商品款一并退还
+    if (finalType === 'refund_not_received') {
+      if (remaining > 0.01) {
+        return withComp({
+          shippingRefundAmount: remaining,
+          shippingDeductionAmount: 0,
+          shippingRefundTipType: 'include',
+          shippingRefundTip: `未收到货退款，本次退款含运费 ¥${fmt(remaining)}，预计共退 ¥${fmt(Math.round((goodsAmount + remaining) * 100) / 100)}`
+        });
       }
-      return {
-        shippingRefundAmount: remaining,
-        shippingDeductionAmount: 0,
-        shippingRefundTipType: 'include',
-        shippingRefundTip: `本次退款含运费 ¥${fmt(remaining)}，预计共退 ¥${fmt(Math.round((goodsAmount + remaining) * 100) / 100)}`
-      };
+      return withComp(noneTip('未收到货退款，配送未完成，不扣除运费'));
     }
 
-    // 买家责任整单：不退运费；包邮订单按"原运费 − 实付运费"从退款中扣减
-    if (REFUND_TYPES.includes(finalType) && !isSellerResponsible && isWholeOrder && deductionRemaining > 0.01) {
-      return {
+    if (!REFUND_TYPES.includes(finalType)) {
+      return withComp(empty);
+    }
+
+    // 运费承担规则：按"责任 × 整单/部分"取本单配置（缺省回落与后端一致）
+    const rule = this.getShippingFeeRuleFront(isSellerResponsible, isWholeOrder);
+
+    // 规则开启扣减：买家承担下单时已免的原运费，内扣到最多可退金额（后端不再二次扣减）
+    if (rule.deductOutbound && deductionRemaining > 0.01) {
+      return withComp({
         shippingRefundAmount: 0,
         shippingDeductionAmount: deductionRemaining,
         shippingRefundTipType: 'deduct',
-        shippingRefundTip: `买家承担原运费 ¥${fmt(deductionRemaining)}，将从本次退款中扣除，预计实退 ¥${fmt(Math.max(0, Math.round((goodsAmount - deductionRemaining) * 100) / 100))}`
-      };
+        shippingRefundTip: isWholeOrder
+          ? `按当前运费承担规则，需承担下单时已免的原运费 ¥${fmt(deductionRemaining)}，该费用已从最多可退金额中扣除`
+          : `部分退货按当前规则需承担原运费差额 ¥${fmt(deductionRemaining)}，已从最多可退金额中扣除`
+      });
     }
 
-    // 买家责任 / 部分退款：商品款照退，运费不退
-    if (remaining <= 0.01) {
-      return empty;
+    // 卖家责任整单：运费由卖家承担，不扣除；有实付运费则一并退还
+    if (isSellerResponsible && isWholeOrder && remaining > 0.01) {
+      return withComp({
+        shippingRefundAmount: remaining,
+        shippingDeductionAmount: 0,
+        shippingRefundTipType: 'include',
+        shippingRefundTip: `卖家承担运费，本次退款含运费 ¥${fmt(remaining)}，预计共退 ¥${fmt(Math.round((goodsAmount + remaining) * 100) / 100)}`
+      });
     }
+
+    // 卖家责任整单但无实付运费可退：明确不扣除
+    if (isSellerResponsible && isWholeOrder) {
+      return withComp(noneTip('卖家承担运费，本次退款不扣除运费'));
+    }
+
+    // 其余：部分退款 / 买家责任整单但实付了运费（商品款照退，运费不退）
+    if (remaining > 0.01) {
+      return withComp({
+        shippingRefundAmount: 0,
+        shippingDeductionAmount: 0,
+        shippingRefundTipType: 'exclude',
+        shippingRefundTip: isWholeOrder
+          ? `运费 ¥${fmt(remaining)} 由买家承担，不在本次退款范围内`
+          : `部分退款，运费 ¥${fmt(remaining)} 不在本次退款范围内`
+      });
+    }
+    // 包邮订单且无运费资金进出：也要明确说明当前操作不扣除运费
+    return withComp(noneTip(isWholeOrder ? '本次退款不扣除运费' : '部分退款，不扣除运费'));
+  },
+
+  // 读取商家配置的寄回运费固定补偿额 + 运费承担规则（settings.afterSalesTimeConfig，兼容平铺字段）
+  async loadReturnShippingCompensationConfig() {
+    try {
+      const res = await wx.cloud.database().collection('settings').limit(1).get();
+      const settingsDoc = (res.data && res.data[0]) || {};
+      const cfg = settingsDoc.afterSalesTimeConfig || {};
+      // 缺省回落与后端 getServiceTimeConfig 默认值保持一致（10元），避免"实际补偿但买家端无提示"
+      const raw = Number(
+        cfg.returnShippingCompensationAmount ?? settingsDoc.returnShippingCompensationAmount ?? 10
+      );
+      const amount = Number.isFinite(raw) && raw > 0 ? Math.round(raw * 100) / 100 : 0;
+      // 运费承担规则（4 个场景；缺省回落与后端 DEFAULT_SHIPPING_FEE_RULES 一致）
+      const DEFAULT_RULES = [
+        { key: 'buyer_partial', label: '买家原因·部分退货', deductOutbound: false, compensateReturn: false },
+        { key: 'seller_partial', label: '卖家原因·部分退货', deductOutbound: false, compensateReturn: true },
+        { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: true, compensateReturn: false },
+        { key: 'seller_whole', label: '卖家原因·整单退货', deductOutbound: false, compensateReturn: true }
+      ];
+      const rawRules = Array.isArray(cfg.shippingFeeRules) ? cfg.shippingFeeRules : settingsDoc.shippingFeeRules;
+      const sourceRules = Array.isArray(rawRules) ? rawRules : [];
+      const rules = DEFAULT_RULES.map((def) => {
+        const found = sourceRules.find((r) => r && r.key === def.key);
+        return {
+          key: def.key,
+          label: def.label,
+          deductOutbound: found && typeof found.deductOutbound === 'boolean' ? found.deductOutbound : def.deductOutbound,
+          compensateReturn: found && typeof found.compensateReturn === 'boolean' ? found.compensateReturn : def.compensateReturn
+        };
+      });
+      this.setData({ returnShippingCompensationConfig: amount, shippingFeeRules: rules });
+      // 配置异步就绪时售后表单可能已打开，按当前选择重算一次运费/补偿提示
+      if (this.data.afterSalesStep >= 3 && this.data.selectedProductIndex >= 0) {
+        this.updateRefundAmount();
+      }
+    } catch (err) {
+      console.warn('读取寄回运费补偿配置失败:', err);
+    }
+  },
+
+  // 取运费承担规则（与后端 getShippingFeeRule 同口径）
+  // 返回 { deductOutbound, compensateReturn }
+  getShippingFeeRuleFront(isSeller, isWholeOrder) {
+    const rules = Array.isArray(this.data.shippingFeeRules) ? this.data.shippingFeeRules : [];
+    const key = isSeller
+      ? (isWholeOrder ? 'seller_whole' : 'seller_partial')
+      : (isWholeOrder ? 'buyer_whole' : 'buyer_partial');
+    const found = rules.find((r) => r && r.key === key);
+    const DEFAULTS = {
+      buyer_partial: { deductOutbound: false, compensateReturn: false },
+      seller_partial: { deductOutbound: false, compensateReturn: true },
+      buyer_whole: { deductOutbound: true, compensateReturn: false },
+      seller_whole: { deductOutbound: false, compensateReturn: true }
+    };
+    const def = DEFAULTS[key] || { deductOutbound: false, compensateReturn: false };
     return {
-      shippingRefundAmount: 0,
-      shippingDeductionAmount: 0,
-      shippingRefundTipType: 'exclude',
-      shippingRefundTip: `运费 ¥${fmt(remaining)} 不在本次退款范围内`
+      deductOutbound: found && typeof found.deductOutbound === 'boolean' ? found.deductOutbound : def.deductOutbound,
+      compensateReturn: found && typeof found.compensateReturn === 'boolean' ? found.compensateReturn : def.compensateReturn
+    };
+  },
+
+  // 寄回运费补偿预览（判定口径与后端 resolveApplyReturnShippingCompensation 一致）
+  // 金额优先取本单寄出规则运费（包邮订单取规则运费而非实付0）；订单无任何运费时回退设置页兜底额
+  // 是否补偿按"运费承担规则"中"对应责任 × 整单/部分"的 compensateReturn 决定
+  buildReturnShippingCompensationPreview(order, finalType, reasonCode, isWholeOrder) {
+    const RETURNABLE_TYPES = ['return_refund', 'quality_return_refund', 'exchange', 'quality_exchange'];
+    if (!RETURNABLE_TYPES.includes(finalType)) {
+      return { amount: 0, tip: '' };
+    }
+    const QUALITY_REASONS = ['size_mismatch', 'color_mismatch', 'material_mismatch', 'fade', 'quality', 'missing', 'damaged', 'wrong_item'];
+    const isSeller = ['quality_return_refund', 'quality_exchange'].includes(finalType)
+      || QUALITY_REASONS.includes(String(reasonCode || ''));
+    // 运费承担规则决定是否补偿（缺省：卖家责任补偿，买家责任不补偿）
+    const rule = this.getShippingFeeRuleFront(isSeller, isWholeOrder);
+    if (!rule.compensateReturn) {
+      return { amount: 0, tip: '' };
+    }
+    // 与后端 getOrderOriginalShippingFee 同口径：规则运费优先，缺失退化为实付运费，再缺失用配置兜底
+    const originalFee = Math.round((Number(order?.originalShippingFeeAmount) || 0) * 100) / 100;
+    const paidFee = Math.round((Number(order?.shippingFeeAmount) || 0) * 100) / 100;
+    const configFallback = Math.round((Number(this.data.returnShippingCompensationConfig) || 0) * 100) / 100;
+    const baseAmount = originalFee > 0 ? originalFee : (paidFee > 0 ? paidFee : configFallback);
+    const amount = Math.min(baseAmount, 1000);
+    if (!(amount > 0)) {
+      return { amount: 0, tip: '' };
+    }
+    const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
+    const isExchange = finalType === 'exchange' || finalType === 'quality_exchange';
+    return {
+      amount,
+      tip: isExchange
+        ? `寄回运费由商家承担，收到新货后预计补偿 ¥${fmt(amount)}（换货完成后到账）`
+        : `寄回运费由商家承担，退款后预计补偿 ¥${fmt(amount)}（与退款一并到账）`
     };
   },
 
@@ -3178,17 +3348,14 @@ Page({
       });
     }
     
-    // 含运费退款 / 扣减运费时，"预计共退（实退）"金额随用户编辑的商品退款额联动
+    // 含运费退款时，"预计共退"金额随用户编辑的商品退款额联动；
+    // 内扣运费（deduct）口径下输入金额已是净额（最多可退已扣除运费），提示文案为静态说明，无需联动
     const patchData = { refundAmount: value };
     const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
     if (this.data.shippingRefundTipType === 'include' && Number(this.data.shippingRefundAmount) > 0) {
       const shippingPart = Math.round((Number(this.data.shippingRefundAmount) || 0) * 100) / 100;
       const total = Math.round((Number(value || 0) + shippingPart) * 100) / 100;
       patchData.shippingRefundTip = `本次退款含运费 ¥${fmt(shippingPart)}，预计共退 ¥${fmt(total)}`;
-    } else if (this.data.shippingRefundTipType === 'deduct' && Number(this.data.shippingDeductionAmount) > 0) {
-      const deductionPart = Math.round((Number(this.data.shippingDeductionAmount) || 0) * 100) / 100;
-      const net = Math.max(0, Math.round((Number(value || 0) - deductionPart) * 100) / 100);
-      patchData.shippingRefundTip = `买家承担原运费 ¥${fmt(deductionPart)}，将从本次退款中扣除，预计实退 ¥${fmt(net)}`;
     }
     this.setData(patchData, () => {
       setTimeout(() => this.updateAmountInputWidth(), 0);
@@ -3314,43 +3481,69 @@ Page({
 
   // 根据售后数量更新退款金额
   updateRefundAmount() {
-    const { applyQty, selectedProductIndex, order, maxRefundAmount } = this.data;
+    const { applyQty, selectedProductIndex, order, goodsMaxRefundAmount, selectedAfterSalesType,
+      selectedRefundType, selectedGoodsStatus, selectedReason, selectedExchangeReason } = this.data;
     if (selectedProductIndex >= 0 && order.products[selectedProductIndex]) {
       const product = order.products[selectedProductIndex];
       const unitPrice = Number(product.price || 0) || 0;
-      // 封顶：部分退款补差时不超过剩余可退金额
-      let rawAmount = Math.min(Number((unitPrice * applyQty).toFixed(2)) || 0, Number(maxRefundAmount) || Infinity);
-      rawAmount = Math.round(rawAmount * 100) / 100;
-      // 与 initStep3Data 保持一致：整数不补小数位，非整数保留两位，避免 28 / 28.00 混用
-      const amountText = Number.isInteger(rawAmount) ? rawAmount.toString() : rawAmount.toFixed(2);
-      this.setData({
-        refundAmount: amountText
-      });
-      // 数量变化影响"整单退款"判定，同步刷新运费提示
-      this.recomputeShippingTip(amountText);
-    }
-  },
+      // 商品口径金额（未扣运费）：封顶为商品可退上限（补差场景金额池更小）
+      const goodsBase = Number(goodsMaxRefundAmount) > 0
+        ? Number(goodsMaxRefundAmount)
+        : Infinity;
+      const goodsAmount = Math.round(
+        Math.min(Number((unitPrice * applyQty).toFixed(2)) || 0, goodsBase) * 100
+      ) / 100;
 
-  // 依据当前弹窗选择重算运费提示（数量增减后调用；原因/类型在进入步骤3时已定）
-  recomputeShippingTip(goodsRefundAmount) {
-    const { order, selectedAfterSalesType, selectedRefundType, selectedGoodsStatus, selectedReason, applyQty } = this.data;
-    let finalType = 'return_refund';
-    if (selectedAfterSalesType === 'exchange') {
-      finalType = 'exchange';
-    } else if (selectedAfterSalesType === 'not_received_refund') {
-      finalType = 'refund_not_received';
-    } else if (selectedRefundType === 'return_refund') {
-      finalType = 'return_refund';
-    } else {
-      finalType = selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
+      // 数量变化影响"整单退款"判定，重算运费提示与净额上限
+      let finalType = 'return_refund';
+      if (selectedAfterSalesType === 'exchange') {
+        finalType = 'exchange';
+      } else if (selectedAfterSalesType === 'not_received_refund') {
+        finalType = 'refund_not_received';
+      } else if (selectedRefundType === 'return_refund') {
+        finalType = 'return_refund';
+      } else {
+        finalType = selectedGoodsStatus === 'received' ? 'refund_received' : 'refund_not_received';
+      }
+      const preview = this.resolveShippingRefundPreview(
+        order,
+        finalType,
+        selectedAfterSalesType === 'exchange' ? selectedExchangeReason : selectedReason,
+        applyQty,
+        goodsAmount
+      );
+      // 买家责任整单：原运费内扣，最多可退与默认金额均为净额
+      const deduction = preview.shippingRefundTipType === 'deduct'
+        ? Math.round((Number(preview.shippingDeductionAmount) || 0) * 100) / 100
+        : 0;
+      // 最多可退按"当前选择数量"封顶（goodsAmount 已取 单价×applyQty 与补差金额池的较小值），
+      // 不能直接用 goodsMaxRefundAmount（那是全部可申请数量的金额池，部分件数申请时会虚高）
+      const effectiveMax = Math.round(Math.max(0, goodsAmount - deduction) * 100) / 100;
+      const netAmount = Math.round(Math.max(0, goodsAmount - deduction) * 100) / 100;
+      // 与 initStep3Data 保持一致：整数不补小数位，非整数保留两位，避免 28 / 28.00 混用
+      const amountText = Number.isInteger(netAmount) ? netAmount.toString() : netAmount.toFixed(2);
+
+      // 补差提示随净额上限联动
+      const refundedMap = order.refundedAmountMap || {};
+      const refundedAmount = Number(
+        refundedMap[selectedProductIndex] ?? refundedMap[String(selectedProductIndex)] ?? 0
+      ) || 0;
+      const partialRefundTip = refundedAmount > 0
+        ? `该商品已退款 ¥${refundedAmount}，本次最多可退 ¥${effectiveMax}`
+        : '';
+
+      this.setData({
+        maxRefundAmount: effectiveMax,
+        refundAmount: amountText,
+        partialRefundTip,
+        shippingRefundAmount: preview.shippingRefundAmount,
+        shippingDeductionAmount: preview.shippingDeductionAmount,
+        shippingRefundTip: preview.shippingRefundTip,
+        shippingRefundTipType: preview.shippingRefundTipType,
+        returnShippingCompensationAmount: preview.returnShippingCompensationAmount,
+        returnShippingCompensationTip: preview.returnShippingCompensationTip
+      });
     }
-    const preview = this.resolveShippingRefundPreview(order, finalType, selectedReason, applyQty, goodsRefundAmount);
-    this.setData({
-      shippingRefundAmount: preview.shippingRefundAmount,
-      shippingDeductionAmount: preview.shippingDeductionAmount,
-      shippingRefundTip: preview.shippingRefundTip,
-      shippingRefundTipType: preview.shippingRefundTipType
-    });
   },
 
   // 设置换货原因

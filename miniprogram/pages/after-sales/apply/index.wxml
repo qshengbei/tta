@@ -177,6 +177,7 @@
         </view>
         <view wx:if="{{partialRefundTip}}" class="amount-section__partial-tip">{{partialRefundTip}}</view>
         <view wx:if="{{shippingRefundTip}}" class="amount-section__shipping-tip amount-section__shipping-tip--{{shippingRefundTipType}}">{{shippingRefundTip}}</view>
+        <view wx:if="{{returnShippingCompensationTip}}" class="amount-section__shipping-tip amount-section__shipping-tip--compensate">{{returnShippingCompensationTip}}</view>
       </view>
 
       <view class="contact-section">

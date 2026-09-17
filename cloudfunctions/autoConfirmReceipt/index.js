@@ -896,6 +896,61 @@ async function processAutoConfirmReturnReceived(buyerReceivingCases, now, autoCo
           });
           logPromises.push(logPromise);
 
+          // 换货新货自动确认收货：卖家承担的寄回运费补偿随换货完成打款（与手动确认同口径，幂等防重）
+          if (String(latestItem.returnGoodsType || caseItem.returnGoodsType || '') === 'new'
+            && !latestItem.returnCompensationRefundCreated) {
+            const rawComp = latestItem.approvedReturnShippingCompensationAmount;
+            const compensationAmount = Math.round(((
+              rawComp === undefined || rawComp === null || rawComp === ''
+                ? (Number(latestItem.applyReturnShippingCompensationAmount || caseItem.applyReturnShippingCompensationAmount) || 0)
+                : (Number(rawComp) || 0)
+            ) * 100) / 100);
+            if (compensationAmount > 0) {
+              try {
+                const existedRes = await db.collection('refund_records')
+                  .where({ caseId: afterSalesCase._id })
+                  .limit(50)
+                  .get();
+                const duplicated = (existedRes.data || []).some((r) =>
+                  Number(r.amount) === compensationAmount
+                  && String(r.reason || '').includes('寄回运费补偿'));
+                if (!duplicated) {
+                  // 与 updateOrderStatus 手动确认同口径：补传 outTradeNo，缺失时 refund 云函数自行回查订单
+                  let outTradeNo = '';
+                  try {
+                    const orderRes = await db.collection('orders').doc(afterSalesCase.orderId).get();
+                    outTradeNo = orderRes.data?.outTradeNo || orderRes.data?.tradeNo || '';
+                  } catch (orderErr) {
+                    console.error('查询订单 outTradeNo 失败（交由 refund 云函数兜底）:', orderErr);
+                  }
+                  const refundRes = await cloud.callFunction({
+                    name: 'refund',
+                    data: {
+                      action: 'create',
+                      orderId: afterSalesCase.orderId,
+                      caseId: afterSalesCase._id,
+                      amount: compensationAmount,
+                      outTradeNo,
+                      reason: '寄回运费补偿（换货自动确认，运费补偿）'
+                    }
+                  });
+                  if (refundRes.result?.success) {
+                    await db.collection('after_sales_case_items').doc(caseItem._id).update({
+                      data: {
+                        returnCompensationRefundCreated: true,
+                        returnCompensationRefundCreatedAt: now
+                      }
+                    });
+                    console.log(`换货自动确认寄回运费补偿打款已创建: ${caseItem._id}，金额 ${compensationAmount}`);
+                  }
+                }
+              } catch (compErr) {
+                // 不阻断自动确认主流程；本周期未打款成功时，下周期由 refund_records 幂等查重兜底
+                console.error('换货自动确认寄回运费补偿打款失败:', caseItem._id, compErr);
+              }
+            }
+          }
+
         } catch (itemError) {
           failedCount += 1;
           console.error('寄回自动确认失败（明细）:', caseItem._id, itemError);

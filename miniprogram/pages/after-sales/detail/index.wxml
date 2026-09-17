@@ -48,9 +48,13 @@
           <text class="info-item__label">商品金额：</text>
           <text class="info-item__value">¥{{afterSales.totalItemAmount}}</text>
         </view>
-        <view class="info-item">
+        <view wx:if="{{!afterSales.isExchange}}" class="info-item">
           <text class="info-item__label">退款金额：</text>
           <text class="info-item__value info-item__value--price">¥{{afterSales.refundAmount}}</text>
+        </view>
+        <view wx:if="{{afterSales.returnShippingCompensationAmount > 0}}" class="info-item">
+          <text class="info-item__label">{{afterSales.returnShippingCompensationPending ? '寄回运费补偿（预计）' : '寄回运费补偿'}}：</text>
+          <text class="info-item__value info-item__value--price">¥{{afterSales.returnShippingCompensationAmount}}</text>
         </view>
         <view class="info-item">
           <text class="info-item__label">申请件数：</text>

@@ -707,6 +707,9 @@
             <view wx:if="{{shippingRefundTip}}" class="after-sales-form__shipping-tip after-sales-form__shipping-tip--{{shippingRefundTipType}}">{{shippingRefundTip}}</view>
           </view>
 
+          <!-- 寄回运费补偿提示（卖家责任退货/换货，换货无退款金额区故放金额区外） -->
+          <view wx:if="{{returnShippingCompensationTip}}" class="after-sales-form__shipping-tip after-sales-form__shipping-tip--compensate">{{returnShippingCompensationTip}}</view>
+
           <!-- 凭证/说明（非换货类型时显示） -->
           <view wx:if="{{selectedAfterSalesType !== 'exchange' && needProof && (afterSalesImages.length > 0 || afterSalesDescription)}}" class="after-sales-form__upload-info" bindtap="viewUploadInfo">
             <view class="after-sales-form__upload-info-row">

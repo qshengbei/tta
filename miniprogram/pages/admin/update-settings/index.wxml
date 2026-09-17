@@ -48,6 +48,14 @@
             <text class="setting-unit">天</text>
           </view>
         </view>
+
+        <view class="service-time-field">
+          <text class="service-time-field__label">寄回运费补偿兜底额</text>
+          <view class="setting-input-group">
+            <input class="setting-input" type="digit" value="{{settings.returnShippingCompensationAmount}}" bindinput="inputReturnShippingCompensation" placeholder="订单无运费信息时的默认补偿额" />
+            <text class="setting-unit">元</text>
+          </view>
+        </view>
       </view>
 
       <button class="save-item-button" bindtap="saveServiceTimeConfig" loading="{{saving.serviceTimeConfig}}">保存售后配置</button>

@@ -46,9 +46,13 @@
           <text class="info-item__label">商品金额：</text>
           <text class="info-item__value">¥{{afterSales.totalItemAmount}}</text>
         </view>
-        <view class="info-item">
+        <view wx:if="{{!afterSales.isExchange}}" class="info-item">
           <text class="info-item__label">退款金额：</text>
           <text class="info-item__value info-item__value--price">¥{{afterSales.refundAmount}}</text>
+        </view>
+        <view wx:if="{{afterSales.returnShippingCompensationAmount > 0}}" class="info-item">
+          <text class="info-item__label">{{afterSales.returnShippingCompensationApproved ? '寄回运费补偿：' : '寄回运费补偿（待审核）：'}}</text>
+          <text class="info-item__value info-item__value--price">¥{{afterSales.returnShippingCompensationAmount}}</text>
         </view>
         <view class="info-item">
           <text class="info-item__label">申请件数：</text>
@@ -301,6 +305,34 @@
     </view>
   </view>
   
+  <!-- 寄回运费补偿调整弹窗（同意卖家责任退货/换货时） -->
+  <view class="intercept-modal-mask" wx:if="{{showCompensationModal}}" bindtap="cancelCompensationModal">
+    <view class="intercept-modal compensation-modal" catchtap="preventModalClose">
+      <view class="intercept-modal__header">
+        <text class="intercept-modal__title">寄回运费补偿</text>
+        <text class="intercept-modal__close" bindtap="cancelCompensationModal">✕</text>
+      </view>
+      <view class="intercept-modal__body">
+        <text class="intercept-modal__desc">该售后由卖家承担寄回运费，申请建议补偿 ¥{{compensationSuggestAmount}}，可在 0~1000 元内调整（每单只补一次）</text>
+        <view class="compensation-modal__field">
+          <text class="compensation-modal__field-label">补偿金额</text>
+          <view class="compensation-modal__input-wrap">
+            <text class="compensation-modal__symbol">¥</text>
+            <input class="compensation-modal__input" type="digit" value="{{compensationInputAmount}}" bindinput="onCompensationAmountInput" placeholder="请输入补偿金额" />
+          </view>
+        </view>
+        <view class="compensation-modal__field">
+          <text class="compensation-modal__field-label">处理意见（选填）</text>
+          <textarea class="compensation-modal__textarea" placeholder="请输入处理意见" value="{{compensationOpinion}}" bindinput="onCompensationOpinionInput" maxlength="200" />
+        </view>
+        <view class="compensation-modal__buttons">
+          <button class="compensation-modal-btn compensation-modal-btn--default" bindtap="cancelCompensationModal">取消</button>
+          <button class="compensation-modal-btn compensation-modal-btn--primary" bindtap="confirmCompensationModal" loading="{{processing}}">确认并同意</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- 验货不通过弹窗 -->
   <view class="intercept-modal-mask" wx:if="{{showInspectFailModal}}" bindtap="hideInspectFailModal">
     <view class="intercept-modal inspect-fail-modal" catchtap="preventModalClose">

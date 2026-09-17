@@ -650,6 +650,77 @@
   box-sizing: border-box;
 }
 
+/* 寄回运费补偿调整弹窗 */
+.compensation-modal__field {
+  margin-top: 24rpx;
+}
+
+.compensation-modal__field-label {
+  display: block;
+  margin-bottom: 12rpx;
+  font-size: 26rpx;
+  color: #333;
+}
+
+.compensation-modal__input-wrap {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background-color: #f9f9f9;
+  border-radius: 16rpx;
+}
+
+.compensation-modal__symbol {
+  margin-right: 8rpx;
+  font-size: 32rpx;
+  color: #333;
+}
+
+.compensation-modal__input {
+  flex: 1;
+  font-size: 32rpx;
+  color: #333;
+}
+
+.compensation-modal__textarea {
+  width: 100%;
+  height: 160rpx;
+  padding: 24rpx;
+  background-color: #f9f9f9;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+.compensation-modal__buttons {
+  display: flex;
+  gap: 24rpx;
+  margin-top: 32rpx;
+}
+
+.compensation-modal-btn {
+  flex: 1;
+  padding: 20rpx 0;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.compensation-modal-btn::after {
+  border: none;
+}
+
+.compensation-modal-btn--default {
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.compensation-modal-btn--primary {
+  background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%);
+  color: #fff;
+}
+
 .inspect-fail__upload-section {
   margin-top: 32rpx;
 }
