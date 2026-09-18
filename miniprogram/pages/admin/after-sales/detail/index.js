@@ -510,7 +510,13 @@ Page({
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
       applyReturnShippingCompensationAmount: Math.round((Number(item.applyReturnShippingCompensationAmount) || 0) * 100) / 100,
-      approvedReturnShippingCompensationAmount: (item.approvedReturnShippingCompensationAmount === undefined || item.approvedReturnShippingCompensationAmount === null || item.approvedReturnShippingCompensationAmount === '')
+      // 待审核（submitted）明细的初始核准额为 0，语义等同"未核准"需映射为 null，
+      // 否则同意时不会弹出补偿调整弹窗（handleApprove 依据 === null 判定）；
+      // 已审核明细商家调为 0 是有效核准值，保持 0
+      approvedReturnShippingCompensationAmount: (status === 'submitted'
+        || item.approvedReturnShippingCompensationAmount === undefined
+        || item.approvedReturnShippingCompensationAmount === null
+        || item.approvedReturnShippingCompensationAmount === '')
         ? null
         : Math.round((Number(item.approvedReturnShippingCompensationAmount) || 0) * 100) / 100,
       statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),

@@ -6,6 +6,21 @@ const db = wx.cloud.database();
 const _ = db.command;
 const EXPIRED_CHECK_COOLDOWN_MS = 15000;
 
+// 清洗金额输入：只保留数字和一个小数点，小数最多两位（允许输入过程中以小数点结尾）
+function sanitizeAmountInput(raw) {
+  let v = String(raw).replace(/[^\d.]/g, '');
+  const dotIndex = v.indexOf('.');
+  if (dotIndex !== -1) {
+    v = v.slice(0, dotIndex + 1) + v.slice(dotIndex + 1).replace(/\./g, '');
+  }
+  return v.replace(/^(\d*\.\d{2})\d+$/, '$1');
+}
+
+// 严格校验金额格式：数字、最多两位小数（提交时使用；允许 "84." 这类输入中状态用宽松正则另行处理）
+function isValidAmountText(value) {
+  return /^\d+(\.\d{1,2})?$/.test(String(value == null ? '' : value).trim());
+}
+
 Page({
   data: {
     order: null,
@@ -2161,7 +2176,8 @@ Page({
       
       // 检查退款金额（仅退款或未收到货退款时）
       if (selectedAfterSalesType === 'refund' || selectedAfterSalesType === 'not_received_refund') {
-        if (!refundAmount || parseFloat(refundAmount) <= 0) {
+        // 必须是合法数字金额（输入中状态允许以小数点结尾，如 "84."），非法符号（如 "84..."）不可提交
+        if (!refundAmount || !/^\d+(\.\d{0,2})?$/.test(String(refundAmount).trim()) || parseFloat(refundAmount) <= 0) {
           canSubmit = false;
         }
         // 检查退款金额不超过最大可退金额
@@ -3326,8 +3342,18 @@ Page({
   // 退款金额输入
   onRefundAmountInput(e) {
     let value = e.detail.value;
+    // 仅允许数字和一个小数点、最多两位小数；parseFloat("84...")===84 会放过非法符号，必须先清洗
+    const sanitized = sanitizeAmountInput(value);
+    if (sanitized !== String(value)) {
+      value = sanitized;
+      wx.showToast({
+        title: '仅支持输入数字金额，最多两位小数',
+        icon: 'none',
+        duration: 2000
+      });
+    }
     const maxAmount = this.data.maxRefundAmount;
-    
+
     // 验证输入的金额不超过最大可退金额
     if (value && parseFloat(value) > parseFloat(maxAmount)) {
       value = maxAmount.toString();
@@ -3574,15 +3600,15 @@ Page({
   
   // 提交售后申请（步骤3点击提交申请时使用）
   async submitAfterSalesApply() {
-    const { 
-      selectedAfterSalesType, 
-      pendingOrderId, 
-      selectedProductIndex, 
-      selectedRefundType, 
-      selectedGoodsStatus, 
-      selectedReason, 
-      selectedReasonLabel, 
-      selectedExchangeReason, 
+    const {
+      selectedAfterSalesType,
+      pendingOrderId,
+      selectedProductIndex,
+      selectedRefundType,
+      selectedGoodsStatus,
+      selectedReason,
+      selectedReasonLabel,
+      selectedExchangeReason,
       selectedExchangeReasonLabel,
       refundAmount,
       contactName,
@@ -3593,6 +3619,14 @@ Page({
       afterSalesDescription,
       order
     } = this.data;
+
+    // 提交前最终校验金额：必须是合法正数金额（数字、最多两位小数），防止 "84..." 等非法输入绕过
+    if (selectedAfterSalesType === 'refund' || selectedAfterSalesType === 'not_received_refund') {
+      if (!isValidAmountText(refundAmount) || Number(refundAmount) <= 0) {
+        wx.showToast({ title: '请填写正确的退款金额', icon: 'none' });
+        return;
+      }
+    }
 
     // 未收到货退款的规则（整单退款金额、拦截/拒签处理）已在申请表单页面内统一提示，
     // 此处不再二次弹窗，直接提交

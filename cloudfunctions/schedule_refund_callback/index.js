@@ -63,6 +63,28 @@ function calcCompletedRefundAmount(items) {
     .reduce((sum, item) => sum + (Number(item.approvedRefundAmount || 0) || 0), 0));
 }
 
+// 有效售后明细中已承诺/已生效的运费扣减（买家责任整单退的包邮差额；运费整单只扣一次）
+// 该扣减已内扣在商品退款额中（净额口径），属于买家已承担、已结算的金额
+function calcCommittedShippingDeduction(items) {
+  return roundAmount((Array.isArray(items) ? items : []).reduce((sum, item) => {
+    const status = String(item?.itemStatus || '');
+    if (status === 'cancelled' || status === 'rejected') {
+      return sum;
+    }
+    const approved = Number(item?.approvedShippingDeductionAmount || 0) || 0;
+    const applied = Number(item?.applyShippingDeductionAmount || 0) || 0;
+    return sum + (approved > 0 ? approved : applied);
+  }, 0));
+}
+
+// 已完成明细中已 settled 的运费扣减（仅 completed 明细计入已到账口径）
+function calcCompletedShippingDeduction(items) {
+  return roundAmount((Array.isArray(items) ? items : [])
+    .filter((item) => !['cancelled', 'rejected'].includes(String(item?.itemStatus || ''))
+      && String(item?.itemStatus || '') === 'completed')
+    .reduce((sum, item) => sum + (Number(item?.approvedShippingDeductionAmount || 0) || 0), 0));
+}
+
 function calcOrderTotalQty(orderProducts) {
   return (orderProducts && orderProducts.length ? orderProducts : []).reduce(
     (sum, p) => sum + (Number(p.quantity || p.buyQty || p.count || 0) || 0), 0);
@@ -144,13 +166,17 @@ function buildAfterSalesResult(caseItems, orderProducts) {
     .reduce((sum, item) => sum + (Number(item.applyQty || 0) || 0), 0);
 
   // 金额口径：可退总额、承诺/到账金额（跨代累计，支持部分退款后补差）
+  // 买家责任整单退款承担的原运费扣减（包邮差额）也属于已结算金额，计入覆盖判定，
+  // 否则净额（可退已内扣运费）会比商品总额少一个运费，被误判为"部分退款"
   const totalPayableAmount = calcOrderProductsPayable(orderProducts);
   const committedRefundAmount = calcCommittedRefundAmount(validItems);
   const completedRefundAmount = calcCompletedRefundAmount(validItems);
+  const settledCommittedDeduction = calcCommittedShippingDeduction(validItems);
+  const settledCompletedDeduction = calcCompletedShippingDeduction(validItems);
   const isRefundAmountFullyCovered = totalPayableAmount > 0
-    && committedRefundAmount >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
+    && committedRefundAmount + settledCommittedDeduction >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
   const isRefundAmountFullyCompleted = totalPayableAmount > 0
-    && completedRefundAmount >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
+    && completedRefundAmount + settledCompletedDeduction >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
 
   if (exchangeCount > 0 && refundCount === 0) {
     return '换货完成';
@@ -253,10 +279,12 @@ function buildOrderUpdateForAfterSales(order, allOrderCaseItems, now) {
       EXCHANGE_TYPES.includes(String(item.afterSalesType || '')));
     // 退款金额跨代累计（第1代部分退款+第2代补差），不能只算最高代明细
     const totalApprovedAmount = calcCompletedRefundAmount(validItems);
+    // 买家责任整单退款承担的原运费已内扣在商品退款额中，属于已结算金额，需计入退满判定
     const totalPayableAmount = calcOrderProductsPayable(order.products);
+    const settledDeduction = calcCompletedShippingDeduction(validItems);
     const isFullyRefunded = totalApprovedAmount > 0
       && totalPayableAmount > 0
-      && totalApprovedAmount >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
+      && totalApprovedAmount + settledDeduction >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
     // 换货/零退款 → completed；纯退款且金额退满 → refund_completed；
     // 纯退款但金额未退满（单件部分金额退款）→ 恢复原状态，剩余金额仍可补差
     if (hasExchangeAfterSales || totalApprovedAmount <= 0) {

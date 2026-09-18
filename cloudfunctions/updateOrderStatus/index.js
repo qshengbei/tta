@@ -692,6 +692,7 @@ function calcCompletedShippingDeduction(items) {
 }
 
 // 售后单实际退款金额汇总（商品退款 + 发货运费退款 − 发货运费扣减 + 寄回运费补偿）；completed 件才计入已到账
+// 仅用于实际打款总额计算；展示用的"退款金额"请用 calcCaseApprovedRefundAmount（不含寄回补偿，避免与补偿行重复）
 function calcCaseApprovedTotalAmount(caseItems) {
   return roundAmount((Array.isArray(caseItems) ? caseItems : []).reduce((sum, item) =>
     sum + (Number(item?.approvedRefundAmount || 0) || 0)
@@ -707,6 +708,23 @@ function calcCaseRefundedTotalAmount(caseItems) {
       + (Number(item?.approvedShippingRefundAmount || 0) || 0)
       - getItemEffectiveShippingDeduction(item)
       + getItemApprovedReturnShippingCompensation(item), 0));
+}
+
+// 售后单"退款金额"展示口径：商品退款 + 发货运费退款 − 发货运费扣减（不含寄回运费补偿）。
+// 寄回补偿在详情页独立成行（案件字段 approvedReturnShippingCompensationAmount），不能计入本行，否则视觉重复。
+function calcCaseApprovedRefundAmount(caseItems) {
+  return roundAmount((Array.isArray(caseItems) ? caseItems : []).reduce((sum, item) =>
+    sum + (Number(item?.approvedRefundAmount || 0) || 0)
+    + (Number(item?.approvedShippingRefundAmount || 0) || 0)
+    - getItemEffectiveShippingDeduction(item), 0));
+}
+function calcCaseRefundedRefundAmount(caseItems) {
+  return roundAmount((Array.isArray(caseItems) ? caseItems : [])
+    .filter((item) => String(item?.itemStatus || '') === 'completed')
+    .reduce((sum, item) =>
+      sum + (Number(item?.approvedRefundAmount || 0) || 0)
+      + (Number(item?.approvedShippingRefundAmount || 0) || 0)
+      - getItemEffectiveShippingDeduction(item), 0));
 }
 
 // 返回订单维度的售后占用信息（按 orderItemId 分商品行聚合）：
@@ -1368,10 +1386,13 @@ function buildOrderUpdateForAfterSales(order, allOrderCaseItems, now) {
     // 纯退款且商品金额已全部退满 → 退款完成；
     // 换货/无退款金额（验货不通过寄回原货）→ 已完成；
     // 纯退款但金额未退满（单件部分金额退款）→ 恢复原状态，剩余金额仍可申请补差
+    // 买家责任整单退款承担的原运费（包邮差额）已在商品退款额中内扣，属于已结算金额，
+    // 不计入则 84(退款) < 90(商品额) 会被误判为"金额未退满"，整单退款完成后退回原订单状态
     const totalPayableAmount = calcOrderProductsPayable(order.products);
+    const settledDeduction = calcCompletedShippingDeduction(validItems);
     const isFullyRefunded = totalApprovedAmount > 0
       && totalPayableAmount > 0
-      && totalApprovedAmount >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
+      && totalApprovedAmount + settledDeduction >= totalPayableAmount - REFUND_AMOUNT_TOLERANCE;
     if (hasExchangeAfterSales || totalApprovedAmount <= 0) {
       updateData.status = 'completed';
     } else if (isFullyRefunded) {
@@ -1414,9 +1435,10 @@ async function refreshAfterSalesAggregation(order, caseDoc, now, resultText) {
   console.log('计算出的售后单状态:', caseStatus);
   console.log('售后明细数量:', caseItems.length);
   console.log('售后明细详情:', caseItems.map(i => ({ id: i._id, orderItemIndex: i.orderItemIndex, approvedRefundAmount: i.approvedRefundAmount, itemStatus: i.itemStatus })));
-  const approvedAmount = calcCaseApprovedTotalAmount(caseItems);
+  // 展示口径：退款金额不含寄回运费补偿（补偿在详情页独立成行；打款总额另由明细级公式计算）
+  const approvedAmount = calcCaseApprovedRefundAmount(caseItems);
   console.log('计算出的approvedAmount:', approvedAmount);
-  const refundedAmount = calcCaseRefundedTotalAmount(caseItems);
+  const refundedAmount = calcCaseRefundedRefundAmount(caseItems);
 
   // 计算订单状态信息（使用订单的所有售后明细）
   const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, allOrderCaseItems, order.products);
@@ -2892,8 +2914,9 @@ async function handleApplyAfterSalesOperation(order, params) {
       shippingDeductionNetted: applyShippingDeductionAmount > 0,
       // 本次申请建议的寄回运费补偿（卖家责任退货/换货，商家审核时可调整）
       applyReturnShippingCompensationAmount,
-      // 已核准寄回运费补偿（审核通过后写入，默认=建议额）
-      approvedReturnShippingCompensationAmount: 0,
+      // 已核准寄回运费补偿：未审核时为 null（详情页据此回退显示申请建议额"预计补偿"）；
+      // 审核通过后写入核准值（商家调整为 0 也落 0），不能用 0 作为初始值，否则待处理阶段补偿行被误判为已核准0而隐藏
+      approvedReturnShippingCompensationAmount: null,
       itemCount: normalizedItems.length,
       // 二次售后时关联的原换货案件ID列表
       relatedCaseIds,
@@ -3134,7 +3157,15 @@ async function handleProcessAfterSalesOperation(order, params) {
       itemStatus = 'approved';
       approvedQty = Number(caseItem.applyQty || 0) || 0;
       rejectedQty = 0;
-      approvedRefundAmount = Number(caseItem.approvedRefundAmount || 0) || 0;
+      // 同意即锁定应退金额：历史已核准沿用，否则回退申请额（与验货/完成环节同口径）。
+      // 否则同意后商品退款核准额仍为0，案件聚合只剩寄回补偿，详情页"退款金额"会错误地只显示补偿额。
+      approvedRefundAmount = Number(caseItem.approvedRefundAmount || 0) || (Number(caseItem.applyRefundAmount || 0) || 0);
+      approvedShippingRefundAmount = approvedShippingRefundAmount > 0
+        ? approvedShippingRefundAmount
+        : applyShippingRefundAmountOfItem;
+      approvedShippingDeductionAmount = approvedShippingDeductionAmount > 0
+        ? approvedShippingDeductionAmount
+        : applyShippingDeductionAmountOfItem;
       // 寄回运费补偿：仅申请建议额>0（卖家责任退货/换货）时可核准，商家可调整，默认=建议额，可调低至0
       if (applyReturnShippingCompensationAmountOfItem > 0) {
         const rawCompParam = params?.approvedReturnShippingCompensationAmount;
@@ -3334,9 +3365,10 @@ async function handleProcessAfterSalesOperation(order, params) {
 
       // 计算售后案件状态和金额
       const caseStatus = calcCaseStatusFromItems(caseItems);
-      const approvedAmount = calcCaseApprovedTotalAmount(caseItems);
-      const refundedAmount = calcCaseRefundedTotalAmount(caseItems);
-      // 寄回运费补偿（案件级，独立字段供详情页展示构成；approvedAmount 已含该金额）
+      // 展示口径"退款金额"=商品退款+发货运费退款−扣减，不含寄回运费补偿（补偿在详情页独立成行）
+      const approvedAmount = calcCaseApprovedRefundAmount(caseItems);
+      const refundedAmount = calcCaseRefundedRefundAmount(caseItems);
+      // 寄回运费补偿（案件级，独立字段供详情页展示构成；与 approvedAmount 相互独立）
       const caseReturnCompensationAmount = calcCaseReturnShippingCompensation(caseItems);
 
       // 计算订单状态信息
@@ -3882,8 +3914,9 @@ async function handleStartInterceptingOperation(order, params) {
     const allOrderCaseItems = allOrderCaseItemsRes.data || [];
 
     const caseStatus = calcCaseStatusFromItems(caseItems);
-    const approvedAmount = calcCaseApprovedTotalAmount(caseItems);
-    const refundedAmount = calcCaseRefundedTotalAmount(caseItems);
+    // 展示口径：退款金额不含寄回运费补偿（拦截场景本身也无寄回补偿）
+    const approvedAmount = calcCaseApprovedRefundAmount(caseItems);
+    const refundedAmount = calcCaseRefundedRefundAmount(caseItems);
 
     const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, allOrderCaseItems, order.products);
 
@@ -4130,8 +4163,10 @@ async function handleCompleteInterceptingOperation(order, params) {
     const allOrderCaseItems = allOrderCaseItemsRes.data || [];
 
     const caseStatus = calcCaseStatusFromItems(caseItems);
+    // 打款总额（含寄回补偿，用于创建退款记录）；展示口径 approvedDisplayAmount 不含补偿
     const approvedAmount = calcCaseApprovedTotalAmount(caseItems);
-    const refundedAmount = calcCaseRefundedTotalAmount(caseItems);
+    const approvedDisplayAmount = calcCaseApprovedRefundAmount(caseItems);
+    const refundedAmount = calcCaseRefundedRefundAmount(caseItems);
 
     const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, allOrderCaseItems, order.products);
 
@@ -4185,7 +4220,7 @@ async function handleCompleteInterceptingOperation(order, params) {
         caseStatus,
         refundSummary: {
           requestedAmount: Number(activeCase?.refundSummary?.requestedAmount || activeCase.totalApplyAmount || 0) || 0,
-          approvedAmount,
+          approvedAmount: approvedDisplayAmount,
           refundedAmount
         },
         totalApplyQty,
@@ -4426,8 +4461,10 @@ async function handleApproveRefusedDeliveryOperation(order, params) {
     const allOrderCaseItems = allOrderCaseItemsRes.data || [];
 
     const caseStatus = calcCaseStatusFromItems(caseItems);
+    // 打款总额（含寄回补偿，用于创建退款记录）；展示口径 approvedDisplayAmount 不含补偿
     const approvedAmount = calcCaseApprovedTotalAmount(caseItems);
-    const refundedAmount = calcCaseRefundedTotalAmount(caseItems);
+    const approvedDisplayAmount = calcCaseApprovedRefundAmount(caseItems);
+    const refundedAmount = calcCaseRefundedRefundAmount(caseItems);
 
     const orderStatusInfo = mapCaseStatusToOrderStatus(caseStatus, order.status, allOrderCaseItems, order.products);
 
@@ -4459,7 +4496,7 @@ async function handleApproveRefusedDeliveryOperation(order, params) {
         caseStatus,
         refundSummary: {
           requestedAmount: Number(activeCase?.refundSummary?.requestedAmount || activeCase.totalApplyAmount || 0) || 0,
-          approvedAmount,
+          approvedAmount: approvedDisplayAmount,
           refundedAmount
         },
         totalApplyQty,

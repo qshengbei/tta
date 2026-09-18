@@ -1031,6 +1031,8 @@
 
 /* 部分退款补差提示 */
 .after-sales-form__partial-tip {
+  flex: 0 0 100%;
+  box-sizing: border-box;
   margin: 12rpx 0 0;
   padding: 12rpx 20rpx;
   background: #fff7e6;
@@ -1041,6 +1043,8 @@
 }
 
 .after-sales-form__shipping-tip {
+  flex: 0 0 100%;
+  box-sizing: border-box;
   margin: 12rpx 0 0;
   padding: 12rpx 20rpx;
   border-radius: 8rpx;
@@ -1667,6 +1671,7 @@
 /* 退款金额 */
 .after-sales-form__amount {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 20rpx 0;

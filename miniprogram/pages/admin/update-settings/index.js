@@ -77,6 +77,12 @@ Page({
       normalAfterSalesDays: 7, // 常规售后天数
       qualityAfterSalesDays: 15, // 质量售后天数
       returnShippingCompensationAmount: 10, // 寄回运费补偿兜底额（元）：正常订单按本单寄出规则运费补偿；订单无运费信息时用此值，0=不补偿
+      shippingFeeRules: [
+        { key: 'buyer_partial', label: '买家原因·部分退货', deductOutbound: false, compensateReturn: false },
+        { key: 'seller_partial', label: '卖家原因·部分退货', deductOutbound: false, compensateReturn: true },
+        { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: true, compensateReturn: false },
+        { key: 'seller_whole', label: '卖家原因·整单退货', deductOutbound: false, compensateReturn: true }
+      ], // 运费承担规则（4 个场景：买家/卖家原因 × 部分/整单退货）
       customerServiceMethod: 'official', // 客服方法：official=官方客服，custom=自定义客服
       wechatId: '', // 微信号
       wechatPicture: '', // 微信二维码图片
@@ -204,6 +210,27 @@ Page({
             afterSalesTimeConfig.returnShippingCompensationAmount ?? settings.returnShippingCompensationAmount ?? 10
           );
           return Number.isFinite(raw) && raw >= 0 ? Math.round(raw * 100) / 100 : 10;
+        })();
+        // 运费承担规则（4 个场景；缺省回落与后端 DEFAULT_SHIPPING_FEE_RULES 一致）
+        settings.shippingFeeRules = (() => {
+          const DEFAULTS = [
+            { key: 'buyer_partial', label: '买家原因·部分退货', deductOutbound: false, compensateReturn: false },
+            { key: 'seller_partial', label: '卖家原因·部分退货', deductOutbound: false, compensateReturn: true },
+            { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: true, compensateReturn: false },
+            { key: 'seller_whole', label: '卖家原因·整单退货', deductOutbound: false, compensateReturn: true }
+          ];
+          const rawRules = Array.isArray(afterSalesTimeConfig.shippingFeeRules)
+            ? afterSalesTimeConfig.shippingFeeRules
+            : (Array.isArray(settings.shippingFeeRules) ? settings.shippingFeeRules : []);
+          return DEFAULTS.map((def) => {
+            const found = rawRules.find((r) => r && r.key === def.key);
+            return {
+              key: def.key,
+              label: def.label,
+              deductOutbound: found && typeof found.deductOutbound === 'boolean' ? found.deductOutbound : def.deductOutbound,
+              compensateReturn: found && typeof found.compensateReturn === 'boolean' ? found.compensateReturn : def.compensateReturn
+            };
+          });
         })();
         
         // 确保 customerServiceMethod 字段存在，默认值为 'official'
@@ -868,6 +895,23 @@ Page({
   },
 
   /**
+   * 切换运费承担规则开关（4 个场景 × 2 字段）
+   */
+  toggleShippingFeeRule(e) {
+    const index = Number(e.currentTarget.dataset.index);
+    const field = e.currentTarget.dataset.field;
+    if (!Number.isInteger(index) || index < 0 || index >= (this.data.settings.shippingFeeRules || []).length) {
+      return;
+    }
+    if (field !== 'deductOutbound' && field !== 'compensateReturn') {
+      return;
+    }
+    this.setData({
+      [`settings.shippingFeeRules[${index}].${field}`]: !!e.detail.value
+    });
+  },
+
+  /**
    * 保存售后时效配置
    */
   async saveServiceTimeConfig() {
@@ -918,6 +962,13 @@ Page({
       return;
     }
 
+    // 运费承担规则：仅保留后端认可的字段（key/deductOutbound/compensateReturn），label 不入库
+    const shippingFeeRules = (this.data.settings.shippingFeeRules || []).map((r) => ({
+      key: r.key,
+      deductOutbound: !!r.deductOutbound,
+      compensateReturn: !!r.compensateReturn
+    }));
+
     this.setData({ 'saving.serviceTimeConfig': true });
 
     try {
@@ -929,7 +980,8 @@ Page({
               autoConfirmReceiptDays,
               normalAfterSalesDays,
               qualityAfterSalesDays,
-              returnShippingCompensationAmount
+              returnShippingCompensationAmount,
+              shippingFeeRules
             }
           }
         }

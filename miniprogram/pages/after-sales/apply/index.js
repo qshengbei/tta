@@ -97,6 +97,21 @@ function getShippingResponsibilityText(value) {
   return value === 'buyer' ? '买家承担' : '商家承担';
 }
 
+// 清洗金额输入：只保留数字和一个小数点，小数最多两位（允许输入过程中以小数点结尾）
+function sanitizeAmountInput(raw) {
+  let v = String(raw).replace(/[^\d.]/g, '');
+  const dotIndex = v.indexOf('.');
+  if (dotIndex !== -1) {
+    v = v.slice(0, dotIndex + 1) + v.slice(dotIndex + 1).replace(/\./g, '');
+  }
+  return v.replace(/^(\d*\.\d{2})\d+$/, '$1');
+}
+
+// 严格校验金额格式：数字、最多两位小数、大于0（提交时使用）
+function isValidAmountText(value) {
+  return /^\d+(\.\d{1,2})?$/.test(String(value).trim());
+}
+
 Page({
   data: {
     order: {},
@@ -973,7 +988,13 @@ Page({
   },
 
   onRefundAmountInput(e) {
-    const value = parseFloat(e.detail.value) || 0;
+    // 仅允许数字和一个小数点、最多两位小数；parseFloat("84...")===84 会放过非法符号，必须先清洗
+    const raw = String(e.detail.value || '');
+    const sanitized = sanitizeAmountInput(raw);
+    if (sanitized !== raw) {
+      wx.showToast({ title: '仅支持输入数字金额，最多两位小数', icon: 'none' });
+    }
+    const value = parseFloat(sanitized) || 0;
     const max = this.data.maxRefundAmount;
     const finalValue = Math.min(max, Math.max(0.01, value));
     const patch = { refundAmount: Math.round(finalValue * 100) / 100 };
@@ -1033,8 +1054,8 @@ Page({
       return;
     }
 
-    if (refundAmount <= 0) {
-      wx.showToast({ title: '请填写退款金额', icon: 'none' });
+    if (!isValidAmountText(refundAmount) || Number(refundAmount) <= 0) {
+      wx.showToast({ title: '请填写正确的退款金额', icon: 'none' });
       return;
     }
 
