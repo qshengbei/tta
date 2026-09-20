@@ -359,6 +359,24 @@
   color: #000;
 }
 
+.order-detail__amount-fee {
+  display: flex;
+  align-items: center;
+}
+
+/* 包邮时原运费划线价 */
+.order-detail__amount-value--original {
+  font-size: 22rpx;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 12rpx;
+}
+
+/* 包邮标识 */
+.order-detail__amount-value--free {
+  color: #e34c4c;
+}
+
 /* 地址操作按钮 */
 .address-actions {
   display: flex;
