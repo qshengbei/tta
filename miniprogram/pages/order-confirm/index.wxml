@@ -1,3 +1,4 @@
+<wxs module="orderStatus" src="../../utils/orderStatus.wxs"></wxs>
 <view class="page-root">
   <view wx:if="{{loading}}" class="loading">
     <view class="loading__spinner"></view>
@@ -39,7 +40,10 @@
         <!-- 快递配送信息 -->
         <view wx:if="{{deliveryType === 'express' && address}}" class="express-delivery-info">
           <view class="express-delivery-info__fee">
-            <text class="express-delivery-info__fee-text">运费：¥{{deliveryFee || 0.00}}</text>
+            <text class="express-delivery-info__fee-text">运费：</text>
+            <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="express-delivery-info__fee-original">¥{{orderStatus.formatMoney(originalDeliveryFee)}}</text>
+            <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="express-delivery-info__fee-tag">包邮</text>
+            <text class="express-delivery-info__fee-text {{deliveryFee === 0 && originalDeliveryFee > 0 ? 'express-delivery-info__fee-text--free' : ''}}">¥{{orderStatus.formatMoney(deliveryFee || 0)}}</text>
             <text wx:if="{{deliveryFee === 0}}" class="express-delivery-info__free-shipping"> 已满足包邮条件</text>
             <text wx:else class="express-delivery-info__free-shipping"> 满{{freeShippingThreshold || 40}}元包邮</text>
             <view class="express-delivery-info__rules" bindtap="showExpressRules">运费规则</view>
@@ -220,7 +224,11 @@
         </view>
         <view wx:if="{{!isOutOfRange && address && deliveryType === 'express'}}" class="order-info__row">
           <text class="order-info__label">运费</text>
-          <text class="order-info__value">¥{{deliveryFee || 0.00}}</text>
+          <view class="order-info__fee">
+            <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="order-info__fee-original">¥{{orderStatus.formatMoney(originalDeliveryFee)}}</text>
+            <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="order-info__fee-tag">包邮</text>
+            <text class="order-info__value {{deliveryFee === 0 && originalDeliveryFee > 0 ? 'order-info__value--free' : ''}}">¥{{orderStatus.formatMoney(deliveryFee || 0)}}</text>
+          </view>
         </view>
         <view class="order-info__row order-info__row--total">
           <text class="order-info__label order-info__label--total">合计</text>

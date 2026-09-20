@@ -242,7 +242,18 @@
       </view>
       <view wx:if="{{order.deliveryType !== 'pickup'}}" class="order-detail__amount-item">
         <text class="order-detail__amount-label">{{order.deliveryType === 'local' ? '配送费：' : '运费：'}}</text>
-        <text class="order-detail__amount-value">{{order.deliveryType === 'local' ? (order.totalPrice > order.productTotalAmount ? '¥' + (order.totalPrice - order.productTotalAmount) : '免配送费') : (order.totalPrice > order.productTotalAmount ? '¥' + (order.totalPrice - order.productTotalAmount) : '已包邮')}}</text>
+        <view wx:if="{{order.deliveryType === 'local'}}" class="order-detail__amount-fee">
+          <text class="order-detail__amount-value">{{order.totalPrice > order.productTotalAmount ? '¥' + orderStatus.formatMoney(order.totalPrice - order.productTotalAmount) : '免配送费'}}</text>
+        </view>
+        <view wx:else class="order-detail__amount-fee">
+          <block wx:if="{{order.totalPrice > order.productTotalAmount}}">
+            <text class="order-detail__amount-value">¥{{orderStatus.formatMoney(order.totalPrice - order.productTotalAmount)}}</text>
+          </block>
+          <block wx:else>
+            <text wx:if="{{order.originalShippingFeeAmount > 0}}" class="order-detail__amount-value--original">¥{{orderStatus.formatMoney(order.originalShippingFeeAmount)}}</text>
+            <text class="order-detail__amount-value order-detail__amount-value--free">已包邮</text>
+          </block>
+        </view>
       </view>
       <view class="order-detail__amount-item">
         <text class="order-detail__amount-label">实付金额：</text>

@@ -113,7 +113,20 @@ function getOrderStatusColorVar(status, statusText) {
   return 'var(--order-status-default)';
 }
 
+/**
+ * 金额格式化：保留两位小数（用于运费、原价划线价等展示）
+ * 注意：WXS 不支持 Number() 转换，需用 parseFloat（ES5 全局函数）
+ * @param {number|string} n - 金额
+ * @returns {string} - 形如 "8.00"
+ */
+function formatMoney(n) {
+  var v = parseFloat(n);
+  if (isNaN(v)) v = 0;
+  return v.toFixed(2);
+}
+
 module.exports = {
   getOrderStatusColor: getOrderStatusColor,
-  getOrderStatusColorVar: getOrderStatusColorVar
+  getOrderStatusColorVar: getOrderStatusColorVar,
+  formatMoney: formatMoney
 };

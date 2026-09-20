@@ -877,6 +877,35 @@
   color: #000;
 }
 
+.order-info__fee {
+  display: flex;
+  align-items: center;
+}
+
+/* 包邮时原运费划线价 */
+.order-info__fee-original {
+  font-size: 22rpx;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 8rpx;
+}
+
+/* 包邮标识 */
+.order-info__fee-tag {
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: #fff;
+  background-color: #e34c4c;
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  margin-right: 8rpx;
+}
+
+/* 包邮时实付运费 0 元 */
+.order-info__value--free {
+  color: #e34c4c;
+}
+
 /* 底部操作栏 */
 .bottom-bar {
   position: fixed;
@@ -985,6 +1014,30 @@
   cursor: pointer;
   margin-left: 16rpx;
   white-space: nowrap;
+}
+
+/* 包邮时原运费划线价 */
+.express-delivery-info__fee-original {
+  font-size: 22rpx;
+  color: #999;
+  text-decoration: line-through;
+  margin-right: 8rpx;
+}
+
+/* 包邮标识 */
+.express-delivery-info__fee-tag {
+  font-size: 20rpx;
+  line-height: 1.4;
+  color: #fff;
+  background-color: #e34c4c;
+  border-radius: 6rpx;
+  padding: 2rpx 10rpx;
+  margin-right: 8rpx;
+}
+
+/* 包邮时实付运费 0 元 */
+.express-delivery-info__fee-text--free {
+  color: #e34c4c;
 }
 
 /* 快递计算规则弹窗 */
