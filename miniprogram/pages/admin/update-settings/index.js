@@ -80,9 +80,9 @@ Page({
       shippingFeeRules: [
         { key: 'buyer_partial', label: '买家原因·部分退货', deductOutbound: false, compensateReturn: false },
         { key: 'seller_partial', label: '卖家原因·部分退货', deductOutbound: false, compensateReturn: true },
-        { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: true, compensateReturn: false },
+        { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: false, compensateReturn: false },
         { key: 'seller_whole', label: '卖家原因·整单退货', deductOutbound: false, compensateReturn: true }
-      ], // 运费承担规则（4 个场景：买家/卖家原因 × 部分/整单退货）
+      ], // 运费承担规则（4 个场景；deductOutbound 已停用——发货运费永不倒扣，仅 compensateReturn 寄回补偿生效）
       customerServiceMethod: 'official', // 客服方法：official=官方客服，custom=自定义客服
       wechatId: '', // 微信号
       wechatPicture: '', // 微信二维码图片
@@ -216,7 +216,7 @@ Page({
           const DEFAULTS = [
             { key: 'buyer_partial', label: '买家原因·部分退货', deductOutbound: false, compensateReturn: false },
             { key: 'seller_partial', label: '卖家原因·部分退货', deductOutbound: false, compensateReturn: true },
-            { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: true, compensateReturn: false },
+            { key: 'buyer_whole', label: '买家原因·整单退货', deductOutbound: false, compensateReturn: false },
             { key: 'seller_whole', label: '卖家原因·整单退货', deductOutbound: false, compensateReturn: true }
           ];
           const rawRules = Array.isArray(afterSalesTimeConfig.shippingFeeRules)
@@ -227,7 +227,8 @@ Page({
             return {
               key: def.key,
               label: def.label,
-              deductOutbound: found && typeof found.deductOutbound === 'boolean' ? found.deductOutbound : def.deductOutbound,
+              // 新运费政策：发货运费永不倒扣，历史配置中的 deductOutbound 一律作废
+              deductOutbound: false,
               compensateReturn: found && typeof found.compensateReturn === 'boolean' ? found.compensateReturn : def.compensateReturn
             };
           });
@@ -895,7 +896,7 @@ Page({
   },
 
   /**
-   * 切换运费承担规则开关（4 个场景 × 2 字段）
+   * 切换运费承担规则开关（4 个场景；当前仅"补偿寄回运费"可切换）
    */
   toggleShippingFeeRule(e) {
     const index = Number(e.currentTarget.dataset.index);
@@ -903,7 +904,7 @@ Page({
     if (!Number.isInteger(index) || index < 0 || index >= (this.data.settings.shippingFeeRules || []).length) {
       return;
     }
-    if (field !== 'deductOutbound' && field !== 'compensateReturn') {
+    if (field !== 'compensateReturn') {
       return;
     }
     this.setData({
@@ -962,10 +963,11 @@ Page({
       return;
     }
 
-    // 运费承担规则：仅保留后端认可的字段（key/deductOutbound/compensateReturn），label 不入库
+    // 运费承担规则：仅保留后端认可的字段（key/deductOutbound/compensateReturn），label 不入库。
+    // deductOutbound 按新运费政策已停用（发货运费永不倒扣），恒存 false
     const shippingFeeRules = (this.data.settings.shippingFeeRules || []).map((r) => ({
       key: r.key,
-      deductOutbound: !!r.deductOutbound,
+      deductOutbound: false,
       compensateReturn: !!r.compensateReturn
     }));
 

@@ -147,7 +147,7 @@
         <view class="modal__close" bindtap="closeReasonModal">×</view>
       </view>
       <view class="modal__body">
-        <view wx:for="{{EXCHANGE_REASONS}}" wx:key="value" class="modal__item" bindtap="selectReason" data-reason="{{JSON.stringify(item)}}">
+        <view wx:for="{{displayReasons}}" wx:key="value" class="modal__item" bindtap="selectReason" data-reason="{{JSON.stringify(item)}}">
           <text class="modal__item-name">{{item.label}}</text>
           <view class="modal__item-check">✓</view>
         </view>

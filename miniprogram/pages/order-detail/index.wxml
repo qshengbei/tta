@@ -660,12 +660,12 @@
             <text class="after-sales-form__quantity-hint">{{applyQtyHint}}</text>
           </view>
 
-          <!-- 退款原因 -->
+          <!-- 退款原因（仅退款无需寄回、不涉及运费，仅退货退款展示运费责任提示） -->
           <view wx:if="{{selectedAfterSalesType === 'refund'}}" class="after-sales-form__reason-item">
             <text class="after-sales-form__type-label">退款原因</text>
             <view class="after-sales-form__reason-right">
               <text class="after-sales-form__type-value">{{selectedReasonLabel}}</text>
-              <text class="after-sales-form__reason-hint">{{shippingResponsibility === 'seller' ? '若此原因属实，运费由卖家承担' : '此原因，运费由买家承担'}}</text>
+              <text wx:if="{{selectedRefundType === 'return_refund'}}" class="after-sales-form__reason-hint">{{shippingResponsibility === 'seller' ? '若此原因属实，运费由卖家承担' : '此原因，运费由买家承担'}}</text>
             </view>
           </view>
           <view wx:elif="{{selectedAfterSalesType === 'exchange'}}" class="after-sales-form__type-item">
@@ -714,7 +714,7 @@
             </view>
             <!-- 部分退款补差提示 -->
             <view wx:if="{{partialRefundTip}}" class="after-sales-form__partial-tip">{{partialRefundTip}}</view>
-            <!-- 运费提示：include=运费随本次退款；exclude=运费不退；deduct=扣除原运费（包邮差额） -->
+            <!-- 运费提示：include=实付运费随本次退款；exclude=实付运费不在退款范围 -->
             <view wx:if="{{shippingRefundTip}}" class="after-sales-form__shipping-tip after-sales-form__shipping-tip--{{shippingRefundTipType}}">{{shippingRefundTip}}</view>
           </view>
 

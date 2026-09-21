@@ -43,8 +43,8 @@
             <text class="express-delivery-info__fee-text">运费：</text>
             <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="express-delivery-info__fee-original">¥{{orderStatus.formatMoney(originalDeliveryFee)}}</text>
             <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="express-delivery-info__fee-tag">包邮</text>
-            <text class="express-delivery-info__fee-text {{deliveryFee === 0 && originalDeliveryFee > 0 ? 'express-delivery-info__fee-text--free' : ''}}">¥{{orderStatus.formatMoney(deliveryFee || 0)}}</text>
-            <text wx:if="{{deliveryFee === 0}}" class="express-delivery-info__free-shipping"> 已满足包邮条件</text>
+            <text wx:if="{{deliveryFee > 0}}" class="express-delivery-info__fee-text">¥{{orderStatus.formatMoney(deliveryFee)}}</text>
+            <text wx:if="{{deliveryFee === 0}}" class="express-delivery-info__free-shipping"> 已满{{freeShippingThreshold || 40}}元包邮</text>
             <text wx:else class="express-delivery-info__free-shipping"> 满{{freeShippingThreshold || 40}}元包邮</text>
             <view class="express-delivery-info__rules" bindtap="showExpressRules">运费规则</view>
           </view>
@@ -227,7 +227,8 @@
           <view class="order-info__fee">
             <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="order-info__fee-original">¥{{orderStatus.formatMoney(originalDeliveryFee)}}</text>
             <text wx:if="{{deliveryFee === 0 && originalDeliveryFee > 0}}" class="order-info__fee-tag">包邮</text>
-            <text class="order-info__value {{deliveryFee === 0 && originalDeliveryFee > 0 ? 'order-info__value--free' : ''}}">¥{{orderStatus.formatMoney(deliveryFee || 0)}}</text>
+            <text wx:if="{{deliveryFee === 0 && originalDeliveryFee <= 0}}" class="order-info__value order-info__value--free">包邮</text>
+            <text wx:if="{{deliveryFee > 0}}" class="order-info__value">¥{{orderStatus.formatMoney(deliveryFee)}}</text>
           </view>
         </view>
         <view class="order-info__row order-info__row--total">

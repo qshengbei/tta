@@ -87,7 +87,8 @@
     </view>
 
     <view wx:if="{{reason}}" class="meta-info">
-      <view class="meta-info__row">
+      <!-- 仅退款无需寄回、不涉及运费，运费归属仅退货退款时展示 -->
+      <view wx:if="{{refundType === 'return_refund'}}" class="meta-info__row">
         <text class="meta-info__label">运费归属</text>
         <text class="meta-info__value">{{shippingResponsibility === 'buyer' ? '买家承担' : '商家承担'}}</text>
       </view>

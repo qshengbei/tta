@@ -20,6 +20,7 @@
     </view>
     
     <view class="return-tracking__tips">系统将根据单号自动识别快递公司，如需修改可手动选择</view>
+    <view class="return-tracking__tips">卖家责任退货的寄回运费补偿以实际运单号为准：同一订单内同一运单号仅补偿一次，多笔售后如分开寄回请分别填写各自单号</view>
     
     <view wx:if="{{detectStatus}}" class="return-tracking__detect-status return-tracking__detect-status--{{detectStatus}}">
       <text class="return-tracking__detect-icon">{{detectStatus === 'success' ? '✓' : '!'}}</text>

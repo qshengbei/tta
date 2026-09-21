@@ -350,6 +350,8 @@ Page({
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       returnShippingCompensationAmount: Math.round(returnShippingCompensationAmount * 100) / 100,
+      // 运单号与同订单其他售后单重复时，寄回运费补偿被自动取消（改填不重复的新单号可恢复）
+      returnCompensationDedup: record.returnCompensationDedup || null,
       // 商家尚未审核时展示"预计"；审核/验货后金额已确定
       returnShippingCompensationPending: status === 'submitted',
       reason: record.applyReasonText || '',
@@ -372,7 +374,10 @@ Page({
       itemCount: Number(record.itemCount || 0) || 0,
       totalApplyQty: Number(record.totalApplyQty || 0) || 0,
       reasonCode: record.applyReasonCode || record.reasonCode || '',
-      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode)),
+      // 运费归属仅涉及寄回的售后（退货退款/换货）需要展示；仅退款（含未收到货退款）不涉及寄回与运费责任
+      shippingResponsibilityText: ['return_refund', 'quality_refund', 'quality_return_refund', 'exchange', 'quality_exchange'].includes(type)
+        ? getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode))
+        : '',
       returnTrackingNumber: record.returnLogisticsInfo?.trackingNumber || '',
       returnCompanyCode: record.returnLogisticsInfo?.companyCode || '',
       returnCompanyName: record.returnLogisticsInfo?.companyName || '',
@@ -1262,6 +1267,8 @@ Page({
           'refused_delivery_approved': '买家拒签，同意退款',
           'submit_return_tracking': '填写退货单号',
           'modify_return_tracking': '修改退货单号',
+          'return_compensation_dedup': '取消寄回运费补偿',
+          'return_compensation_restore': '恢复寄回运费补偿',
           'confirm_receipt_refund': '确认收货',
           'confirm_receipt_exchange': '确认收货',
           'inspect_pass_refund': '验货通过',

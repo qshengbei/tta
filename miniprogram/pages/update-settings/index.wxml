@@ -64,17 +64,13 @@
               <view class="shipping-fee-rule-label">{{item.label}}</view>
               <view class="shipping-fee-rule-switches">
                 <view class="shipping-fee-rule-switch">
-                  <text class="shipping-fee-rule-switch-label">扣除寄出运费</text>
-                  <switch checked="{{item.deductOutbound}}" bindchange="toggleShippingFeeRule" data-index="{{index}}" data-field="deductOutbound" />
-                </view>
-                <view class="shipping-fee-rule-switch">
                   <text class="shipping-fee-rule-switch-label">补偿寄回运费</text>
                   <switch checked="{{item.compensateReturn}}" bindchange="toggleShippingFeeRule" data-index="{{index}}" data-field="compensateReturn" />
                 </view>
               </view>
             </view>
           </view>
-          <text class="service-time-field__hint">扣除寄出运费：买家承担商家寄出运费差额（包邮订单的原运费），从商品退款中扣减；补偿寄回运费：商家补偿买家寄回快递费（按本单寄出规则运费，封顶1000元）</text>
+          <text class="service-time-field__hint">补偿寄回运费：商家责任退货/换货时，补偿买家寄回快递费（按本单寄出规则运费，封顶1000元）。发货运费不因任何售后从退款中倒扣：包邮为商家促销承诺，买家责任退货时实付运费不退、包邮差额不补收（与主流电商口径一致）</text>
         </view>
       </view>
 

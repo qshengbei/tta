@@ -1080,18 +1080,6 @@
   color: #999;
 }
 
-/* 买家责任整单退：扣除原运费（包邮差额，已内扣到最多可退） */
-.after-sales-form__shipping-tip--deduct {
-  background: #fff7e6;
-  color: #fa8c16;
-}
-
-/* 不涉及运费扣减的说明性提示（包邮且无运费资金进出） */
-.after-sales-form__shipping-tip--none {
-  background: #e6f7ff;
-  color: #1890ff;
-}
-
 /* 寄回运费补偿（卖家责任退货/换货，固定额，利好提示） */
 .after-sales-form__shipping-tip--compensate {
   margin: 12rpx 0 0;
