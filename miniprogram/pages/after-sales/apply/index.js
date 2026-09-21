@@ -487,11 +487,17 @@ Page({
             const type = String(item.afterSalesType || '');
             const approved = Number(item.approvedRefundAmount || 0) || 0;
             const applied = Number(item.applyRefundAmount || 0) || 0;
-            committedAmount += approved > 0 ? approved : applied;
-            if (status === 'completed') {
-              refundedAmount += approved;
+            // 换货不发生商品退款，形式上的申请金额不占用退款金额池（与后端同口径）
+            const isExchangeItem = ['exchange', 'quality_exchange'].includes(type);
+            if (!isExchangeItem) {
+              committedAmount += approved > 0 ? approved : applied;
+              if (status === 'completed') {
+                refundedAmount += approved;
+              }
+            }
+            if (status === 'completed' && !isExchangeItem) {
               // 退货退款少退的差额：份额金额 − 核准额（货已寄回，不可再申请）
-              if (!refundOnlyTypes.includes(type) && !['exchange', 'quality_exchange'].includes(type)) {
+              if (!refundOnlyTypes.includes(type)) {
                 const qty = Number(item.applyQty || 0) || 0;
                 const unitPrice = Number(item.unitPriceSnapshot || 0) || 0;
                 let share = 0;

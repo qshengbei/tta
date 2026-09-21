@@ -308,6 +308,13 @@ exports.main = async (event, context) => {
   console.log('=== 定时任务：处理待退款记录 ===')
   
   try {
+    // 步骤0：退款链路对账自愈。
+    // 正常链路是"审核事务提交 → 事务外创建 refund_records → 本任务扫描打款"。
+    // 若事务提交成功但退款记录创建缺失（如云函数调用失败、历史代码用事务前快照
+    // 计算金额导致应退为 0），案件会停在 pending_refund 而本任务只扫 refund_records，
+    // 形成永久卡死的孤儿案件。这里按案件兜底补建，使其重新进入打款队列。
+    const reconcile = await reconcilePendingRefundCases()
+
     const pendingRefunds = await db.collection('refund_records')
       .where({
         status: 'pending'
@@ -381,12 +388,13 @@ exports.main = async (event, context) => {
     }
 
     console.log(`=== 定时任务完成 ===`)
-    console.log(`成功: ${successCount}, 失败: ${failCount}`)
+    console.log(`对账补建: ${reconcile.rebuilt}/${reconcile.scanned}，成功: ${successCount}, 失败: ${failCount}`)
     
     return {
       success: true,
-      message: `定时任务完成，成功 ${successCount} 条，失败 ${failCount} 条`,
+      message: `定时任务完成，对账补建 ${reconcile.rebuilt} 条，成功 ${successCount} 条，失败 ${failCount} 条`,
       processedCount: records.length,
+      reconciledCount: reconcile.rebuilt,
       successCount,
       failCount
     }
@@ -402,7 +410,7 @@ exports.main = async (event, context) => {
 
 async function updateAfterSalesAndOrderStatus(refundRecord) {
   console.log(`更新售后单和订单状态: caseId=${refundRecord.caseId}, orderId=${refundRecord.orderId}`)
-  
+
   if (!refundRecord.caseId) {
     console.log('没有 caseId，跳过更新')
     return
@@ -487,5 +495,84 @@ async function updateAfterSalesAndOrderStatus(refundRecord) {
   } catch (error) {
     console.error('更新售后单和订单状态失败:', error)
   }
+}
+
+/**
+ * 退款链路对账自愈：
+ * 找出 caseStatus=pending_refund 但 refund_records 中无活跃记录（pending/processing/success）
+ * 的孤儿案件，按明细核准口径重算应退金额并补建退款记录。
+ * 幂等：存在任一活跃记录即跳过；failed 记录不阻塞补建。
+ */
+async function reconcilePendingRefundCases() {
+  const caseRes = await db.collection('after_sales_cases')
+    .where({ caseStatus: 'pending_refund' })
+    .limit(20)
+    .get()
+  const cases = caseRes.data || []
+  console.log(`[对账] 待退款案件 ${cases.length} 个，开始核对退款记录`)
+
+  let rebuilt = 0
+  for (const caseDoc of cases) {
+    try {
+      const [itemsRes, recordsRes, orderRes] = await Promise.all([
+        db.collection('after_sales_case_items').where({ caseId: caseDoc._id }).limit(100).get(),
+        db.collection('refund_records').where({
+          caseId: caseDoc._id,
+          status: db.command.in(['pending', 'processing', 'success'])
+        }).limit(1).get(),
+        db.collection('orders').doc(caseDoc.orderId).get().catch(() => ({ data: null }))
+      ])
+
+      // 已有活跃退款记录：正在排队/打款/已到账，无需补建
+      if ((recordsRes.data || []).length > 0) {
+        continue
+      }
+
+      // 应退金额口径与 updateOrderStatus 审核通过时一致：
+      // 商品退款 + 应退发货运费 − 应扣发货运费（净额口径免扣）+ 寄回运费补偿
+      const validItems = (itemsRes.data || []).filter(item =>
+        !['cancelled', 'rejected'].includes(String(item.itemStatus || '')))
+      const amount = roundAmount(validItems.reduce((sum, item) => {
+        const deductionNetted = !!item.shippingDeductionNetted
+        return sum
+          + (Number(item.approvedRefundAmount || 0) || 0)
+          + (Number(item.approvedShippingRefundAmount || 0) || 0)
+          - (deductionNetted ? 0 : (Number(item.approvedShippingDeductionAmount || 0) || 0))
+          + (Number(item.approvedReturnShippingCompensationAmount || 0) || 0)
+      }, 0))
+
+      if (!(amount > 0)) {
+        console.warn(`[对账] 案件 ${caseDoc._id} 应退金额为 0，跳过（明细数 ${validItems.length}）`)
+        continue
+      }
+
+      // 统一走 refund 云函数补建，保证落库结构与正常审核入口一致，下一轮即可被扫描打款
+      const order = orderRes.data
+      const createRes = await cloud.callFunction({
+        name: 'refund',
+        data: {
+          action: 'create',
+          orderId: caseDoc.orderId,
+          caseId: caseDoc._id,
+          amount,
+          outTradeNo: order?.outTradeNo || order?.tradeNo || '',
+          reason: '系统对账补建：售后审核通过待退款'
+        }
+      })
+
+      if (!createRes.result?.success) {
+        console.error(`[对账] 补建失败 案件 ${caseDoc._id}:`, createRes.result?.error)
+        continue
+      }
+
+      rebuilt++
+      console.log(`[对账] 已补建退款记录：案件 ${caseDoc._id}，金额 ${amount}`)
+    } catch (err) {
+      console.error(`[对账] 处理异常 案件 ${caseDoc._id}:`, err)
+    }
+  }
+
+  console.log(`[对账] 完成，补建 ${rebuilt}/${cases.length}`)
+  return { scanned: cases.length, rebuilt }
 }
 

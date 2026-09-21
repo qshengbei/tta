@@ -310,40 +310,75 @@
     </view>
 
     <!-- 订单操作日志 -->
-    <view wx:if="{{operationLogs.length > 0}}" class="order-detail__section">
+    <view wx:if="{{operationLogEntries.length > 0}}" class="order-detail__section">
       <text class="order-detail__section-title">操作记录</text>
       <view class="operation-logs">
-        <view wx:for="{{operationLogs}}" wx:key="_id" wx:if="{{!item._hidden || expandedCases[item._caseId]}}" class="operation-log-item">
-          <view class="operation-log-item__line"></view>
-          <view class="operation-log-item__dot"></view>
-          <view class="operation-log-item__content">
-            <view class="operation-log-item__header">
-              <text class="operation-log-item__action">{{item.actionText}}</text>
-              <text wx:if="{{item.afterSalesSeqLabel}}" class="operation-log-item__seq-tag">{{item.afterSalesSeqLabel}}</text>
-              <text class="operation-log-item__operator">{{item.operatorText}}</text>
-            </view>
-            <!-- 售后相关日志显示商品信息（申请售后/完成退款/完成换货/售后完成） -->
-            <view wx:if="{{item.itemSummaries && item.itemSummaries.length > 0}}" class="operation-log-item__items">
-              <view wx:for="{{item.itemSummaries}}" wx:for-item="prod" wx:key="index" class="operation-log-item__item">
-                <text class="operation-log-item__item-name">{{prod.productName}}</text>
-                <text wx:if="{{prod.skuName}}" class="operation-log-item__item-sku">{{prod.skuName}}</text>
-                <text wx:if="{{prod.afterSalesTypeName}}" class="operation-log-item__item-type">{{prod.afterSalesTypeName}}</text>
-                <text class="operation-log-item__item-qty">x{{prod.applyQty}}</text>
+        <view wx:for="{{operationLogEntries}}" wx:key="key" class="operation-log-entry">
+          <view class="operation-log-item">
+            <view class="operation-log-item__line"></view>
+            <view class="operation-log-item__dot"></view>
+            <view class="operation-log-item__content">
+              <view class="operation-log-item__header">
+                <text class="operation-log-item__action">{{item.logs[0].actionText}}</text>
+                <text wx:if="{{item.seqLabel}}" class="operation-log-item__seq-tag">{{item.seqLabel}}</text>
+                <text class="operation-log-item__operator">{{item.logs[0].operatorText}}</text>
+              </view>
+              <!-- 售后相关日志显示商品信息（申请售后/完成退款/完成换货/售后完成） -->
+              <view wx:if="{{item.logs[0].itemSummaries && item.logs[0].itemSummaries.length > 0}}" class="operation-log-item__items">
+                <view wx:for="{{item.logs[0].itemSummaries}}" wx:for-item="prod" wx:key="index" class="operation-log-item__item">
+                  <text class="operation-log-item__item-name">{{prod.productName}}</text>
+                  <text wx:if="{{prod.skuName}}" class="operation-log-item__item-sku">{{prod.skuName}}</text>
+                  <text wx:if="{{prod.afterSalesTypeName}}" class="operation-log-item__item-type">{{prod.afterSalesTypeName}}</text>
+                  <text class="operation-log-item__item-qty">x{{prod.applyQty}}</text>
+                </view>
+              </view>
+              <view wx:if="{{item.logs[0].reason}}" class="operation-log-item__reason">
+                <text class="operation-log-item__reason-label">原因：</text>
+                <text class="operation-log-item__reason-value">{{item.logs[0].reason}}</text>
+              </view>
+              <view wx:if="{{item.logs[0].remark}}" class="operation-log-item__remark">
+                <text class="operation-log-item__remark-label">备注：</text>
+                <text class="operation-log-item__remark-value">{{item.logs[0].remark}}</text>
+              </view>
+              <text class="operation-log-item__time">{{item.logs[0].operatedAtText}}</text>
+              <!-- 同一售后单日志超过2条时，展开/收起更早的记录（嵌套在本条目内） -->
+              <view wx:if="{{item.expandable}}" class="operation-log-item__expand" bindtap="toggleCaseLogExpand" data-key="{{item.key}}">
+                <text>{{expandedCases[item.key] ? '收起' : '展开更早的记录 (' + (item.logs.length - 1) + '条)'}}</text>
               </view>
             </view>
-            <view wx:if="{{item.reason}}" class="operation-log-item__reason">
-              <text class="operation-log-item__reason-label">原因：</text>
-              <text class="operation-log-item__reason-value">{{item.reason}}</text>
-            </view>
-            <view wx:if="{{item.remark}}" class="operation-log-item__remark">
-              <text class="operation-log-item__remark-label">备注：</text>
-              <text class="operation-log-item__remark-value">{{item.remark}}</text>
-            </view>
-            <text class="operation-log-item__time">{{item.operatedAtText}}</text>
-            <!-- 同一售后单日志超过2条时，展开/收起更早的记录 -->
-            <view wx:if="{{item._showToggle}}" class="operation-log-item__expand" bindtap="toggleCaseLogExpand" data-case-id="{{item._caseId}}">
-              <text>{{expandedCases[item._caseId] ? '收起' : '展开更早的记录 (' + item._hiddenCount + '条)'}}</text>
-            </view>
+          </view>
+          <!-- 同一售后单更早的操作记录，嵌套展示，不会散落到时间轴其他位置 -->
+          <view wx:if="{{item.expandable && expandedCases[item.key]}}" class="operation-log-older">
+            <block wx:for="{{item.logs}}" wx:for-item="oldLog" wx:key="_id">
+              <view wx:if="{{index > 0}}" class="operation-log-item operation-log-item--older">
+                <view class="operation-log-item__line"></view>
+                <view class="operation-log-item__dot"></view>
+                <view class="operation-log-item__content">
+                  <view class="operation-log-item__header">
+                    <text class="operation-log-item__action">{{oldLog.actionText}}</text>
+                    <text wx:if="{{item.seqLabel}}" class="operation-log-item__seq-tag">{{item.seqLabel}}</text>
+                    <text class="operation-log-item__operator">{{oldLog.operatorText}}</text>
+                  </view>
+                  <view wx:if="{{oldLog.itemSummaries && oldLog.itemSummaries.length > 0}}" class="operation-log-item__items">
+                    <view wx:for="{{oldLog.itemSummaries}}" wx:for-item="prod" wx:key="index" class="operation-log-item__item">
+                      <text class="operation-log-item__item-name">{{prod.productName}}</text>
+                      <text wx:if="{{prod.skuName}}" class="operation-log-item__item-sku">{{prod.skuName}}</text>
+                      <text wx:if="{{prod.afterSalesTypeName}}" class="operation-log-item__item-type">{{prod.afterSalesTypeName}}</text>
+                      <text class="operation-log-item__item-qty">x{{prod.applyQty}}</text>
+                    </view>
+                  </view>
+                  <view wx:if="{{oldLog.reason}}" class="operation-log-item__reason">
+                    <text class="operation-log-item__reason-label">原因：</text>
+                    <text class="operation-log-item__reason-value">{{oldLog.reason}}</text>
+                  </view>
+                  <view wx:if="{{oldLog.remark}}" class="operation-log-item__remark">
+                    <text class="operation-log-item__remark-label">备注：</text>
+                    <text class="operation-log-item__remark-value">{{oldLog.remark}}</text>
+                  </view>
+                  <text class="operation-log-item__time">{{oldLog.operatedAtText}}</text>
+                </view>
+              </view>
+            </block>
           </view>
         </view>
       </view>

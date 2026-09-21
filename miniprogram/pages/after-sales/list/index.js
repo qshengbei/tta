@@ -25,7 +25,8 @@ const STATUS_TEXT_MAP = {
   pending: '待处理',
   approved: '已通过',
   seller_reviewing: '商家验货中',
-  seller_returning: '商家寄回中',
+  seller_returning: '待商家发新货',
+  buyer_receiving: '待买家收新货',
   intercepting: '拦截中',
   pending_refund: '待退款'
 };
@@ -43,6 +44,7 @@ const STATUS_CLASS_MAP = {
   approved: 'after-sales-item__status--approved',
   seller_reviewing: 'after-sales-item__status--pending',
   seller_returning: 'after-sales-item__status--processing',
+  buyer_receiving: 'after-sales-item__status--pending',
   intercepting: 'after-sales-item__status--pending',
   pending_refund: 'after-sales-item__status--approved'
 };
@@ -312,7 +314,7 @@ Page({
     console.log('=== fetchAfterSalesByOrderId ===');
     console.log('orderId:', orderId);
     console.log('currentProductIndex:', currentProductIndex);
-    
+
     // 先查询售后案件
     getCollection("after_sales_cases").where({
       orderId: orderId
