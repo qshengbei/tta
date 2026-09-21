@@ -1070,6 +1070,11 @@ function calcOrderProductsPayable(orderProducts) {
 
 // 单条明细当前承诺的退款金额：已核准取核准额，进行中尚无核准额时取申请额（防止两笔在途申请超额）
 function getItemCommittedRefundAmount(item) {
+  // 换货不产生商品退款（买家退回旧货、收到等值新货），其申请时形式上写入的
+  // applyRefundAmount 不得占用商品行退款金额池，否则换货新货二次退货时可退额会被算成 0
+  if (EXCHANGE_TYPES.includes(String(item?.afterSalesType || ''))) {
+    return 0;
+  }
   const approved = Number(item?.approvedRefundAmount || 0) || 0;
   if (approved > 0) {
     return roundAmount(approved);
@@ -2142,6 +2147,7 @@ exports.main = async (event, context) => {
                   .get();
                 // after_sales_case_items 表的商品名/sku 存放在 Snapshot 后缀字段中
                 updateResult.items = (caseItemsRes.data || []).map(item => ({
+                  orderItemIndex: item.orderItemIndex,
                   productName: item.productName || item.productNameSnapshot || '',
                   skuName: item.skuName || item.skuNameSnapshot || '',
                   applyQty: item.applyQty || 0,
@@ -2825,7 +2831,12 @@ async function handleApplyAfterSalesOperation(order, params) {
       });
     }
 
+    // 换货不发生商品退款，申请金额固定为 0（寄回运费补偿等独立计算挂在单独字段）；
+    // 退款类按前端传值或单价×数量计算
     let applyRefundAmount = roundAmount(selectedItem.applyRefundAmount ?? calculateItemRefundAmount(matchedOrderItem, applyQty));
+    if (EXCHANGE_TYPES.includes(afterSalesType)) {
+      applyRefundAmount = 0;
+    }
 
     return {
       ...matchedOrderItem,
@@ -3126,6 +3137,7 @@ async function handleApplyAfterSalesOperation(order, params) {
 
   // 构建商品信息摘要，用于日志记录
   const itemSummaries = normalizedItems.map(item => ({
+    orderItemIndex: item.index,
     productName: item.productName,
     skuName: item.skuName || '',
     applyQty: item.applyQty,
@@ -3539,8 +3551,10 @@ async function handleProcessAfterSalesOperation(order, params) {
       // 新口径（shippingDeductionNetted）：应扣运费已内扣在商品退款额（最多可退为净额），不再重复扣减；
       // 历史明细（无标记）：按原口径再扣一次
       const deductionNetted = !!caseItem.shippingDeductionNetted;
+      // 注意：商品退款必须用事务内核验后的局部变量 approvedRefundAmount，
+      // 不能用 caseItem.approvedRefundAmount（那是事务前快照，申请时初始为 0，会导致退款记录被静默跳过）
       const approvedAmount = roundAmount(
-        (Number(caseItem.approvedRefundAmount) || 0)
+        (Number(approvedRefundAmount) || 0)
         + (Number(approvedShippingRefundAmount) || 0)
         - (deductionNetted ? 0 : (Number(approvedShippingDeductionAmount) || 0))
         + (Number(approvedReturnShippingCompensationAmount) || 0)

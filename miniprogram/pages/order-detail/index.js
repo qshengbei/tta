@@ -97,7 +97,7 @@ Page({
     maxRefundAmount: 0, // 最大退款金额（商品口径全额，发货运费永不倒扣）
     goodsMaxRefundAmount: 0, // 商品口径最大可退（用于数量联动重算）
     needProof: false, // 是否需要上传凭证
-    operationLogs: [], // 订单操作日志
+    operationLogEntries: [], // 订单操作日志（售后单按 caseId 归集为条目）
     expandedCases: {}, // 已展开的售后单日志分组（caseId -> bool）
     goodsStatusOptions: [ // 货物状态选项
       { value: 'not_received', label: '未收到货' },
@@ -935,9 +935,12 @@ Page({
                   forfeitedAmount += Math.round((shareAmount - approvedAmount) * 100) / 100;
                 }
                 // 退款金额池：已核准取核准额，进行中尚无核准额取申请额
-                committedAmount += approvedAmount > 0 ? approvedAmount : applyAmount;
-                if (r.statusType === 'completed') {
-                  refundedAmount += approvedAmount;
+                // 换货不发生商品退款（形式上的申请金额不占用金额池，与后端 getItemCommittedRefundAmount 同口径）
+                if (!isExchange) {
+                  committedAmount += approvedAmount > 0 ? approvedAmount : applyAmount;
+                  if (r.statusType === 'completed') {
+                    refundedAmount += approvedAmount;
+                  }
                 }
                 // 订单级运费聚合：有效历史件数 / 是否含换货明细 / 已承诺运费退款
                 orderValidAfterSalesQty += consumed;
@@ -1184,8 +1187,12 @@ Page({
         // 退款到账后由 schedule_refund_callback 写订单级 complete_refund 日志
         .filter(log => !['start_intercepting', 'auto_start_intercepting', 'after_sales_pending_refund', 'auto_process_after_sales'].includes(log.action));
 
-      // 按 caseId 分组售后操作日志，每个 caseId 对应一次独立的售后申请；
-      // 同一 caseId 下的申请/取消/完成等操作共享同一序号，便于追踪某次售后的完整生命周期
+      // 售后操作日志归集规则：
+      // 1. 有 caseId 的日志（申请/取消/完成等）一律按 caseId 归为同一个售后单，
+      //    不依赖商品名/明细顺序，避免同一售后单被拆成多个"第1次"；
+      // 2. "第N次"按商品维度编号：同一商品被多个售后单覆盖时，各单按最早操作时间依次编号；
+      //    商品键取该售后单全部日志、全部明细的 orderItemIndex（新日志），历史无索引时退化为商品名；
+      // 3. 渲染以售后单为条目，更早的记录嵌套在同一块内展开，不会散落到时间轴其他位置。
       const afterSalesActions = ['apply_after_sales', 'cancel_after_sales', 'complete_refund', 'complete_exchange', 'complete_after_sales'];
       const getProductKey = log => {
         const items = (log.detail && log.detail.items) || [];
@@ -1219,38 +1226,18 @@ Page({
           }
         }
       });
-      // caseMap: caseKey -> { earliestTs, productKey, caseId }
-      const caseMap = {};
-      // productCaseKeys: productKey -> [caseKey]（去重）
-      const productCaseKeys = {};
-      filteredLogs.forEach(log => {
-        if (!afterSalesActions.includes(log.action)) return;
-        const productKey = getProductKey(log);
-        const caseId = (log.detail && log.detail.caseId) || null;
-        // caseKey 优先用 caseId；无 caseId 时用 productKey + 时间兜底，避免不同 case 被合并
-        const caseKey = caseId ? 'case_' + caseId : 'nocase_' + productKey + '_' + (log.operatedAtTs || '');
-        const ts = log.operatedAtTs || (log.operatedAt ? new Date(log.operatedAt).getTime() : 0);
-        if (!caseMap[caseKey]) caseMap[caseKey] = { earliestTs: ts, productKey, caseId };
-        if (ts < caseMap[caseKey].earliestTs) caseMap[caseKey].earliestTs = ts;
-        if (!productCaseKeys[productKey]) productCaseKeys[productKey] = [];
-        if (!productCaseKeys[productKey].includes(caseKey)) productCaseKeys[productKey].push(caseKey);
-      });
-      // 给每个 case 按商品内最早操作时间正序分配序号（第1次、第2次...）
-      const productCaseSeq = {}; // caseKey -> seq
-      Object.keys(productCaseKeys).forEach(productKey => {
-        const caseKeys = productCaseKeys[productKey];
-        caseKeys.sort((a, b) => caseMap[a].earliestTs - caseMap[b].earliestTs);
-        caseKeys.forEach((caseKey, idx) => { productCaseSeq[caseKey] = idx + 1; });
-      });
-      // 给每条售后日志打上序号（同 caseId 共享）
-      filteredLogs.forEach(log => {
-        if (!afterSalesActions.includes(log.action)) return;
-        const productKey = getProductKey(log);
-        const caseId = (log.detail && log.detail.caseId) || null;
-        const caseKey = caseId ? 'case_' + caseId : 'nocase_' + productKey + '_' + (log.operatedAtTs || '');
-        log._afterSalesSeq = productCaseSeq[caseKey] || 0;
-        log._afterSalesProductKey = productKey;
-      });
+
+      const getLogTs = log => log.operatedAtTs || (log.operatedAt ? new Date(log.operatedAt).getTime() : 0);
+      // 提取一条日志涉及的全部商品键（不能只取 items[0]，多商品售后单需整体归集）
+      const getLogProductKeys = log => {
+        const items = (log.detail && log.detail.items) || [];
+        return items.map(item => {
+          const idx = item.orderItemIndex;
+          return (idx === undefined || idx === null || idx === '')
+            ? `name_${item.productName || ''}`
+            : `idx_${idx}`;
+        }).filter(key => key !== 'name_');
+      };
 
       const logs = filteredLogs.map(log => {
         let actionText = '';
@@ -1321,12 +1308,11 @@ Page({
           }
         }
 
-        // 售后序号：同一商品存在多次售后申请时区分第几次（仅多条时才显示）
-        // 同一 caseId 下的所有操作（申请/取消/完成）共享同一序号
-        const afterSalesSeq = log._afterSalesSeq || 0;
-        const productKeyForCount = log._afterSalesProductKey || '';
-        const totalCasesForProduct = (productKeyForCount && productCaseKeys[productKeyForCount]) ? productCaseKeys[productKeyForCount].length : 0;
-        const showAfterSalesSeq = afterSalesSeq > 0 && totalCasesForProduct > 1;
+        // 售后单分组键：有 caseId 按 caseId 归集；无 caseId 的历史日志各自独立
+        const caseId = (log.detail && log.detail.caseId) || '';
+        log._groupKey = afterSalesActions.includes(log.action)
+          ? (caseId ? `case_${caseId}` : `nocase_${log._id}`)
+          : '';
 
         return {
           ...log,
@@ -1334,41 +1320,83 @@ Page({
           operatorText,
           operatedAtText,
           itemSummaries,
-          reason: cleanReason,
-          afterSalesSeqLabel: showAfterSalesSeq ? `第${afterSalesSeq}次` : ''
+          reason: cleanReason
         };
       });
 
-      // 同一售后单的操作记录超过1条就折叠，默认仅显示最新1条，点击可展开更早记录
-      const caseLogGroups = {};
+      // 按 caseId 聚合售后单：key -> { key, logs(desc), productKeys, earliestTs }
+      const caseGroupMap = {};
       logs.forEach(log => {
-        const caseId = log.detail && log.detail.caseId;
-        if (!caseId) return;
-        if (!caseLogGroups[caseId]) caseLogGroups[caseId] = [];
-        caseLogGroups[caseId].push(log);
-      });
-      Object.values(caseLogGroups).forEach(group => {
-        if (group.length <= 1) return;
-        group.forEach((log, idx) => {
-          log._caseId = group[0].detail.caseId;
-          log._hidden = idx >= 1; // 仅保留最新一条（idx=0）
-        });
-        group[0]._showToggle = true;
-        group[0]._hiddenCount = group.length - 1;
+        if (!log._groupKey) return;
+        const key = log._groupKey;
+        if (!caseGroupMap[key]) {
+          caseGroupMap[key] = { key, logs: [], productKeys: {}, earliestTs: getLogTs(log) };
+        }
+        const group = caseGroupMap[key];
+        group.logs.push(log);
+        const ts = getLogTs(log);
+        if (ts < group.earliestTs) group.earliestTs = ts;
+        getLogProductKeys(log).forEach(pk => { group.productKeys[pk] = true; });
       });
 
-      this.setData({ operationLogs: logs });
+      // 商品 -> 覆盖该商品的售后单列表，按最早操作时间正序编号（第1次、第2次...）
+      const productGroupKeys = {};
+      Object.keys(caseGroupMap).forEach(groupKey => {
+        Object.keys(caseGroupMap[groupKey].productKeys).forEach(pk => {
+          if (!productGroupKeys[pk]) productGroupKeys[pk] = [];
+          productGroupKeys[pk].push(groupKey);
+        });
+      });
+      Object.keys(productGroupKeys).forEach(pk => {
+        productGroupKeys[pk].sort((a, b) => caseGroupMap[a].earliestTs - caseGroupMap[b].earliestTs);
+      });
+
+      // 每个售后单的序号标签：涉及的商品中存在多次售后时才展示；多商品序号不同则拼接
+      Object.keys(caseGroupMap).forEach(groupKey => {
+        const group = caseGroupMap[groupKey];
+        const seqSet = {};
+        Object.keys(group.productKeys).forEach(pk => {
+          const groupKeys = productGroupKeys[pk] || [];
+          if (groupKeys.length > 1) {
+            seqSet[groupKeys.indexOf(groupKey) + 1] = true;
+          }
+        });
+        const seqs = Object.keys(seqSet).map(Number).sort((a, b) => a - b);
+        group.seqLabel = seqs.length > 0 ? `第${seqs.join('/')}次` : '';
+      });
+
+      // 组装渲染条目：日志本身按时间倒序，售后单组在其最新一条的位置整体占位，
+      // 组内更早的记录作为嵌套内容，展开时不会出现在时间轴的其他位置
+      const operationLogEntries = [];
+      const emittedGroupKeys = {};
+      logs.forEach(log => {
+        if (!log._groupKey) {
+          operationLogEntries.push({ key: `log_${log._id}`, logs: [log], seqLabel: '', expandable: false });
+          return;
+        }
+        if (emittedGroupKeys[log._groupKey]) return;
+        emittedGroupKeys[log._groupKey] = true;
+        const group = caseGroupMap[log._groupKey];
+        operationLogEntries.push({
+          key: group.key,
+          logs: group.logs, // 已按时间倒序，logs[0] 为最新一条
+          seqLabel: group.seqLabel,
+          expandable: group.logs.length > 1
+        });
+      });
+
+      this.setData({ operationLogEntries });
     } catch (error) {
       console.error('获取订单操作日志失败:', error);
-      this.setData({ operationLogs: [] });
+      this.setData({ operationLogEntries: [] });
     }
   },
 
   toggleCaseLogExpand(e) {
-    const caseId = e.currentTarget.dataset.caseId;
-    if (!caseId) return;
+    const groupKey = e.currentTarget.dataset.key;
+    if (!groupKey) return;
     this.setData({
-      [`expandedCases.${caseId}`]: !this.data.expandedCases[caseId]
+      [`expandedCases.${groupKey}`]: !this.data.expandedCases[groupKey]
     });
   },
 

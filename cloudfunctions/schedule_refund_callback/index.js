@@ -543,6 +543,7 @@ async function updateAfterSalesAndOrderStatus(refundRecord) {
             .get()
           refundItems = (caseItemsRes.data || []).map(item => ({
             // after_sales_case_items 表的商品名/sku 存放在 Snapshot 后缀字段中
+            orderItemIndex: item.orderItemIndex,
             productName: item.productName || item.productNameSnapshot || '',
             skuName: item.skuName || item.skuNameSnapshot || '',
             applyQty: item.applyQty || 0

@@ -2162,8 +2162,37 @@
   padding-bottom: 0;
 }
 
-.operation-log-item:last-child .operation-log-item__line {
+/* 嵌套归集后，连接线只需在整个时间轴最后一个条目（含其展开的嵌套记录）收尾 */
+.operation-log-entry:last-child .operation-log-item:last-child .operation-log-item__line {
   display: none;
+}
+
+/* 同一售后单更早的记录：缩进的分支时间轴，视觉上从属于主条目 */
+.operation-log-older {
+  margin: -8rpx 0 0 0;
+  padding-left: 52rpx;
+}
+
+.operation-log-item--older {
+  padding-bottom: 24rpx;
+}
+
+.operation-log-item--older .operation-log-item__dot {
+  width: 20rpx;
+  height: 20rpx;
+  margin-right: 16rpx;
+  background-color: #ffb3b3;
+}
+
+.operation-log-item--older .operation-log-item__line {
+  left: 9rpx;
+  top: 20rpx;
+}
+
+.operation-log-item--older .operation-log-item__action {
+  font-size: 26rpx;
+  font-weight: 400;
+  color: #555;
 }
 
 .operation-log-item__line {
