@@ -238,13 +238,14 @@
     </view>
     
     <!-- 底部按钮（管理员端） -->
-    <!-- 待处理/审核中：显示拒绝/开始拦截；未收到货退款额外显示"买家已拒签，同意退款" -->
+    <!-- 未收到货退款·物流在途未签收：拒绝/开始拦截/买家已拒签同意退款 -->
+    <!-- 未收到货退款·已签收（空包裹等）及其他售后类型：拒绝/同意（已签收不存在拦截、拒签） -->
     <view class="footer" wx:if="{{afterSales.status === 'submitted' || afterSales.status === 'reviewing' || afterSales.status === 'pending'}}">
       <button class="footer__btn footer__btn--reject" bindtap="handleReject">拒绝</button>
-      <button class="footer__btn footer__btn--secondary" bindtap="handleStartIntercepting">开始拦截</button>
+      <button wx:if="{{afterSales.showInterceptActions}}" class="footer__btn footer__btn--secondary" bindtap="handleStartIntercepting">开始拦截</button>
       <!-- 物流已显示拒收/退回时直接同意退款，无需等待包裹退回入库 -->
-      <button wx:if="{{afterSales.isNotReceivedRefund}}" class="footer__btn footer__btn--primary footer__btn--refused" bindtap="handleApproveRefusedDelivery">买家已拒签，同意退款</button>
-      <button wx:if="{{!afterSales.isNotReceivedRefund}}" class="footer__btn footer__btn--primary" bindtap="handleApprove">同意</button>
+      <button wx:if="{{afterSales.showInterceptActions}}" class="footer__btn footer__btn--primary footer__btn--refused" bindtap="handleApproveRefusedDelivery">买家已拒签，同意退款</button>
+      <button wx:if="{{!afterSales.showInterceptActions}}" class="footer__btn footer__btn--primary" bindtap="handleApprove">同意</button>
     </view>
     <!-- 拦截中：显示完成拦截按钮 -->
     <view class="footer" wx:if="{{afterSales.status === 'intercepting'}}">

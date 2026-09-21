@@ -2,10 +2,10 @@
 import { getCollection } from "../../../utils/cloud";
 
 const EXCHANGE_REASONS = [
+  { value: 'seven_day_no_reason', label: '7天无理由换货' },
   { value: 'wrong_order', label: '拍错/不喜欢/不合适' },
   { value: 'quality', label: '质量问题（掉钻，掉胶，配件掉落等）' },
-  { value: 'wrong_item', label: '卖家发错货' },
-  { value: 'no_reason', label: '7天无理由换货' }
+  { value: 'wrong_item', label: '卖家发错货' }
 ];
 
 function parseFlexibleDate(value) {
@@ -53,11 +53,12 @@ Page({
     contactName: '',
     contactPhone: '',
     address: '',
-    
+
     description: '',
     proofImages: [],
-    
-    remainingDays: 0
+
+    remainingDays: 0,
+    supportNoReason: false,
   },
 
   onLoad(options) {
@@ -131,6 +132,9 @@ Page({
 
       const remainingDays = this.calculateRemainingDays(order);
 
+      // 商品是否支持7天无理由（控制换货原因中 seven_day_no_reason 选项的可见性）
+      const supportNoReason = !!currentProduct?.supportNoReasonReturn;
+
       this.setData({
         order,
         displayOrderNo: order.orderNumber || order.orderNo || order._id || '',
@@ -138,7 +142,8 @@ Page({
         contactName,
         contactPhone,
         address,
-        remainingDays
+        remainingDays,
+        supportNoReason
       });
 
       wx.hideLoading();
@@ -161,7 +166,15 @@ Page({
   },
 
   showReasonModal() {
-    this.setData({ showReasonModal: true });
+    // 商品不支持7天无理由时，过滤掉 seven_day_no_reason 选项
+    let reasons = EXCHANGE_REASONS;
+    if (!this.data.supportNoReason) {
+      reasons = reasons.filter(r => r.value !== 'seven_day_no_reason');
+    }
+    this.setData({
+      displayReasons: reasons,
+      showReasonModal: true
+    });
   },
 
   closeReasonModal() {

@@ -200,9 +200,8 @@ Page({
       });
 
       if (res.result.success) {
-        const message = isModify ? '修改退货单号成功' : '提交退货单号成功';
-        wx.showToast({ title: message, icon: 'success' });
-        
+        const result = res.result || {};
+
         // 如果是修改退货单号，立即查询新单号的物流状态
         if (isModify) {
           try {
@@ -238,10 +237,28 @@ Page({
             });
           }
         }
-        
-        setTimeout(() => {
-          wx.navigateBack();
-        }, isModify ? 2500 : 1500);
+
+        // 运单号与其他售后单重复：寄回运费补偿已自动取消，弹窗明确告知（同一运单号只补偿一次）
+        if (result.compensationDuplicated) {
+          setTimeout(() => {
+            wx.showModal({
+              title: '寄回运费不重复补偿',
+              content: `该运单号已用于售后单${result.duplicateCaseNo ? ' ' + result.duplicateCaseNo : ''}，同一运单号仅补偿一次，本单寄回运费补偿已取消。若本单确实是分开寄回的，请修改为实际运单号，补偿将自动恢复。`,
+              showCancel: false,
+              confirmText: '我知道了',
+              success: () => wx.navigateBack()
+            });
+          }, 300);
+        } else {
+          const message = isModify
+            ? (result.compensationRestored ? '修改成功，寄回运费补偿已恢复' : '修改退货单号成功')
+            : '提交退货单号成功';
+          wx.showToast({ title: message, icon: result.compensationRestored ? 'none' : 'success' });
+
+          setTimeout(() => {
+            wx.navigateBack();
+          }, isModify ? 2500 : 1500);
+        }
       } else {
         wx.showToast({ title: res.result.error || '操作失败', icon: 'none' });
       }

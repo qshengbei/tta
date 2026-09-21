@@ -22,6 +22,19 @@ const QUALITY_REASONS = [
   'wrong_item'
 ];
 
+// 判定订单物流是否已签收（与订单详情页同口径）：
+// 1. 物流轨迹 isCheck='1' 或 stateName 含"签收"；2. 订单已确认收货完成；
+// 3. 兜底：售后原因为"空包裹"——签收拆包后才能发现，必然已签收
+// 用于区分"未收到货退款"两种场景：在途未签收→拦截/拒签流程；已签收（空包裹等）→直接同意或拒绝
+function isOrderLogisticsSigned(order, reasonCode) {
+  const state = order?.logisticsState || {};
+  if (String(state.isCheck) === '1') return true;
+  if (String(state.stateName || '').includes('签收')) return true;
+  if (String(order?.status || '') === 'completed') return true;
+  if (String(reasonCode || '') === 'empty_package') return true;
+  return false;
+}
+
 function getShippingResponsibilityByReason(reasonCode) {
   if (reasonCode && QUALITY_REASONS.includes(reasonCode)) {
     return 'seller';
@@ -231,6 +244,20 @@ Page({
               items: selectedItems,
               totalItemAmount: totalItemAmount
             };
+
+            // 未收到货退款需按物流签收状态区分审核动作：在途未签收→拦截/拒签；已签收（空包裹等）→直接同意/拒绝
+            if (afterSales.isNotReceivedRefund) {
+              try {
+                const orderRes = await getCollection('orders').doc(res.data.orderId).get();
+                afterSales.logisticsSigned = isOrderLogisticsSigned(
+                  orderRes.data,
+                  res.data.applyReasonCode || res.data.reasonCode || ''
+                );
+                afterSales.showInterceptActions = !afterSales.logisticsSigned;
+              } catch (orderErr) {
+                console.warn('[管理员售后详情] 补查订单物流状态失败，按在途处理:', orderErr);
+              }
+            }
 
             console.log('[管理员售后详情] normalizeCaseRecord后 proofImages:', afterSales.proofImages);
 
@@ -454,8 +481,15 @@ Page({
       itemCount: Number(record.itemCount || 0) || 0,
       totalApplyQty: Number(record.totalApplyQty || 0) || 0,
       reasonCode: record.applyReasonCode || record.reasonCode || '',
-      shippingResponsibilityText: getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode)),
+      // 运费归属仅涉及寄回的售后（退货退款/换货）需要展示；仅退款（含未收到货退款）不涉及寄回与运费责任
+      shippingResponsibilityText: ['return_refund', 'quality_refund', 'quality_return_refund', 'exchange', 'quality_exchange'].includes(type)
+        ? getShippingResponsibilityText(record.shippingResponsibility || record.shippingResponsibilitySummary || getShippingResponsibilityByReason(record.applyReasonCode || record.reasonCode))
+        : '',
       isNotReceivedRefund: isNotReceivedRefund,
+      // 物流签收状态由 fetchAfterSalesDetail 补查订单后回填；默认 false 保持在途按钮组，避免闪烁期间误展示"同意"
+      logisticsSigned: false,
+      // 仅"未收到货退款且物流未签收"才显示拦截/拒签按钮；已签收（空包裹等）与其他售后类型走普通同意/拒绝
+      showInterceptActions: isNotReceivedRefund,
       returnTrackingNumber: record.returnLogisticsInfo?.trackingNumber || '',
       returnCompanyCode: record.returnLogisticsInfo?.companyCode || '',
       returnCompanyName: record.returnLogisticsInfo?.companyName || '',
@@ -1552,6 +1586,8 @@ Page({
           'refused_delivery_approved': '买家拒签，同意退款',
           'submit_return_tracking': '填写退货单号',
           'modify_return_tracking': '修改退货单号',
+          'return_compensation_dedup': '取消寄回运费补偿',
+          'return_compensation_restore': '恢复寄回运费补偿',
           'confirm_receipt_refund': '确认收货',
           'confirm_receipt_exchange': '确认收货',
           'inspect_pass_refund': '验货通过',

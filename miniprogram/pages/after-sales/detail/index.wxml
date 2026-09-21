@@ -56,6 +56,9 @@
           <text class="info-item__label">{{afterSales.returnShippingCompensationPending ? '寄回运费补偿（预计）' : '寄回运费补偿'}}：</text>
           <text class="info-item__value info-item__value--price">¥{{afterSales.returnShippingCompensationAmount}}</text>
         </view>
+        <view wx:if="{{afterSales.returnCompensationDedup && afterSales.returnCompensationDedup.suspended}}" class="info-item">
+          <text class="info-item__value info-item__value--dedup">寄回运费补偿已取消：运单号 {{afterSales.returnCompensationDedup.trackingNumber}} 已用于售后单 {{afterSales.returnCompensationDedup.duplicateCaseNo}}，同一运单号仅补偿一次。若本单为分开寄回，请修改为实际运单号，补偿将自动恢复。</text>
+        </view>
         <view class="info-item">
           <text class="info-item__label">申请件数：</text>
           <text class="info-item__value">{{afterSales.totalApplyQty}} 件 / {{afterSales.itemCount}} 个商品项</text>

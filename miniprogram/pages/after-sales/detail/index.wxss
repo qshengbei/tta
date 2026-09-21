@@ -154,6 +154,11 @@
   word-break: break-all;
 }
 
+.info-item__value--dedup {
+  color: #faad14;
+  line-height: 1.5;
+}
+
 .proof-media {
   margin-bottom: 16rpx;
 }

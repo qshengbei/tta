@@ -42,16 +42,20 @@ async function convertDataForUpdateOrderStatus(data) {
   
   let afterSalesType;
   if (refundType === 'not_received' || data.goodsStatus === 'not_received') {
-    // 未收到货退款
+    // 未收到货退款（配送未完成，实付运费随退款退还）
     afterSalesType = 'refund_not_received';
   } else if (type === 'exchange') {
     afterSalesType = 'exchange';
-  } else if (refundType === 'return_refund' || type === 'refund') {
-    // 根据原因类型判断：质量原因使用 quality_refund（15天），其他使用 refund（7天）
+  } else if (refundType === 'refund_only' || type === 'refund') {
+    // 仅退款（已收到货）：买家保留商品、无需寄回，不涉及发货运费退/扣与寄回运费补偿
+    // 与订单详情页售后表单提交口径保持一致（refund_received）
+    afterSalesType = 'refund_received';
+  } else if (refundType === 'return_refund' || type === 'return') {
+    // 退货退款：根据原因类型判断，质量原因使用 quality_refund（15天时效，需寄回），其他使用 refund（7天）
     if (qualityReasons.includes(reason)) {
-      afterSalesType = 'quality_refund'; // 质量问题售后，15天时效
+      afterSalesType = 'quality_refund';
     } else {
-      afterSalesType = 'refund'; // 普通售后，7天时效
+      afterSalesType = 'refund';
     }
   } else {
     afterSalesType = 'refund'; // 默认使用普通售后
