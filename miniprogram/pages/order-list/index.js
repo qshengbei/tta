@@ -521,7 +521,14 @@ Page({
 
       for (const order of orders) {
         const orderId = order._id;
-        
+
+        // 状态白名单：仅"已发货/待收货"与"已送达待确认收货"需要跟踪物流。
+        // 待发货无物流、已完成/已退款/售后已终结的物流已定格，自动刷新无意义且浪费快递查询配额；
+        // 售后中订单主状态仍为 shipping 时（发货后退货/拒签在途）保留刷新，物流轨迹仍是处理依据
+        if (!['shipping', 'delivered'].includes(String(order.status || ''))) {
+          continue;
+        }
+
         if (!order.logisticsState) {
           console.log(`[物流刷新] 订单 ${orderId} 无物流状态信息，跳过`);
           continue;
