@@ -159,9 +159,9 @@ Page({
   handleRelatedAction() {
     const { message } = this.data;
     if (message.relatedType === 'order') {
-      // 跳转到订单详情页
+      // 跳转到订单详情页（已注册路由）
       wx.navigateTo({
-        url: `/pages/order/detail/index?id=${message.relatedId}`
+        url: `/pages/order-detail/index?id=${message.relatedId}`
       });
     } else if (message.relatedType === 'product') {
       // 跳转到商品详情页
@@ -169,9 +169,10 @@ Page({
         url: `/pages/product-detail/index?id=${message.relatedId}`
       });
     } else if (message.relatedType === 'activity') {
-      // 跳转到活动详情页
-      wx.navigateTo({
-        url: `/pages/activity/detail/index?id=${message.relatedId}`
+      // 活动详情页尚未实现，避免跳转到不存在路由
+      wx.showToast({
+        title: '活动详情暂不可用',
+        icon: 'none'
       });
     }
   }

@@ -20,6 +20,7 @@
     "pages/category-products/index",
     "pages/search-result/index",
     "pages/admin/index/index",
+    "pages/admin/dashboard/index",
     "pages/admin/product-manage/index",
     "pages/admin/product-publish/index",
     "pages/admin/order-manage/index",

@@ -1,35 +1,12 @@
 // pages/after-sales/list/index.js
 import { getCollection } from "../../../utils/cloud";
 import watcherManager from '../../../utils/watcherManager';
+import {
+  getAfterSalesStatusText,
+  getAfterSalesTypeText
+} from '../../../utils/afterSalesStatus';
 
 const db = wx.cloud.database();
-
-const TYPE_TEXT_MAP = {
-  refund: '退款',
-  refund_received: '退款（已收到货）',
-  refund_not_received: '退款（未收到货）',
-  return_refund: '退货退款',
-  exchange: '换货',
-  mixed: '混合售后'
-};
-
-const STATUS_TEXT_MAP = {
-  submitted: '待处理',
-  reviewing: '审核中',
-  waiting_buyer_return: '待买家寄回',
-  waiting_seller_receive: '待商家收货',
-  processing: '处理中',
-  rejected: '已拒绝',
-  completed: '已完成',
-  cancelled: '已取消',
-  pending: '待处理',
-  approved: '已通过',
-  seller_reviewing: '商家验货中',
-  seller_returning: '待商家发新货',
-  buyer_receiving: '待买家收新货',
-  intercepting: '拦截中',
-  pending_refund: '待退款'
-};
 
 const STATUS_CLASS_MAP = {
   submitted: 'after-sales-item__status--pending',
@@ -280,20 +257,14 @@ Page({
   normalizeCaseRecord(item, isLegacy) {
     const type = item.primaryAfterSalesType || item.type || 'refund';
     const status = item.caseStatus || item.status || 'submitted';
-    const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
-    const isExchange = EXCHANGE_TYPES.includes(type);
-    let statusText = STATUS_TEXT_MAP[status] || status;
-    // 换货流程中 seller_returning/buyer_receiving 文案区分
-    if (isExchange && status === 'seller_returning') statusText = '待商家发新货';
-    if (isExchange && status === 'buyer_receiving') statusText = '待买家收新货';
     return {
       _id: item._id,
       orderId: item.orderId,
       orderNo: item.orderNumber || item.orderNo || item.orderId,
       type,
-      typeText: TYPE_TEXT_MAP[type] || type,
+      typeText: getAfterSalesTypeText(type),
       status,
-      statusText,
+      statusText: getAfterSalesStatusText(status, type),
       statusClass: STATUS_CLASS_MAP[status] || '',
       reason: item.applyReasonText || item.reason || '',
       refundAmount: Number(item.totalApplyAmount ?? item.refundAmount ?? 0) || 0,
@@ -491,7 +462,8 @@ Page({
   },
 
   goToOrderList() {
-    wx.switchTab({
+    // order-list 不是 TabBar 页面，不能用 switchTab
+    wx.navigateTo({
       url: '/pages/order-list/index'
     });
   }
