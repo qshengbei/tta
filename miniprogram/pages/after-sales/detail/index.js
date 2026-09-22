@@ -1,16 +1,13 @@
 // pages/after-sales/detail/index.js
 import { getCollection } from "../../../utils/cloud";
 import watcherManager from '../../../utils/watcherManager';
-
-const TYPE_TEXT_MAP = {
-  refund: '退款',
-  refund_received: '退款（已收到货）',
-  refund_not_received: '退款（未收到货）',
-  return_refund: '退货退款',
-  exchange: '换货',
-  mixed: '混合售后',
-  not_received_refund: '未收到货退款'
-};
+import {
+  STATUS_TEXT_MAP,
+  getAfterSalesStatusText,
+  getAfterSalesStatusDesc,
+  getAfterSalesTypeText,
+  EXCHANGE_TYPES
+} from '../../../utils/afterSalesStatus';
 
 const QUALITY_REASONS = [
   'size_mismatch',
@@ -30,46 +27,13 @@ function getShippingResponsibilityByReason(reasonCode) {
   return 'buyer';
 }
 
-const STATUS_TEXT_MAP = {
-  submitted: '待处理',
-  reviewing: '审核中',
-  waiting_buyer_return: '待买家寄回',
-  waiting_seller_receive: '待商家收货',
-  pending_refund: '待退款',
-  rejected: '已拒绝',
-  completed: '已完成',
-  cancelled: '已取消',
-  pending: '待处理',
-  approved: '已通过',
-  seller_reviewing: '商家验货中',
-  seller_returning: '商家寄回中',
-  buyer_receiving: '待买家收货',
-  intercepting: '正在拦截快递'
-};
-
-const STATUS_DESC_MAP = {
-  submitted: '我们正在处理您的售后申请，请耐心等待',
-  reviewing: '售后单正在审核中，请耐心等待',
-  waiting_buyer_return: '审核已通过，请按指引寄回商品',
-  waiting_seller_receive: '商品寄回中，等待商家签收',
-  processing: '售后处理中，请留意后续进度',
-  rejected: '您的售后申请未通过，请查看处理意见',
-  completed: '您的售后申请已完成，感谢您的支持',
-  cancelled: '您的售后申请已取消',
-  pending: '我们正在处理您的售后申请，请耐心等待',
-  approved: '您的售后申请已通过，我们将尽快为您处理',
-  seller_reviewing: '商家正在验货，请耐心等待',
-  seller_returning: '商家正在将商品寄回，请留意物流信息',
-  buyer_receiving: '商家已寄回商品，请注意查收并确认收货',
-  intercepting: '客服正在拦截快递，请耐心等待后续处理'
-};
-
 const STATUS_CLASS_MAP = {
   submitted: 'status-section__status--pending',
   reviewing: 'status-section__status--pending',
   waiting_buyer_return: 'status-section__status--pending',
   waiting_seller_receive: 'status-section__status--pending',
   processing: 'status-section__status--approved',
+  pending_refund: 'status-section__status--approved',
   rejected: 'status-section__status--rejected',
   completed: 'status-section__status--completed',
   cancelled: 'status-section__status--cancelled',
@@ -83,22 +47,6 @@ const STATUS_CLASS_MAP = {
 
 const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'waiting_seller_receive', 'processing', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
-const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
-
-// 根据售后类型动态调整状态文案（换货流程中 seller_returning/buyer_receiving 文案区分）
-function getExchangeStatusText(status, type, defaultText) {
-  if (!EXCHANGE_TYPES.includes(type)) return defaultText;
-  if (status === 'seller_returning') return '待商家发新货';
-  if (status === 'buyer_receiving') return '待买家收新货';
-  return defaultText;
-}
-
-function getExchangeStatusDesc(status, type, defaultDesc) {
-  if (!EXCHANGE_TYPES.includes(type)) return defaultDesc;
-  if (status === 'seller_returning') return '商家即将寄出换新商品，请留意物流信息';
-  if (status === 'buyer_receiving') return '商家已寄出换新商品，请注意查收并确认收货';
-  return defaultDesc;
-}
 
 function parseDate(value) {
   if (!value) {
@@ -342,11 +290,11 @@ Page({
       orderNo: record.orderNumber || record.orderId,
       type,
       isExchange,
-      typeText: TYPE_TEXT_MAP[type] || type,
+      typeText: getAfterSalesTypeText(type),
       status,
       caseStatus: status,
-      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
-      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
+      statusText: getAfterSalesStatusText(status, type),
+      statusDesc: getAfterSalesStatusDesc(status, type, false),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       returnShippingCompensationAmount: Math.round(returnShippingCompensationAmount * 100) / 100,
@@ -394,10 +342,10 @@ Page({
       ...record,
       orderNo: record.orderNo || record.orderId,
       type,
-      typeText: TYPE_TEXT_MAP[type] || type,
+      typeText: getAfterSalesTypeText(type),
       status,
-      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
-      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
+      statusText: getAfterSalesStatusText(status, type),
+      statusDesc: getAfterSalesStatusDesc(status, type, false),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundAmount || 0) || 0,
       reason: record.reason || '',
