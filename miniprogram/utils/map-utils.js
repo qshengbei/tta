@@ -54,6 +54,11 @@ export function calculateDeliveryFee(distance, deliveryRules) {
   return { deliveryFee, isOutOfRange };
 }
 
+// 同城配送范围分区色：地图圆环描边、填充与页面图例共用同一真源
+export const DELIVERY_ZONE_COLORS = ['#00ff99', '#ffff99', '#ff9999']; // 淡绿色、淡黄色、淡红色
+export const DELIVERY_ZONE_FILL_COLORS = ['#00ff9922', '#ffff9922', '#ff999922']; // 带透明度的填充色
+export const DELIVERY_ZONE_OUT_OF_RANGE_COLOR = '#999999'; // 超出配送范围
+
 /**
  * 生成地图圆形覆盖物
  * @param {Object} center - 圆心坐标 {latitude, longitude}
@@ -62,9 +67,6 @@ export function calculateDeliveryFee(distance, deliveryRules) {
  */
 export function generateCircles(center, deliveryRules) {
   const circles = [];
-  // 使用标准十六进制颜色格式设置描边颜色
-  const colors = ['#00ff99', '#ffff99', '#ff9999']; // 淡绿色、淡黄色、淡红色
-  const fillColors = ['#00ff9922', '#ffff9922', '#ff999922']; // 带透明度的填充色
   
   // 从deliveryRules生成圆形覆盖物
   deliveryRules.forEach((rule, index) => {
@@ -73,12 +75,36 @@ export function generateCircles(center, deliveryRules) {
       longitude: center.longitude,
       radius: rule.maxDistance * 1000, // 转换为米
       strokeWidth: 2,
-      color: colors[index % colors.length], // 描边颜色，使用正确的属性名
-      fillColor: fillColors[index % fillColors.length]
+      color: DELIVERY_ZONE_COLORS[index % DELIVERY_ZONE_COLORS.length], // 描边颜色，使用正确的属性名
+      fillColor: DELIVERY_ZONE_FILL_COLORS[index % DELIVERY_ZONE_FILL_COLORS.length]
     });
   });
   
   return circles;
+}
+
+/**
+ * 生成配送范围图例（颜色与文案），供确认订单页与订单详情页共用
+ * @param {Array} deliveryRules - 配送规则数组 [{maxDistance, fee}]
+ * @returns {Array} 图例项数组 [{color, text}]
+ */
+export function buildDeliveryLegend(deliveryRules) {
+  const rules = deliveryRules || [];
+  const legend = rules.map((rule, index) => {
+    const from = index === 0 ? 0 : rules[index - 1].maxDistance;
+    return {
+      color: DELIVERY_ZONE_COLORS[index % DELIVERY_ZONE_COLORS.length],
+      text: `${from}-${rule.maxDistance}公里${rule.fee === 0 ? ' 免费' : ' ' + rule.fee + '元'}`
+    };
+  });
+
+  const lastDistance = rules.length > 0 ? rules[rules.length - 1].maxDistance : 10;
+  legend.push({
+    color: DELIVERY_ZONE_OUT_OF_RANGE_COLOR,
+    text: `＞${lastDistance}公里 不配送`
+  });
+
+  return legend;
 }
 
 /**

@@ -1,6 +1,8 @@
 {
   "usingComponents": {
     "cart-preview": "../../components/cart-preview/index",
-    "quantity-selector": "../../components/quantity-selector/index"
+    "quantity-selector": "../../components/quantity-selector/index",
+    "express-rules-modal": "../../components/express-rules-modal/index",
+    "modal-shell": "../../components/modal-shell/index"
   }
 }

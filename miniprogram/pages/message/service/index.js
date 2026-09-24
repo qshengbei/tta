@@ -1,3 +1,5 @@
+import { getOrderStatusText } from "../../../utils/orderStatusText";
+
 const db = wx.cloud.database();
 const _ = db.command;
 const DEBUG_LOG = false;
@@ -2216,43 +2218,10 @@ Page({
   formatOrderStatusText(order = {}) {
     const deliveryType = this.normalizeOrderToken(order.deliveryType) || 'express';
     const status = this.normalizeOrderToken(order.status) || 'pending';
-    const statusMap = {
-      express: {
-        pending: '待支付',
-        paid: '待发货',
-        shipping: '待收货',
-        completed: '已完成',
-        refund: '售后处理中',
-        refund_completed: '售后完成',
-        cancelled: '已取消'
-      },
-      pickup: {
-        pending: '待支付',
-        paid: '待自提',
-        completed: '已完成',
-        cancelled: '已取消'
-      },
-      local: {
-        pending: '待支付',
-        paid: '待配送',
-        shipping: '配送中',
-        completed: '已完成',
-        cancelled: '已取消'
-      }
-    };
-    let defaultText = (statusMap[deliveryType] && statusMap[deliveryType][status]) || order.statusText || order.status || '订单';
-
-    if (status === 'refund_completed' && order.afterSalesResult) {
-      if (order.afterSalesResult.includes('部分')) {
-        defaultText = '部分退款';
-      } else if (order.afterSalesResult.includes('换货')) {
-        defaultText = '换货完成';
-      } else if (order.afterSalesResult.includes('退款')) {
-        defaultText = '退款完成';
-      }
-    }
-
-    return defaultText;
+    // 订单状态文案（唯一真源：utils/orderStatusText.js）
+    return getOrderStatusText(status, deliveryType, {
+      afterSalesResult: order.afterSalesResult
+    });
   },
   buildOrderPickerItem(order = {}) {
     const firstProduct = (order.products && order.products[0]) || {};

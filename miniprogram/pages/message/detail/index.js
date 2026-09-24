@@ -1,17 +1,30 @@
 Page({
   data: {
     message: null,
-    loading: true
+    loading: true,
+    error: false,
+    errorMessage: ''
   },
 
   onLoad(options) {
     const { id } = options;
+    this.messageId = id;
     this.loadMessageDetail(id);
+  },
+
+  // 加载失败后重试
+  retryLoad() {
+    this.setData({ error: false, errorMessage: '' });
+    this.loadMessageDetail(this.messageId);
   },
 
   // 加载消息详情
   async loadMessageDetail(id) {
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: false, errorMessage: '' });
+    if (!id) {
+      this.setData({ loading: false, error: true, errorMessage: '消息不存在' });
+      return;
+    }
     try {
       const db = wx.cloud.database();
       const res = await db.collection('notifications').doc(id).get();
@@ -59,7 +72,7 @@ Page({
       }
     } catch (error) {
       console.error('加载消息详情失败', error);
-      wx.showToast({ title: '加载失败', icon: 'none' });
+      this.setData({ error: true, errorMessage: '加载失败，请稍后重试' });
     } finally {
       this.setData({ loading: false });
     }

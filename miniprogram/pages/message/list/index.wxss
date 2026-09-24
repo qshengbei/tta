@@ -1,6 +1,6 @@
 .message-container {
   min-height: 100vh;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 顶部操作栏 */
@@ -9,7 +9,7 @@
   justify-content: flex-end;
   align-items: center;
   padding: 20rpx 32rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
   gap: 40rpx;
 }
 
@@ -29,18 +29,18 @@
 
 .mark-all-read {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   transition: color 0.2s ease;
 }
 
 .mark-all-read:active {
-  color: #374151;
+  color: var(--color-text-main);
 }
 
 /* 区域容器 */
 .section-container {
   margin-top: 0rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 通知列表 */
@@ -87,16 +87,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   font-size: 24rpx;
 }
 
 .swipe-action-unread {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
 }
 
 .swipe-action-delete {
-  background-color: #ef4444;
+  background-color: var(--color-danger);
 }
 
 .swipe-card {
@@ -119,14 +119,14 @@
 
 .footer-text {
   font-size: 18rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .notification-item {
   display: flex;
   align-items: flex-start;
   padding: 24rpx 32rpx;
-  background-color: #ffffff;
+  background-color: var(--color-bg-elevated);
   border-radius: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   position: relative;
@@ -141,7 +141,7 @@
 .unread-badge {
   width: 10rpx;
   height: 10rpx;
-  background-color: #ef4444;
+  background-color: var(--color-danger);
   border-radius: 50%;
   margin-right: 16rpx;
   margin-top: 12rpx;
@@ -165,7 +165,7 @@
 .notification-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-main);
   flex: 1;
   margin-right: 16rpx;
   overflow: hidden;
@@ -176,7 +176,7 @@
 
 .notification-time {
   font-size: 18rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -184,7 +184,7 @@
 
 .notification-text {
   font-size: 22rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 32rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -198,55 +198,42 @@
 .notification-role-tag {
   display: inline-block;
   padding: 4rpx 12rpx;
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-secondary);
   font-size: 18rpx;
   border-radius: 12rpx;
   margin-top: 8rpx;
-}
-
-/* 空状态 */
-.empty-notification {
-  padding: 120rpx 0;
-  text-align: center;
-  background-color: #f8f8f8;
-}
-
-.empty-text {
-  font-size: 24rpx;
-  color: #9ca3af;
-  margin-bottom: 48rpx;
 }
 
 /* 加载更多 */
 .loading-more {
   padding: 32rpx 0;
   text-align: center;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 .loading-text {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 /* 没有更多 */
 .no-more {
   padding: 32rpx 0;
   text-align: center;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 .no-more-text {
   font-size: 24rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 /* 加载更多按钮 */
 .load-more-btn-wrap {
   padding: 24rpx 0;
   text-align: center;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 .load-more-btn {
@@ -254,17 +241,17 @@
   align-items: center;
   justify-content: center;
   padding: 16rpx 48rpx;
-  background-color: #ffffff;
+  background-color: var(--color-bg-elevated);
   border-radius: 40rpx;
-  border: 1rpx solid #e5e7eb;
+  border: 1rpx solid var(--color-border);
   transition: all 0.2s ease;
 }
 
 .load-more-btn:active {
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-muted);
 }
 
 .load-more-text {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
 }

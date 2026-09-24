@@ -1,6 +1,6 @@
 import { getCollection } from "../../utils/cloud";
 import { formatDate, formatDateLabel, generatePickupDates, calculateTimeRange, calculateMinTime } from "../../utils/time-utils";
-import { calculateDistance, calculateDeliveryFee, generateCircles, generateMarkers, adjustMapView, getAddressLocation } from "../../utils/map-utils";
+import { calculateDistance, calculateDeliveryFee, generateCircles, generateMarkers, adjustMapView, getAddressLocation, buildDeliveryLegend } from "../../utils/map-utils";
 import { generatePickupCode, getPickupLocation as fetchPickupLocation, getAddress as fetchAddress, chooseAddress as selectAddress, saveCoordinates, calculateTotalPrice, submitOrder as placeOrder } from "../../utils/order-utils";
 import { calculateShippingFee, sortExpressRules, DEFAULT_EXPRESS_RULES } from "../../utils/shipping";
 import { getCachedExpressRules, cacheExpressRules } from "../../utils/cache";
@@ -25,6 +25,7 @@ Page({
     originalDeliveryFee: 0, // 原运费（规则运费，包邮时仍有值，用于买家责任整单退款扣减）
     freeShippingThreshold: 40, // 包邮门槛
     isOutOfRange: false, // 是否超出配送范围
+    deliveryLegend: [], // 配送范围图例（颜色+文案，由 map-utils.buildDeliveryLegend 生成）
     showDeliverySelectorModal: false,
     showExpressRulesModal: false, // 显示快递计算规则弹窗
     pickupLocation: "", // 自提地址
@@ -412,7 +413,8 @@ Page({
           secretKey: pickupLocationInfo.secretKey,
           beginTime: pickupLocationInfo.beginTime,
           endTime: pickupLocationInfo.endTime,
-          deliveryRules: pickupLocationInfo.deliveryRules
+          deliveryRules: pickupLocationInfo.deliveryRules,
+          deliveryLegend: buildDeliveryLegend(pickupLocationInfo.deliveryRules)
         });
         
         // 只有当配送方式为自提，或同城配送且未超过配送范围时，才初始化自提时间
@@ -973,11 +975,6 @@ Page({
     
     // 隐藏弹窗
     this.hideDeliverySelector();
-  },
-
-  // 阻止事件冒泡
-  noop() {
-    // 空方法，用于阻止事件冒泡
   },
 
   // 刷新取件号码

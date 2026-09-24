@@ -1,6 +1,6 @@
 /* pages/admin/order-manage/index.wxss */
 .order-manage {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -25,7 +25,7 @@
 }
 
 /* 搜索筛选组件 */
-order-search-filter-panel, admin-order-search-filter-panel {
+order-search-filter-panel {
   display: block;
   width: 100%;
   height: auto;
@@ -47,13 +47,13 @@ order-search-filter-panel, admin-order-search-filter-panel {
   text-align: center;
   padding: 20rpx 0;
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   position: relative;
   transition: all 0.3s ease;
 }
 
 .delivery-type-tab.active {
-  color: #1989fa;
+  color: var(--color-primary);
   font-weight: bold;
 }
 
@@ -64,7 +64,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
   left: 25%;
   width: 50%;
   height: 4rpx;
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   border-radius: 2rpx;
 }
 
@@ -94,7 +94,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .filter-label {
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 20rpx;
   min-width: 120rpx;
 }
@@ -121,14 +121,14 @@ order-search-filter-panel, admin-order-search-filter-panel {
   border: 2rpx solid #e0e0e0;
   border-radius: 20rpx;
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   background-color: white;
   white-space: nowrap;
 }
 
 .filter-button.active {
-  border-color: #1989fa;
-  color: #1989fa;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
   background-color: #f0f7ff;
 }
 
@@ -138,7 +138,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 }
 
 .order-item {
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 12rpx;
   margin: 0 0 24rpx 0;
   overflow: hidden;
@@ -158,7 +158,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
   justify-content: space-between;
   align-items: center;
   padding: 8rpx 24rpx;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
 }
 
 .order-item__shop {
@@ -169,7 +169,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .order-item__status {
   font-size: 24rpx;
-  color: #ff6b6b;
+  color: var(--color-danger);
   font-weight: 500;
 }
 
@@ -215,7 +215,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .order-item__spec {
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
   margin-bottom: 12rpx;
 }
 
@@ -228,12 +228,12 @@ order-search-filter-panel, admin-order-search-filter-panel {
 .order-item__price {
   font-size: 28rpx;
   font-weight: 600;
-  color: #000;
+  color: var(--color-text-main);
 }
 
 .order-item__quantity {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .order-item__divider {
@@ -245,7 +245,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
   justify-content: space-between;
   align-items: center;
   padding: 4rpx 24rpx 16rpx 30rpx;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   margin-top: -8rpx;
 }
 
@@ -253,13 +253,13 @@ order-search-filter-panel, admin-order-search-filter-panel {
   display: flex;
   flex-direction: column;
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .order-item__total-price {
   font-size: 26rpx;
   font-weight: 600;
-  color: #000;
+  color: var(--color-text-main);
   margin-top: 4rpx;
 }
 
@@ -274,7 +274,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .order-item__btn {
   padding: 8rpx 24rpx;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   color: #333;
   border: none;
   border-radius: 16rpx;
@@ -291,29 +291,15 @@ order-search-filter-panel, admin-order-search-filter-panel {
 }
 
 .order-item__btn--primary {
-  background-color: #000;
-  color: #fff;
+  background-color: var(--color-bg-inverse);
+  color: var(--color-text-inverse);
   white-space: nowrap;
   display: inline-block;
   max-width: 180rpx;
   width: auto;
 }
 
-/* 空状态 */
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background-color: #f5f5f5;
-  padding: 40rpx;
-}
-
-.empty-state__text {
-  font-size: 28rpx;
-  color: #999;
-}
+/* 空状态已统一为全局 .empty-view */
 
 /* 加载状态 */
 .loading-state {
@@ -322,66 +308,29 @@ order-search-filter-panel, admin-order-search-filter-panel {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   padding: 40rpx;
 }
 
 .loading-state__text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-top: 20rpx;
 }
 
-.after-sales-panel-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.42);
-  z-index: 300;
-  display: flex;
-  align-items: flex-end;
-}
-
-.after-sales-panel {
-  width: 100%;
-  max-height: 82vh;
-  background: #fff;
-  border-top-left-radius: 24rpx;
-  border-top-right-radius: 24rpx;
-  display: flex;
-  flex-direction: column;
-}
-
-.after-sales-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 24rpx 16rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.after-sales-panel__title-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8rpx;
-}
-
-.after-sales-panel__title {
-  font-size: 30rpx;
-  color: #111;
-  font-weight: 600;
-}
-
+/* 售后弹层（外壳由 modal-shell 提供） */
 .after-sales-panel__meta {
   font-size: 22rpx;
   color: #777;
 }
 
-.after-sales-panel__close {
-  font-size: 24rpx;
-  color: #1989fa;
+.after-sales-panel__meta--body {
+  padding: 0 4rpx;
 }
 
 .after-sales-panel__body {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 20rpx 24rpx 32rpx;
   display: flex;
@@ -438,19 +387,19 @@ order-search-filter-panel, admin-order-search-filter-panel {
   padding: 4rpx 14rpx;
   border-radius: 999rpx;
   background: #e6f4ff;
-  color: #0958d9;
+  color: var(--color-primary);
   font-size: 20rpx;
 }
 
 .after-sales-item-card__status,
 .after-sales-item-card__qty {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .after-sales-item-card__amount {
   font-size: 24rpx;
-  color: #cf1322;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -477,7 +426,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
   border-radius: 999rpx;
   border: 1rpx solid #b7d6ff;
   background: #f3f9ff;
-  color: #0958d9;
+  color: var(--color-primary);
   font-size: 22rpx;
   line-height: 56rpx;
 }
@@ -485,13 +434,13 @@ order-search-filter-panel, admin-order-search-filter-panel {
 .after-sales-action-btn--warn {
   border-color: #ffd6d6;
   background: #fff5f5;
-  color: #cf1322;
+  color: var(--color-danger);
 }
 
 .after-sales-action-btn--primary {
-  border-color: #1989fa;
-  background: #1989fa;
-  color: #fff;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .after-sales-action-btn::after {
@@ -500,7 +449,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .after-sales-item-card__readonly {
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 /* 售后案件列表 */
@@ -521,7 +470,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .after-sales-case-item:active {
   background: #f0f7ff;
-  border-color: #1989fa;
+  border-color: var(--color-primary);
 }
 
 .after-sales-case-item__header {
@@ -539,7 +488,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .after-sales-case-item__status {
   font-size: 22rpx;
-  color: #1989fa;
+  color: var(--color-primary);
   padding: 4rpx 12rpx;
   background: #f0f7ff;
   border-radius: 8rpx;
@@ -553,66 +502,30 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .after-sales-case-item__reason {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .after-sales-case-item__amount {
   font-size: 24rpx;
-  color: #ff6b6b;
+  color: var(--color-danger);
   font-weight: 500;
 }
 
 .after-sales-case-item__time {
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
-/* 编辑订单弹窗 */
-.edit-order-panel-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.42);
-  z-index: 300;
-  display: flex;
-  align-items: flex-end;
-}
-
-.edit-order-panel {
-  width: 100%;
-  max-height: 85vh;
-  background: #fff;
-  border-top-left-radius: 24rpx;
-  border-top-right-radius: 24rpx;
-  display: flex;
-  flex-direction: column;
-}
-
-.edit-order-panel__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 24rpx 16rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.edit-order-panel__title {
-  font-size: 30rpx;
-  color: #111;
-  font-weight: 600;
-}
-
-.edit-order-panel__close {
-  font-size: 24rpx;
-  color: #1989fa;
-}
-
+/* 编辑订单弹窗（外壳由 modal-shell 提供） */
 .edit-order-panel__body {
   overflow-y: auto;
   padding: 20rpx 24rpx;
   flex: 1;
+  min-height: 0;
 }
 
 .edit-order-panel__footer {
+  flex-shrink: 0;
   padding: 20rpx 24rpx 32rpx;
   border-top: 1rpx solid #f0f0f0;
   display: flex;
@@ -629,13 +542,13 @@ order-search-filter-panel, admin-order-search-filter-panel {
 }
 
 .edit-order-btn--cancel {
-  background: #f5f5f5;
-  color: #666;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
 }
 
 .edit-order-btn--confirm {
-  background: #1989fa;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .edit-order-btn::after {
@@ -657,7 +570,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-section__value {
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 /* 收货地址 */
@@ -682,20 +595,20 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-address__phone {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .edit-order-address__detail {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
 .edit-order-address__edit {
   font-size: 24rpx;
-  color: #1989fa;
+  color: var(--color-primary);
   padding: 8rpx 16rpx;
-  border: 1rpx solid #1989fa;
+  border: 1rpx solid var(--color-primary);
   border-radius: 8rpx;
   flex-shrink: 0;
 }
@@ -751,7 +664,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-product-item__spec {
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .edit-order-product-item__bottom {
@@ -762,7 +675,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-product-item__price {
   font-size: 26rpx;
-  color: #cf1322;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -778,7 +691,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--color-bg-elevated);
   border: 1rpx solid #e0e0e0;
   border-radius: 50%;
   font-size: 32rpx;
@@ -786,7 +699,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 }
 
 .quantity-btn--disabled {
-  background: #f5f5f5;
+  background: var(--color-bg);
   border-color: #e0e0e0;
   color: #ccc;
 }
@@ -800,7 +713,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-tip {
   font-size: 22rpx;
-  color: #ff6b6b;
+  color: var(--color-danger);
   margin-top: 16rpx;
   display: block;
 }
@@ -829,7 +742,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 
 .edit-order-amount__label {
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .edit-order-amount__value {
@@ -845,7 +758,7 @@ order-search-filter-panel, admin-order-search-filter-panel {
 .edit-order-amount__item--total .edit-order-amount__value {
   font-size: 30rpx;
   font-weight: 600;
-  color: #cf1322;
+  color: var(--color-danger);
 }
 
 /* 地址编辑表单 */

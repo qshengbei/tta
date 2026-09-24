@@ -77,5 +77,8 @@
       <text class="payment__footer-amount-value">¥{{totalPrice}}</text>
     </view>
     <button class="payment__footer-pay" bindtap="handlePayment" disabled="{{isPaying}}">{{isPaying === 'generating' ? '生成中...' : (isPaying ? '支付中...' : '立即支付')}}</button>
+    </view>
   </view>
-</view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

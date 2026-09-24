@@ -2700,8 +2700,13 @@ async function handleApplyAfterSalesOperation(order, params) {
   // 原始订单商品（未换货件）的售后期基准时间
   let originalBaseTime;
   if (isTransactionCompleted) {
-    // 交易成功后：优先使用签收时间，回退到确认收货时间（签收后7天/15天）
-    originalBaseTime = parseFlexibleDate(order?.logisticsState?.checkTime) || parseFlexibleDate(order?.receiptTime);
+    // 交易成功后：以签收时间为准（签收后7天/15天）；
+    // 签收时间缺失或早于发货时间（物流返回的脏数据）时回退确认收货时间
+    const checkTime = parseFlexibleDate(order?.logisticsState?.checkTime);
+    const shippingTime = parseFlexibleDate(order?.shippingTime);
+    originalBaseTime = (checkTime && (!shippingTime || checkTime >= shippingTime))
+      ? checkTime
+      : parseFlexibleDate(order?.receiptTime);
   } else {
     // 交易成功前：使用发货时间（发货后10天）
     originalBaseTime = parseFlexibleDate(order?.shippingTime);

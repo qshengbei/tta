@@ -1,4 +1,6 @@
 // pages/admin/banner-manage/index.js
+import { confirm } from "../../../utils/confirm";
+
 const db = wx.cloud.database()
 
 Page({
@@ -47,10 +49,11 @@ Page({
   async deleteBanner(e) {
     const banner = e.currentTarget.dataset.banner
     
-    wx.showModal({
+    confirm({
       title: '确认删除',
       content: '确定要删除这张轮播图吗？',
-      success: async (res) => {
+      tone: 'danger'
+    }).then(async (res) => {
         if (res.confirm) {
           wx.showLoading({ title: '删除中...' })
           try {
@@ -72,7 +75,6 @@ Page({
             wx.hideLoading()
           }
         }
-      }
     })
   },
 

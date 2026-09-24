@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "我的订单",
   "usingComponents": {
-    "order-search-filter-panel": "../../components/order-search-filter-panel"
+    "order-search-filter-panel": "../../components/order-search-filter-panel",
+    "logistics-modal": "../../components/logistics-modal/index",
+    "confirm-dialog": "../../components/confirm-dialog/index"
   }
 }

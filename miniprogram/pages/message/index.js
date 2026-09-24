@@ -52,6 +52,8 @@ Page({
   data: {
     notifications: [],
     sessions: [],
+    // 通知区首次加载失败标记（列表非空时只弹 Toast，不显示错误态）
+    notificationsError: false,
     loading: false,
     refreshing: false,
     openid: '',
@@ -258,10 +260,12 @@ Page({
 
     const type = lastMessage.type || 'text';
     const status = lastMessage.status || '';
+    // data.openid 在 onLoad 异步回填，首屏会话可能先于它加载；补 storage 兜底，避免撤回方误判
+    const myOpenid = this.data.openid || wx.getStorageSync('openid') || '';
     const senderOpenid = lastMessage.openid || lastMessage._openid || '';
 
     if (status === 'revoked' || type === 'revoked') {
-      return senderOpenid && this.data.openid && senderOpenid === this.data.openid
+      return senderOpenid && myOpenid && senderOpenid === myOpenid
         ? '您撤回了一条消息'
         : '对方撤回了一条消息';
     }
@@ -420,7 +424,7 @@ Page({
 
   // 加载通知消息
   async loadNotifications() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, notificationsError: false });
     try {
       const openid = wx.getStorageSync('openid');
 
@@ -437,10 +441,22 @@ Page({
       console.log('通知数据长度:', notificationSummaries.length);
     } catch (error) {
       console.error('加载通知消息失败', error);
-      wx.showToast({ title: '加载消息失败', icon: 'none' });
+      // 首次加载失败（列表为空）→ 出可重试的错误态；已有旧数据时只是刷新失败，Toast 提示，
+      // 避免把「加载失败」显示成「暂无通知消息」
+      if (this.data.notifications.length === 0) {
+        this.setData({ notificationsError: true });
+      } else {
+        wx.showToast({ title: '加载消息失败', icon: 'none' });
+      }
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  // 通知区加载失败后重试
+  retryLoadNotifications() {
+    this.setData({ notificationsError: false });
+    this.loadNotifications();
   },
 
   async loadNotificationSummaries(openid) {

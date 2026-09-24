@@ -689,13 +689,6 @@ Page({
   },
 
   /**
-   * 阻止事件冒泡
-   */
-  stopPropagation() {
-    // 阻止事件冒泡，防止点击弹窗内容时关闭弹窗
-  },
-
-  /**
    * 检查管理员权限
    */
   async checkAdminPermission(openid) {

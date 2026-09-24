@@ -2,7 +2,7 @@
 .ship-order {
   width: 100%;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
 }
 
 /* 头部 */
@@ -52,13 +52,13 @@
   align-items: center;
   margin-bottom: 12px;
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 8px;
 }
 
 .ship-order__order-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 8px;
   min-width: 80px;
 }
@@ -73,7 +73,7 @@
 .ship-order__logistics-section {
   margin-top: 16px;
   padding: 16px;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 8px;
 }
 
@@ -93,7 +93,7 @@
 
 .ship-order__form-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 12px;
   min-width: 80px;
 }
@@ -116,7 +116,7 @@
 
 .ship-order__form-select-arrow {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .ship-order__form-input {
@@ -134,8 +134,8 @@
   margin-top: 32px;
   width: 100%;
   height: 44px;
-  background-color: #07c160;
-  color: #fff;
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
   font-size: 16px;
   border-radius: 4px;
   display: flex;
@@ -147,37 +147,9 @@
   background-color: #ccc;
 }
 
-/* 快递公司选择器 */
-.ship-order__picker {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-}
-
-.ship-order__picker-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.ship-order__picker-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  overflow: hidden;
-}
-
+/* 快递公司选择器（外壳由 modal-shell 提供） */
 .ship-order__picker-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -188,7 +160,7 @@
 
 .ship-order__picker-cancel {
   font-size: 14px;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .ship-order__picker-title {
@@ -199,12 +171,12 @@
 
 .ship-order__picker-confirm {
   font-size: 14px;
-  color: #07c160;
+  color: var(--color-success);
   font-weight: bold;
 }
 
 .ship-order__picker-view {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
 }
 
 .ship-order__picker-view view {

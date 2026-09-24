@@ -1,6 +1,7 @@
 // pages/admin/cloth-manage/index.js
 const { getCollection } = require("../../../utils/cloud");
 const { parseDbDate } = require("../../../utils/time-utils");
+const { confirm } = require("../../../utils/confirm");
 
 const db = wx.cloud.database();
 const PAGE_SIZE = 20;
@@ -89,10 +90,11 @@ Page({
   // 删除布料
   deleteCloth(e) {
     const id = e.currentTarget.dataset.id;
-    wx.showModal({
+    confirm({
       title: '删除布料',
       content: '确定要删除这个布料吗？',
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           wx.showLoading({
             title: '删除中...',
@@ -116,7 +118,6 @@ Page({
               });
             });
         }
-      }
     });
   }
 });

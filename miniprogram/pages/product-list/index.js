@@ -263,6 +263,12 @@ Page({
     }
   },
 
+  // ========== 错误态重试 ==========
+
+  reload() {
+    this._loadProducts(true);
+  },
+
   // ========== 排序 ==========
 
   setSortType(e) {
@@ -413,71 +419,6 @@ Page({
 
   goBack() {
     wx.navigateBack();
-  },
-
-  goToAddProduct() {
-    const { typeId } = this.data;
-    wx.navigateTo({ url: `/pages/admin/product-publish/index?typeId=${typeId}` });
-  },
-
-  // 下架商品
-  下架商品(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.showModal({
-      title: '确认下架',
-      content: '确定要下架这个商品吗？',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            const result = await wx.cloud.callFunction({
-              name: 'updateProduct',
-              data: { productId: id, updateData: { status: 'off', updatedAt: new Date() } }
-            });
-            if (result.result?.success) {
-              wx.showToast({ title: '商品下架成功', icon: 'success' });
-              this._loadProducts(true);
-            } else {
-              wx.showToast({ title: '下架商品失败', icon: 'none' });
-            }
-          } catch (err) {
-            wx.showToast({ title: '下架商品失败', icon: 'none' });
-          }
-        }
-      }
-    });
-  },
-
-  // 上架商品
-  上架商品(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.showModal({
-      title: '确认上架',
-      content: '确定要上架这个商品吗？',
-      success: async (res) => {
-        if (res.confirm) {
-          try {
-            const result = await wx.cloud.callFunction({
-              name: 'updateProduct',
-              data: { productId: id, updateData: { status: 'on', updatedAt: new Date() } }
-            });
-            if (result.result?.success) {
-              wx.showToast({ title: '商品上架成功', icon: 'success' });
-              this._loadProducts(true);
-            } else {
-              wx.showToast({ title: '上架商品失败', icon: 'none' });
-            }
-          } catch (err) {
-            wx.showToast({ title: '上架商品失败', icon: 'none' });
-          }
-        }
-      }
-    });
-  },
-
-  // 编辑商品
-  编辑商品(e) {
-    const { id } = e.currentTarget.dataset;
-    wx.navigateTo({ url: `/pages/admin/product-publish/index?id=${id}` });
   },
 
   // ========== 滚动手势 ==========

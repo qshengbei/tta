@@ -8,7 +8,7 @@
 /* 排序选项 */
 .sort-options {
   display: flex;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   padding: 0 32rpx;
   height: 72rpx;
   align-items: center;
@@ -40,12 +40,12 @@
 
 .sort-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   transition: all 0.3s ease;
 }
 
 .sort-option--active .sort-text {
-  color: #000;
+  color: var(--color-text-main);
   font-weight: 500;
 }
 
@@ -73,7 +73,7 @@
   grid-column: 1 / -1;
   text-align: center;
   padding: 40rpx 0;
-  color: #999;
+  color: var(--color-text-muted);
   font-size: 28rpx;
   background-color: #f8f8f8;
 }
@@ -94,14 +94,14 @@
 .product-content {
   padding: 16rpx;
   flex: 1;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 12rpx 12rpx 0 0;
 }
 
 .product-actions {
   display: flex;
   border-top: 1rpx solid #f0f0f0;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 0 0 12rpx 12rpx;
 }
 
@@ -124,7 +124,7 @@
 
 .action-button-text {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .product-image-container {
@@ -160,7 +160,7 @@
 .product-sold-out-text {
   font-size: 28rpx;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text-inverse);
   transform: rotate(-30deg);
   text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
 }
@@ -190,7 +190,7 @@
 .product-price {
   font-size: 28rpx;
   font-weight: 600;
-  color: #000;
+  color: var(--color-text-main);
   margin-right: 8rpx;
 }
 
@@ -200,20 +200,22 @@
   margin-left: 8rpx;
 }
 
-/* 空状态 */
-.empty-state {
+/* 空状态已统一为全局 .empty-view */
+
+/* 加载状态（语义独立，不再复用空态容器） */
+.loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 400rpx;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   margin: 20rpx;
   border-radius: 12rpx;
 }
 
-.empty-text {
+.loading-state__text {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 /* 响应式设计 */

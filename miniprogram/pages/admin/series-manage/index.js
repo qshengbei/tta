@@ -1,6 +1,7 @@
 // pages/admin/series-manage/index.js
 const { getCollection } = require("../../../utils/cloud");
 const { parseDbDate } = require("../../../utils/time-utils");
+const { confirm } = require("../../../utils/confirm");
 
 const db = wx.cloud.database();
 const PAGE_SIZE = 20;
@@ -89,10 +90,11 @@ Page({
   // 删除系列
   deleteSeries(e) {
     const id = e.currentTarget.dataset.id;
-    wx.showModal({
+    confirm({
       title: '删除系列',
       content: '确定要删除这个系列吗？',
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           wx.showLoading({
             title: '删除中...',
@@ -116,7 +118,6 @@ Page({
               });
             });
         }
-      }
     });
   },
 
@@ -127,10 +128,10 @@ Page({
     const newStatus = currentStatus === 'on' ? 'off' : 'on';
     const actionText = newStatus === 'on' ? '上架' : '下架';
     
-    wx.showModal({
+    confirm({
       title: `${actionText}系列`,
-      content: `确定要${actionText}这个系列吗？`,
-      success: (res) => {
+      content: `确定要${actionText}这个系列吗？`
+    }).then((res) => {
         if (res.confirm) {
           wx.showLoading({
             title: `${actionText}中...`,
@@ -168,7 +169,6 @@ Page({
             });
           });
         }
-      }
     });
   }
 });

@@ -13,9 +13,9 @@
     <text class="loading__text">加载物流信息中...</text>
   </view>
 
-  <view wx:elif="{{error}}" class="error">
-    <text class="error__text">{{errorMessage}}</text>
-    <button class="btn btn-secondary" bindtap="fetchLogistics">重试</button>
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="fetchLogistics">重试</button>
   </view>
 
   <view wx:else class="content">

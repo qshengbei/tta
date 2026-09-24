@@ -1,7 +1,7 @@
 /* pages/admin/product-type-manage/index.wxss */
 .product-type-manage {
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   padding-bottom: 100rpx; /* 为底部固定按钮留出空间 */
 }
 
@@ -9,8 +9,8 @@
   height: 60rpx;
   padding: 0 24rpx;
   font-size: 24rpx;
-  background-color: #1890ff;
-  color: #fff;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
   border: none;
   border-radius: 8rpx;
   line-height: 60rpx;
@@ -47,7 +47,7 @@
 
 .product-type-item {
   display: flex;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 12rpx;
   padding: 20rpx;
   margin-bottom: 15rpx;
@@ -88,12 +88,12 @@
 .product-type-item__created,
 .product-type-item__child-count {
   font-size: 20rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-bottom: 4rpx;
 }
 
 .product-type-item__child-count {
-  color: #1890ff;
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -117,8 +117,8 @@
   justify-content: center;
   border-radius: 8rpx;
   border: 1rpx solid #e5e5e5;
-  background-color: #fff;
-  color: #666;
+  background-color: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
   margin-left: auto;
 }
 
@@ -127,23 +127,23 @@
 }
 
 .view-button {
-  color: #1890ff;
-  border-color: #1890ff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .edit-button {
-  color: #52c41a;
-  border-color: #52c41a;
+  color: var(--color-success);
+  border-color: var(--color-success);
 }
 
 .delete-button {
-  color: #ff4d4f;
-  border-color: #ff4d4f;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
 }
 
 .toggle-button {
-  color: #faad14;
-  border-color: #faad14;
+  color: var(--color-warning);
+  border-color: var(--color-warning);
 }
 
 .level2-container {
@@ -163,49 +163,19 @@
   flex-wrap: nowrap;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100rpx 0;
-  background-color: #fff;
-  border-radius: 12rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-}
-
-.empty-state__text {
-  font-size: 24rpx;
-  color: #999;
-  margin-bottom: 20rpx;
-}
-
-.empty-state__button {
-  height: 60rpx;
-  padding: 0 32rpx;
-  font-size: 24rpx;
-  background-color: #1890ff;
-  color: #fff;
-  border: none;
-  border-radius: 8rpx;
-  line-height: 60rpx;
-}
-
-.empty-state__button::after {
-  border: none;
-}
+/* 空状态已统一为全局 .empty-view */
 
 .loading-state {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40rpx 0;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 12rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 
 .loading-state__text {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }

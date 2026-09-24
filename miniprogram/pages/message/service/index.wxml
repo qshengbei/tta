@@ -114,8 +114,8 @@
       </view>
       
       <!-- 空消息提示 -->
-      <view wx:if="{{messages.length === 0}}" class="empty-message">
-        <text class="empty-text">暂无消息</text>
+      <view wx:if="{{messages.length === 0}}" class="empty-view">
+        <text class="empty-view__text">暂无消息</text>
       </view>
       <view id="bottom-anchor" style="height: 10rpx;"></view>
     </view>
@@ -249,9 +249,16 @@
     <view wx:if="{{previewType === 'video'}}" class="media-preview-close" bindtap="closePreview">×</view>
   </view>
 
-  <view wx:if="{{showCardPicker}}" class="picker-mask" catchtap="closeCardPicker">
-    <view class="picker-panel" catchtap="stopPreviewPropagation">
-      <view class="picker-title">{{cardPickerTitle}}</view>
+  <modal-shell
+    visible="{{showCardPicker}}"
+    position="bottom"
+    title="{{cardPickerTitle}}"
+    titleAlign="center"
+    showClose="{{false}}"
+    panelHeight="70vh"
+    bind:close="closeCardPicker"
+  >
+    <view class="picker-panel">
       <block wx:if="{{cardPickerType === 'order_card'}}">
         <scroll-view class="picker-delivery-tabs" scroll-x="true" enable-flex="true" show-scrollbar="false">
           <view wx:for="{{cardPickerOrderDeliveryTabs}}" wx:key="key" class="picker-delivery-tab {{cardPickerOrderActiveDeliveryType === item.key ? 'picker-delivery-tab--active' : ''}}" bindtap="switchOrderPickerDeliveryTab" data-delivery-type="{{item.key}}">
@@ -319,7 +326,7 @@
         <view class="picker-browse-btn" bindtap="goBrowseFromPicker">去逛逛</view>
       </view>
     </view>
-  </view>
+  </modal-shell>
 
   <view wx:if="{{pendingEntryProductCardVisible && pendingEntryProductCard}}" class="entry-card-draft" catchtap="stopPreviewPropagation">
     <view class="entry-card-draft__header">

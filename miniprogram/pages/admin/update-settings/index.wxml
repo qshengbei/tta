@@ -5,7 +5,8 @@
     <!-- 购买须知设置 -->
     <view class="setting-item">
       <text class="setting-label">购买须知</text>
-      <textarea class="setting-textarea" value="{{settings.buyTips}}" bindinput="inputBuyTips" placeholder="请输入购买须知内容" maxlength="2000" auto-height />
+      <textarea class="setting-textarea" value="{{settings.buyTips}}" bindinput="inputBuyTips" placeholder="可填写全店通用的补充说明，如发货时效、包装方式、手工制品细微差异等；留空则商品详情仅显示退换政策行" maxlength="2000" auto-height />
+      <text class="setting-hint">退换货政策无需在此填写：商品详情页会按每个商品发布时的「支持七天无理由退换货」开关自动展示（支持N天/不支持N天）。此处仅填写与退换政策无关的全店通用须知，避免与商品实际政策冲突。</text>
       <button class="save-item-button" bindtap="saveBuyTips" loading="{{saving.buyTips}}">保存购买须知</button>
     </view>
 
@@ -206,13 +207,12 @@
       </view>
       
       <!-- 发货地址编辑表单 -->
-      <view wx:if="{{showDeliveryAddressForm}}" class="delivery-address-form-overlay">
-        <view class="delivery-address-form-container">
-          <view class="delivery-address-form-header">
-            <text class="delivery-address-form-title">{{editingDeliveryAddressIndex >= 0 ? '编辑发货地址' : '添加发货地址'}}</text>
-            <view class="delivery-address-form-close" bindtap="closeDeliveryAddressForm">✕</view>
-          </view>
-          
+      <modal-shell
+        visible="{{showDeliveryAddressForm}}"
+        position="bottom"
+        title="{{editingDeliveryAddressIndex >= 0 ? '编辑发货地址' : '添加发货地址'}}"
+        bind:close="closeDeliveryAddressForm"
+      >
           <view class="delivery-address-form-body">
             <view class="form-group">
               <text class="form-label">发货地址</text>
@@ -230,8 +230,7 @@
             <view class="form-btn form-btn-cancel" bindtap="closeDeliveryAddressForm">取消</view>
             <view class="form-btn form-btn-confirm" bindtap="confirmDeliveryAddress">确认</view>
           </view>
-        </view>
-      </view>
+      </modal-shell>
       
       <button class="save-item-button" bindtap="saveDeliveryAddress" loading="{{saving.deliveryAddress}}">保存发货地址</button>
     </view>
@@ -283,12 +282,13 @@
       <button class="save-item-button" bindtap="saveExpress100Parameters" loading="{{saving.express100Parameters}}">保存快递100配置</button>
     </view>
 
-    <view wx:if="{{showShippingResponsibilitySelector}}" class="selector-mask" bindtap="closeShippingResponsibilitySelector">
-      <view class="selector-sheet" catchtap="noop">
-        <view class="selector-sheet__header">
-          <text class="selector-sheet__title">{{currentShippingResponsibilityTitle || '选择运费归属'}}</text>
-          <text class="selector-sheet__close" bindtap="closeShippingResponsibilitySelector">取消</text>
-        </view>
+    <modal-shell
+      visible="{{showShippingResponsibilitySelector}}"
+      position="bottom"
+      title="{{currentShippingResponsibilityTitle || '选择运费归属'}}"
+      bind:close="closeShippingResponsibilitySelector"
+    >
+      <view class="selector-sheet__options">
         <view
           wx:for="{{shippingResponsibilityOptions}}"
           wx:key="value"
@@ -300,6 +300,9 @@
           <text wx:if="{{currentShippingResponsibilityValue === item.value}}" class="selector-sheet__check">✓</text>
         </view>
       </view>
-    </view>
+    </modal-shell>
   </view>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

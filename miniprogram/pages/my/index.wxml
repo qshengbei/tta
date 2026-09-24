@@ -189,9 +189,14 @@
   </view>
 
   <!-- 微信二维码弹窗 -->
-  <view wx:if="{{showWechatQRCodeModal}}" class="modal-overlay" bindtap="hideWechatQRCode">
-    <view class="modal-content" catchtap="stopPropagation">
+  <modal-shell
+    visible="{{showWechatQRCodeModal}}"
+    position="center"
+    showClose="{{false}}"
+    bind:close="hideWechatQRCode"
+  >
+    <view class="modal-content">
       <image class="wechat-qr-code" src="{{wechatQRCodeUrl}}" mode="aspectFit" show-menu-by-longpress="true"></image>
     </view>
-  </view>
+  </modal-shell>
 </view>

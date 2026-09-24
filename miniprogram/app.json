@@ -16,10 +16,6 @@
     "pages/order-detail/index",
     "pages/payment/index",
     "pages/payment-success/index",
-    "pages/customer-service/index",
-    "pages/category-products/index",
-    "pages/search-result/index",
-    "pages/admin/index/index",
     "pages/admin/dashboard/index",
     "pages/admin/product-manage/index",
     "pages/admin/product-publish/index",
@@ -39,7 +35,6 @@
     "pages/admin/ship-order/index",
     "pages/admin/after-sales/detail/index",
     "pages/admin/after-sales/return-tracking/index",
-    "pages/after-sales/apply/index",
     "pages/after-sales/list/index",
     "pages/after-sales/detail/index",
     "pages/after-sales/return-tracking/index"
@@ -47,7 +42,7 @@
   "window": {
     "backgroundColor": "#F5F5F5",
     "backgroundTextStyle": "light",
-    "navigationBarBackgroundColor": "#F5F5F5",
+    "navigationBarBackgroundColor": "#FFFFFF",
     "navigationBarTitleText": "Touch the Aura",
     "navigationBarTextStyle": "black"
   },

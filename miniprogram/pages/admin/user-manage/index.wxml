@@ -12,8 +12,8 @@
     </view>
     
     <!-- 空状态 -->
-    <view wx:if="{{users.length === 0 && !loading}}" class="empty-state">
-      <text class="empty-state__text">暂无用户</text>
+    <view wx:if="{{users.length === 0 && !loading}}" class="empty-view">
+      <text class="empty-view__text">暂无用户</text>
     </view>
     
     <!-- 加载状态 -->
@@ -22,3 +22,6 @@
     </view>
   </view>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

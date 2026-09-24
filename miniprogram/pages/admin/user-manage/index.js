@@ -1,4 +1,6 @@
 // pages/admin/user-manage/index.js
+import { confirm } from "../../../utils/confirm";
+
 const db = wx.cloud.database();
 Page({
 
@@ -99,7 +101,7 @@ Page({
     const userId = e.currentTarget.dataset.id;
     const user = this.data.users.find(item => item._id === userId);
     
-    wx.showModal({
+    confirm({
       title: '用户详情',
       content: `昵称: ${user.nickName || '未知'}\n创建时间: ${user.createdAt}`,
       showCancel: false

@@ -1,6 +1,8 @@
 import { getCollection } from "../../utils/cloud";
 import { getGlobalOrderWatcher } from "../../utils/globalOrderWatcher";
 import orderCacheStore from "../../utils/orderCacheStore";
+import { confirm } from "../../utils/confirm";
+import { getOrderStatusText } from "../../utils/orderStatusText";
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -1041,83 +1043,14 @@ Page({
 
   // 处理订单数据
   processOrders(ordersList) {
-    // 处理订单状态文本
+    // 处理订单状态文本（唯一真源：utils/orderStatusText.js）
     let processedOrders = ordersList.map(order => {
-      // 处理订单状态文本
       const deliveryType = order.deliveryType || 'express'; // 默认快递运输
-      let statusText = "";
-      switch (order.status) {
-        case "pending":
-          statusText = "待支付";
-          break;
-        case "paid":
-          if (deliveryType === 'express') {
-            statusText = "待发货";
-          } else if (deliveryType === 'pickup') {
-            statusText = "待自提";
-          } else if (deliveryType === 'local') {
-            statusText = "待配送";
-          } else {
-            statusText = "已支付";
-          }
-          break;
-        case "shipping":
-          if (deliveryType === 'express') {
-            // 待收货卡片主状态优先展示 logisticsState.stateName，避免与“已发货”重复显示
-            statusText = order.logisticsState?.stateName || "已发货";
-          } else if (deliveryType === 'pickup') {
-            statusText = "待自提";
-          } else if (deliveryType === 'local') {
-            statusText = "配送中";
-          } else {
-            statusText = "已发货";
-          }
-          break;
-        case "delivered":
-          if (deliveryType === 'express') {
-            statusText = "已签收，待确认收货";
-          } else if (deliveryType === 'pickup') {
-            statusText = "待自提";
-          } else if (deliveryType === 'local') {
-            statusText = "已送达，待确认收货";
-          } else {
-            statusText = "已送达";
-          }
-          break;
-
-        case "completed":
-          // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
-          statusText = "已完成";
-          break;
-        case "refund":
-          statusText = "售后处理中";
-          break;
-        case "refund_completed":
-          // 根据售后结果显示更详细的状态
-          if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
-            statusText = "部分退款";
-          } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
-            statusText = "换货完成";
-          } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
-            statusText = "退款完成";
-          } else {
-            statusText = "售后完成";
-          }
-          break;
-        case "cancelled":
-          statusText = "已取消";
-          break;
-        default:
-          statusText = "未知状态";
-      }
-
-      // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
-      if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
-        statusText = `${statusText}（部分退款）`;
-      } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
-        // 拦截成功等整单退款场景：退款到账前显示"售后处理中（整单退款）"
-        statusText = `${statusText}（整单退款）`;
-      }
+      const statusText = getOrderStatusText(order.status, deliveryType, {
+        useLogisticsStateForShipping: true,
+        logisticsStateName: order.logisticsState && order.logisticsState.stateName,
+        afterSalesResult: order.afterSalesResult
+      });
 
       // 催发货按钮：支付满12小时后才显示（不限次数，刚下单时商家需要备货时间，催发无意义）
       let canUrge = false;
@@ -1720,10 +1653,10 @@ Page({
     console.log('=== confirmReceipt 开始 ===');
     console.log('订单ID:', orderId);
     
-    wx.showModal({
+    confirm({
       title: '确认收货',
-      content: '确认已收到商品吗？',
-      success: async (res) => {
+      content: '确认已收到商品吗？'
+    }).then(async (res) => {
         if (res.confirm) {
           try {
             console.log('调用 updateOrderStatus 云函数，操作: confirm');
@@ -1746,16 +1679,15 @@ Page({
             });
           }
         }
-      }
     });
   },
 
   cancelOrder(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '取消订单',
-      content: '确定要取消这个订单吗？',
-      success: (res) => {
+      content: '确定要取消这个订单吗？'
+    }).then((res) => {
         if (res.confirm) {
           this.callUpdateOrderStatus(orderId, 'cancel', {
             cancelReason: '用户主动取消'
@@ -1772,19 +1704,18 @@ Page({
             });
           });
         }
-      }
     });
   },
 
   // 催发货
   urgeShipping(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '催发货',
       content: '已提醒商家尽快发货，您可以在订单详情页查看发货进度',
       showCancel: false,
-      confirmText: '知道了',
-      success: async () => {
+      confirmText: '知道了'
+    }).then(async () => {
         try {
           await wx.cloud.callFunction({
             name: 'sendNotification',
@@ -1804,7 +1735,6 @@ Page({
             icon: 'none'
           });
         }
-      }
     });
   },
 
@@ -1839,10 +1769,11 @@ Page({
   // 删除订单（软删除）
   deleteOrder(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '删除订单',
       content: '确定要删除这个订单吗？',
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           const orders = getCollection("orders");
           orders.doc(orderId).update({
@@ -1867,7 +1798,6 @@ Page({
               });
             });
         }
-      }
     });
   },
 
@@ -1911,14 +1841,6 @@ Page({
       originalOrders: updatedOrders
     });
     this.processOrders(updatedOrders);
-  },
-
-  // 申请售后
-  afterSales(e) {
-    const orderId = e.currentTarget.dataset.orderId;
-    wx.navigateTo({
-      url: `/pages/after-sales/apply/index?orderId=${orderId}`
-    });
   },
 
   _updateOrderLogisticsState(orderId, logisticsResult) {

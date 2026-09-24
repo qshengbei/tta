@@ -24,9 +24,9 @@
     </view>
 
     <!-- 空状态 -->
-    <view wx:if="{{series.length === 0 && !loading && !loadingMore}}" class="empty-state">
-      <text class="empty-state__text">暂无系列</text>
-      <button class="empty-state__button" bindtap="addSeries">添加系列</button>
+    <view wx:if="{{series.length === 0 && !loading && !loadingMore}}" class="empty-view">
+      <text class="empty-view__text">暂无系列</text>
+      <button class="empty-view__btn" bindtap="addSeries">添加系列</button>
     </view>
     
     <!-- 加载状态 -->
@@ -38,3 +38,6 @@
   <!-- 底部固定添加按钮 -->
   <button class="add-button fixed-bottom" bindtap="addSeries">添加系列</button>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

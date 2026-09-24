@@ -168,34 +168,9 @@
   color: #999999;
 }
 
-.return-tracking__picker {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-}
-
-.return-tracking__picker-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.return-tracking__picker-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #ffffff;
-  border-radius: 24rpx 24rpx 0 0;
-}
-
+/* 快递公司选择器（外壳由 modal-shell 提供） */
 .return-tracking__picker-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;

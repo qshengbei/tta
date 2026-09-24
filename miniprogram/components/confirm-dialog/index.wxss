@@ -1,0 +1,62 @@
+/* components/confirm-dialog/index.wxss
+   统一确认弹窗内容区（外壳的遮罩/圆角/动画来自 modal-shell） */
+.confirm-dialog {
+  padding: 48rpx 40rpx 36rpx;
+}
+
+.confirm-dialog__title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #333;
+  text-align: center;
+}
+
+.confirm-dialog__content {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  color: #666;
+  line-height: 1.6;
+  text-align: center;
+  /* 保留 wx.showModal 的换行表现 */
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 48rpx;
+}
+
+.confirm-dialog__btn {
+  flex: 1;
+  height: 84rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  color: #333;
+  font-size: 30rpx;
+  border-radius: 12rpx;
+}
+
+/* 确认按钮语义色：default(黑) | info(蓝) | success(绿) | danger(红) */
+.confirm-dialog__btn--default {
+  background-color: #000;
+  color: #fff;
+}
+
+.confirm-dialog__btn--info {
+  background-color: #1890ff;
+  color: #fff;
+}
+
+.confirm-dialog__btn--success {
+  background-color: #52c41a;
+  color: #fff;
+}
+
+.confirm-dialog__btn--danger {
+  background-color: #ff4d4f;
+  color: #fff;
+}

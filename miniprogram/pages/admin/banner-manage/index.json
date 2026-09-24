@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "轮播图管理",
-  "navigationStyle": "default"
+  "navigationStyle": "default",
+  "usingComponents": {
+    "confirm-dialog": "../../../components/confirm-dialog/index"
+  }
 }

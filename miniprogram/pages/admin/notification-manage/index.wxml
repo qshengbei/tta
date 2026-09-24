@@ -135,8 +135,8 @@
 
   <!-- 补货通知内容 -->
   <view wx:if="{{activeTab === 'restock'}}">
-    <view wx:if="{{restockList.length === 0}}" class="empty-state">
-      <text>暂无补货提醒</text>
+    <view wx:if="{{restockList.length === 0}}" class="empty-view">
+      <text class="empty-view__text">暂无补货提醒</text>
     </view>
     <view wx:else class="restock-list">
       <view 
@@ -179,37 +179,37 @@
             已处理
           </text>
         </view>
-        <!-- 用户列表弹窗 -->
-        <view 
-          class="user-list-modal" 
-          wx:if="{{showUserList && currentRestockId === item._id}}"
-        >
-          <view class="user-list-content">
-            <view class="user-list-header">
-              <text class="user-list-title">补货用户列表</text>
-              <text class="close-btn" bindtap="hideUserList">×</text>
-            </view>
-            <view class="user-list">
-              <view 
-                class="user-item"
-                wx:for="{{item.users}}"
-                wx:key="openid"
-              >
-                <image 
-                  class="user-avatar"
-                  src="{{item.avatarUrl || '/images/default-avatar.png'}}"
-                  mode="aspectFill"
-                />
-                <view class="user-info">
-                  <text class="user-name">{{item.nickName}}</text>
-                  <text class="request-time">{{item.requestTime}}</text>
-                  <text class="request-count">请求次数：{{item.requestCount}}</text>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
       </view>
     </view>
   </view>
+
+  <!-- 补货用户列表弹窗 -->
+  <modal-shell
+    visible="{{showUserList}}"
+    position="center"
+    title="补货用户列表"
+    bind:close="hideUserList"
+  >
+    <view class="user-list">
+      <view
+        class="user-item"
+        wx:for="{{currentRestockUsers}}"
+        wx:key="openid"
+      >
+        <image
+          class="user-avatar"
+          src="{{item.avatarUrl || '/images/default-avatar.png'}}"
+          mode="aspectFill"
+        />
+        <view class="user-info">
+          <text class="user-name">{{item.nickName}}</text>
+          <text class="request-time">{{item.requestTime}}</text>
+          <text class="request-count">请求次数：{{item.requestCount}}</text>
+        </view>
+      </view>
+    </view>
+  </modal-shell>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

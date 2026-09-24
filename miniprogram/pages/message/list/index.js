@@ -2,6 +2,8 @@ Page({
   data: {
     type: '',
     notifications: [],
+    // 加载失败标记（列表为空时显示可重试错误态，避免伪装成「暂无通知」）
+    error: false,
     loading: false,
     loadingMore: false,
     hasMore: true,
@@ -52,7 +54,8 @@ Page({
         notifications: [], 
         pageNum: 0, 
         hasMore: true,
-        loading: true 
+        loading: true,
+        error: false
       });
     }
     
@@ -81,17 +84,32 @@ Page({
           });
         }
         
-        // 检查是否还有更多数据
-        this.setData({ hasMore: notifications.length === this.data.pageSize });
+        // 检查是否还有更多数据，并推进分页计数器。
+        // pageNum 只在成功取到本页数据后自增，加载更多失败时保持不动，
+        // 下次触底会重试同一页，不会跳过一整页导致列表出现永久缺口。
+        this.setData({
+          hasMore: notifications.length === this.data.pageSize,
+          pageNum: this.data.pageNum + 1
+        });
       } else {
         this.setData({ hasMore: false });
       }
     } catch (error) {
       console.error('加载通知消息失败', error);
-      wx.showToast({ title: '加载消息失败', icon: 'none' });
+      // 列表为空时显示可重试的错误态；已有旧数据时只是刷新失败，Toast 提示，不吞掉内容
+      if (this.data.notifications.length === 0) {
+        this.setData({ error: true });
+      } else {
+        wx.showToast({ title: '加载消息失败', icon: 'none' });
+      }
     } finally {
       this.setData({ loading: false, loadingMore: false });
     }
+  },
+
+  // 加载失败后重试
+  retryLoadNotifications() {
+    this.loadNotifications(true);
   },
 
   // 加载更多通知
@@ -99,7 +117,7 @@ Page({
     console.log('[通知列表] loadMoreNotifications 被调用', {
       loadingMore: this.data.loadingMore,
       hasMore: this.data.hasMore,
-      currentPage: this.data.pageNum,
+      nextPage: this.data.pageNum,
       currentCount: this.data.notifications.length
     });
     
@@ -108,9 +126,15 @@ Page({
       console.log('[通知列表] 不执行加载：loadingMore=', this.data.loadingMore, 'hasMore=', this.data.hasMore);
       return;
     }
+
+    // 首次加载失败（空列表 + 错误态）时不自动翻页重试，交由重试按钮触发
+    if (this.data.error && this.data.notifications.length === 0) {
+      console.log('[通知列表] 处于错误态，跳过自动翻页');
+      return;
+    }
     
     this.setData({ loadingMore: true });
-    this.setData({ pageNum: this.data.pageNum + 1 });
+    // 此处不再预增 pageNum，自增已挪到 loadNotifications 的成功分支
     console.log('[通知列表] 开始加载第', this.data.pageNum, '页');
     await this.loadNotifications(false);
   },
@@ -189,7 +213,7 @@ Page({
       return;
     }
     // 标记消息为已读（仅更新本地，不刷新列表）
-    this.markNotificationAsRead(id, { skipReload: true });
+    this.markNotificationAsRead(id);
     this.setData({ hasNavigatedToDetail: true });
     wx.navigateTo({
       url: `/pages/message/detail/index?id=${id}`
@@ -243,9 +267,8 @@ Page({
     this.setData({ notifications });
   },
 
-  // 标记通知消息为已读
-  async markNotificationAsRead(id, options = {}) {
-    const { skipReload = false } = options;
+  // 标记通知消息为已读（仅更新本地状态，不重新请求列表）
+  async markNotificationAsRead(id) {
     try {
       const result = await wx.cloud.callFunction({
         name: 'updateNotificationStatus',
@@ -261,10 +284,6 @@ Page({
       }
 
       this.updateNotificationLocalStatus(id, 'read');
-
-      if (!skipReload) {
-        await this.loadNotifications(true);
-      }
     } catch (error) {
       console.error('标记消息已读失败', error);
       wx.showToast({ title: '操作失败', icon: 'none' });

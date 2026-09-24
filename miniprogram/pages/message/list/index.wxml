@@ -50,8 +50,12 @@
           </view>
         </view>
       </view>
-      <view wx:if="{{notifications.length === 0}}" class="empty-notification">
-        <text class="empty-text">暂无{{type}}通知</text>
+      <view wx:if="{{error && notifications.length === 0}}" class="error-view">
+        <text class="error-view__text">通知加载失败，请稍后重试</text>
+        <button class="error-view__btn" bindtap="retryLoadNotifications">重试</button>
+      </view>
+      <view wx:elif="{{notifications.length === 0}}" class="empty-view">
+        <text class="empty-view__text">暂无{{type}}通知</text>
       </view>
       
       <!-- 加载更多提示 -->

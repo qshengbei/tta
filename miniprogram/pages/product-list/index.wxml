@@ -1,6 +1,6 @@
 <view class="products-list-page" style="padding-top: 166rpx;">
   <!-- 顶部搜索和筛选组件 -->
-  <search-filter-panel pageType="products" searchKeyword="{{keyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10002;"/>
+  <search-filter-panel pageType="products" historyScope="productList" searchKeyword="{{keyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10002;"/>
 
   <!-- 排序选项 -->
   <view class="sort-options" style="position: fixed; top: 94rpx; left: 0; right: 0; z-index: 998; background-color: #fff; transition: transform 0.3s ease; transform: translateY({{isTopBarVisible ? '0rpx' : '-100%'}});">
@@ -31,8 +31,19 @@
     </view>
   </view>
 
+  <!-- 错误态 -->
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage || '加载失败，请稍后重试'}}</text>
+    <button class="error-view__btn" bindtap="reload">重试</button>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:elif="{{!loading && products.length === 0}}" class="empty-view empty-view--page">
+    <text class="empty-view__text">{{emptyText}}</text>
+  </view>
+
   <!-- 商品列表 -->
-  <scroll-view wx:if="{{!showSkeleton}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscrolltolower="_loadMoreProducts" lower-threshold="50" style="height: calc(100vh - 166rpx);">
+  <scroll-view wx:else scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscrolltolower="_loadMoreProducts" lower-threshold="50" style="height: calc(100vh - 166rpx);">
     <view class="products-list">
       <view wx:for="{{products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
         <view class="product-image-container">
@@ -55,4 +66,5 @@
       </view>
     </view>
   </scroll-view>
+
 </view>

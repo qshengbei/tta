@@ -1,12 +1,14 @@
 // pages/after-sales/detail/index.js
 import { getCollection } from "../../../utils/cloud";
 import watcherManager from '../../../utils/watcherManager';
+import { confirm } from '../../../utils/confirm';
 import {
+  TYPE_TEXT_MAP,
   STATUS_TEXT_MAP,
+  getExchangeStatusText,
   getAfterSalesStatusText,
   getAfterSalesStatusDesc,
-  getAfterSalesTypeText,
-  EXCHANGE_TYPES
+  getAfterSalesTypeText
 } from '../../../utils/afterSalesStatus';
 
 const QUALITY_REASONS = [
@@ -100,7 +102,9 @@ Page({
   data: {
     afterSales: {},
     afterSalesItems: [],
-    isLegacy: false,
+    // 整页加载失败标记（无数据时显示可重试错误态，替代原来的 Toast + 强制返回）
+    error: false,
+    errorMessage: '',
     remainingTime: 0,
     isExpired: false,
     processingExpired: false,
@@ -128,6 +132,8 @@ Page({
       this.caseId = id;
       this.cancelAttempted = new Set();
       this.fetchAfterSalesDetail(id);
+    } else {
+      this.setData({ error: true, errorMessage: '售后记录不存在' });
     }
   },
 
@@ -172,10 +178,6 @@ Page({
 
     return getCollection('after_sales_cases').doc(id).get()
       .then((res) => {
-        if (!res.data) {
-          return this.fetchLegacyAfterSalesDetail(id);
-        }
-
         return getCollection('after_sales_case_items').where({ caseId: id }).orderBy('createdAt', 'asc').get()
           .then((itemsRes) => {
             const items = (itemsRes.data || []).map((item) => this.normalizeCaseItem(item));
@@ -188,7 +190,8 @@ Page({
             this.setData({
               afterSales: afterSales,
               afterSalesItems: items,
-              isLegacy: false,
+              error: false,
+              errorMessage: '',
               combinedMediaList: this.generateCombinedMediaList(afterSales.proofImages, afterSales.proofVideos, afterSales.proofVideoThumbs)
             });
             this.startAutoProcessCountdown();
@@ -199,7 +202,27 @@ Page({
             wx.hideLoading();
           });
       })
-      .catch(() => this.fetchLegacyAfterSalesDetail(id));
+      .catch((err) => {
+        wx.hideLoading();
+        console.error('获取售后详情失败', err);
+        // 已有数据时只是刷新失败：Toast 提示，保留旧内容，不再强制返回列表
+        if (this.data.afterSales && this.data.afterSales._id) {
+          wx.showToast({ title: '获取售后详情失败', icon: 'none' });
+          return;
+        }
+        // 首次加载失败（无数据）：整页错误态 + 重试，避免自动返回在无返回栈时留下白屏
+        this.setData({ error: true, errorMessage: '售后详情加载失败，请稍后重试' });
+      });
+  },
+
+  // 加载失败后重试
+  retryLoad() {
+    if (!this.caseId) {
+      wx.navigateBack({ delta: 1 });
+      return;
+    }
+    this.setData({ error: false, errorMessage: '' });
+    this.fetchAfterSalesDetail(this.caseId);
   },
 
   // 启动售后单监听
@@ -249,30 +272,6 @@ Page({
         this.fetchAfterSalesDetail(this.caseId);
       }
     });
-  },
-
-  fetchLegacyAfterSalesDetail(id) {
-    return getCollection('afterSales').doc(id).get()
-      .then((res) => {
-        wx.hideLoading();
-        if (res.data) {
-          this.setData({
-            afterSales: this.normalizeLegacyCaseRecord(res.data),
-            afterSalesItems: [],
-            isLegacy: true
-          });
-          return;
-        }
-
-        wx.showToast({ title: '售后记录不存在', icon: 'none' });
-        setTimeout(() => wx.navigateBack(), 1000);
-      })
-      .catch((err) => {
-        wx.hideLoading();
-        console.error('获取售后详情失败', err);
-        wx.showToast({ title: '获取售后详情失败', icon: 'none' });
-        setTimeout(() => wx.navigateBack(), 1000);
-      });
   },
 
   normalizeCaseRecord(record) {
@@ -335,37 +334,6 @@ Page({
     };
   },
 
-  normalizeLegacyCaseRecord(record) {
-    const status = record.status || 'pending';
-    const type = record.type || 'refund';
-    return {
-      ...record,
-      orderNo: record.orderNo || record.orderId,
-      type,
-      typeText: getAfterSalesTypeText(type),
-      status,
-      statusText: getAfterSalesStatusText(status, type),
-      statusDesc: getAfterSalesStatusDesc(status, type, false),
-      statusClass: STATUS_CLASS_MAP[status] || '',
-      refundAmount: Number(record.refundAmount || 0) || 0,
-      reason: record.reason || '',
-      proofImages: Array.isArray(record.proofImages) ? record.proofImages : [],
-      proofVideos: Array.isArray(record.proofVideos) ? record.proofVideos : [],
-      proofVideoThumbs: Array.isArray(record.proofVideoThumbs) ? record.proofVideoThumbs : [],
-      processInfo: record.processInfo
-        ? {
-            opinion: record.processInfo.opinion || '',
-            processTimeText: formatTime(record.processInfo.processTime)
-          }
-        : null,
-      createdAtText: formatTime(record.createdAt),
-      updatedAtText: formatTime(record.updatedAt),
-      itemCount: 1,
-      totalApplyQty: 1,
-      shippingResponsibilityText: ''
-    };
-  },
-
   normalizeCaseItem(item) {
     const type = item.afterSalesType || 'refund';
     const status = item.itemStatus || 'submitted';
@@ -403,37 +371,32 @@ Page({
       return;
     }
 
-    wx.showModal({
+    confirm({
       title: '取消售后',
-      content: '确定要取消售后申请吗？',
-      success: (res) => {
+      content: '确定要取消售后申请吗？'
+    }).then((res) => {
         if (res.confirm) {
           this.performCancelAfterSales();
         }
-      }
     });
   },
 
   performCancelAfterSales() {
     wx.showLoading({ title: '取消中...' });
 
-    const request = this.data.isLegacy
-      ? this.cancelLegacyAfterSales()
-      : wx.cloud.callFunction({
-          name: 'updateOrderStatus',
-          data: {
-            orderId: this.data.afterSales.orderId,
-            operation: 'cancelAfterSales',
-            params: {
-              caseId: this.data.afterSales._id,
-              result: '用户取消售后申请',
-              operatorType: 'user'
-            }
-          }
-        });
-
-    request.then((res) => {
-      if (!this.data.isLegacy && (!res.result || !res.result.success)) {
+    wx.cloud.callFunction({
+      name: 'updateOrderStatus',
+      data: {
+        orderId: this.data.afterSales.orderId,
+        operation: 'cancelAfterSales',
+        params: {
+          caseId: this.data.afterSales._id,
+          result: '用户取消售后申请',
+          operatorType: 'user'
+        }
+      }
+    }).then((res) => {
+      if (!res.result || !res.result.success) {
         throw new Error(res.result?.error || '取消售后失败');
       }
       wx.hideLoading();
@@ -447,23 +410,6 @@ Page({
       console.error('取消售后失败', err);
       wx.showToast({ title: err.message || '取消售后失败', icon: 'none' });
     });
-  },
-
-  cancelLegacyAfterSales() {
-    const afterSales = getCollection('afterSales');
-    return afterSales.doc(this.data.afterSales._id).update({
-      data: {
-        status: 'cancelled',
-        updatedAt: new Date()
-      }
-    }).then(() => getCollection('orders').doc(this.data.afterSales.orderId).update({
-      data: {
-        status: 'completed',
-        afterSalesStatus: 'cancelled',
-        updatedAt: new Date(),
-        updatedAtTs: Date.now()
-      }
-    }));
   },
 
   // 找到第一个待买家收货的明细
@@ -480,14 +426,13 @@ Page({
       return;
     }
 
-    wx.showModal({
+    confirm({
       title: '确认收货',
-      content: '确认已收到商家寄回的商品吗？',
-      success: (res) => {
+      content: '确认已收到商家寄回的商品吗？'
+    }).then((res) => {
         if (res.confirm) {
           this.performConfirmReturnReceived(targetItem._id);
         }
-      }
     });
   },
 

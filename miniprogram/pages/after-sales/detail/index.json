@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "售后详情",
-  "usingComponents": {}
+  "usingComponents": {
+    "logistics-modal": "../../../components/logistics-modal/index",
+    "confirm-dialog": "../../../components/confirm-dialog/index"
+  }
 }

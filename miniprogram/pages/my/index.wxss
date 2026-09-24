@@ -283,53 +283,18 @@
   border: none;
 }
 
-/* 微信二维码弹窗 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
+/* 微信二维码弹窗（外壳由 modal-shell 提供） */
 .modal-content {
-  background-color: #ffffff;
-  border-radius: 12rpx;
   padding: 40rpx;
-  width: 90%;
-  max-width: 500rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.15);
 }
 
 .wechat-qr-code {
   max-width: 95%;
   max-height: 70vh;
   margin-bottom: 30rpx;
-}
-
-.wechat-qr-code-text {
-  font-size: 24rpx;
-  color: #333333;
-  margin-bottom: 30rpx;
-  text-align: center;
-}
-
-.wechat-qr-code-close {
-  font-size: 24rpx;
-  color: #3B82F6;
-  margin-top: 10rpx;
-  cursor: pointer;
-  padding: 10rpx 20rpx;
-  border-radius: 8rpx;
-  background-color: #f5f5f5;
 }
 
 /* 响应式设计 */

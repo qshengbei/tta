@@ -1,6 +1,7 @@
 // pages/admin/product-type-manage/index.js
 const { getCollection } = require("../../../utils/cloud");
 const { parseDbDate } = require("../../../utils/time-utils");
+const { confirm } = require("../../../utils/confirm");
 
 const db = wx.cloud.database();
 
@@ -121,10 +122,11 @@ Page({
       return;
     }
     
-    wx.showModal({
+    confirm({
       title: '删除商品类型',
       content: '确定要删除这个商品类型吗？',
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           wx.showLoading({
             title: '删除中...',
@@ -148,7 +150,6 @@ Page({
               });
             });
         }
-      }
     });
   }
 });

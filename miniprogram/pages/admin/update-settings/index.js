@@ -1,4 +1,6 @@
 // pages/admin/update-settings/index.js
+import { confirm } from "../../../utils/confirm";
+
 const db = wx.cloud.database();
 
 const SHIPPING_RESPONSIBILITY_OPTIONS = [
@@ -832,10 +834,6 @@ Page({
     });
   },
 
-  noop() {
-    return;
-  },
-
   selectShippingResponsibilityOption(e) {
     const type = this.data.currentShippingResponsibilityType;
     const responsibility = String(e.currentTarget.dataset.value || 'seller');
@@ -1406,10 +1404,10 @@ Page({
    */
   removeDeliveryAddress(e) {
     const index = e.currentTarget.dataset.index;
-    wx.showModal({
+    confirm({
       title: '删除发货地址',
-      content: '确定要删除这个发货地址吗？',
-      success: (res) => {
+      content: '确定要删除这个发货地址吗？'
+    }).then((res) => {
         if (res.confirm) {
           const deliveryAddress = [...this.data.settings.deliveryAddress];
           deliveryAddress.splice(index, 1);
@@ -1419,7 +1417,6 @@ Page({
             icon: 'success'
           });
         }
-      }
     });
   },
 

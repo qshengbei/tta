@@ -1,4 +1,5 @@
 const { EXPRESS_COMPANIES, COMMON_EXPRESS_COMPANIES, getCompanyByCode } = require('../../../utils/expressCompanies');
+const { confirm } = require('../../../utils/confirm');
 
 Page({
   data: {
@@ -241,13 +242,13 @@ Page({
         // 运单号与其他售后单重复：寄回运费补偿已自动取消，弹窗明确告知（同一运单号只补偿一次）
         if (result.compensationDuplicated) {
           setTimeout(() => {
-            wx.showModal({
+            confirm({
               title: '寄回运费不重复补偿',
               content: `该运单号已用于售后单${result.duplicateCaseNo ? ' ' + result.duplicateCaseNo : ''}，同一运单号仅补偿一次，本单寄回运费补偿已取消。若本单确实是分开寄回的，请修改为实际运单号，补偿将自动恢复。`,
               showCancel: false,
               confirmText: '我知道了',
-              success: () => wx.navigateBack()
-            });
+              maskClosable: false
+            }).then(() => wx.navigateBack());
           }, 300);
         } else {
           const message = isModify

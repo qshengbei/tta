@@ -228,6 +228,12 @@ Page({
     hasNavigatedAway: false,
     // 是否显示骨架屏
     showSkeleton: true,
+    // 错误态（加载失败时展示，可重试）
+    error: false,
+    errorMessage: '',
+    // 「分类」「系列」两个 tab 各自的加载失败标记（与商品 tab 的 error 互不干扰）
+    categoryError: false,
+    seriesError: false,
     // 页面可见性状态
     pageVisible: false,
     // 页面隐藏期间是否有数据变更
@@ -1802,8 +1808,12 @@ Page({
       }
     }
 
-    if (reset && this.data.products.length === 0) {
-      this.setData({ showSkeleton: true });
+    if (reset) {
+      // 重新加载时清空上一次的错误态
+      this.setData({ error: false, errorMessage: '' });
+      if (this.data.products.length === 0) {
+        this.setData({ showSkeleton: true });
+      }
     }
 
     try {
@@ -2138,7 +2148,12 @@ Page({
     } catch (err) {
       console.error('加载商品失败:', err);
       wx.hideLoading();
-      this.setData({ showSkeleton: false, loadingMore: false });
+      this.setData({
+        showSkeleton: false,
+        loadingMore: false,
+        error: true,
+        errorMessage: '商品加载失败，请稍后重试'
+      });
       this._isLoadingProducts = false; // 加载失败，重置标志
     }
   },
@@ -2280,11 +2295,24 @@ Page({
       if (data && data.length > 0 && reset) {
         this.setCachedSeries(this.data.seriesList);
       }
+      if (this.data.seriesError) this.setData({ seriesError: false });
       this._tabsLoaded.series = true;
     } catch (err) {
       console.error('加载系列失败:', err);
-      this.setData({ seriesListLoadingMore: false });
+      // 首页失败且列表为空 → 出错误态可重试；已有旧数据时只是刷新失败，用 Toast 提示，
+      // 分页器的 hasMore 未被改动，触底仍会自动重试
+      if (this.data.seriesList.length === 0) {
+        this.setData({ seriesListLoadingMore: false, seriesError: true });
+      } else {
+        this.setData({ seriesListLoadingMore: false });
+        wx.showToast({ title: '系列加载失败，请稍后重试', icon: 'none' });
+      }
     }
+  },
+
+  retryLoadSeries() {
+    this.setData({ seriesError: false });
+    this.loadSeries(true);
   },
 
   loadMoreSeriesList() {
@@ -2347,11 +2375,24 @@ Page({
       }
       
       this.setData({ categoryLoadingMore: false });
+      if (this.data.categoryError) this.setData({ categoryError: false });
       this._tabsLoaded.categories = true;
     } catch (err) {
       console.error('加载分类失败:', err);
-      this.setData({ categoryLoadingMore: false });
+      // 首页失败且列表为空 → 出错误态可重试；已有旧数据时只是刷新失败，用 Toast 提示，
+      // 分页器的 categoryHasMore 未被改动，触底仍会自动重试
+      if (this.data.level1Categories.length === 0) {
+        this.setData({ categoryLoadingMore: false, categoryError: true });
+      } else {
+        this.setData({ categoryLoadingMore: false });
+        wx.showToast({ title: '分类加载失败，请稍后重试', icon: 'none' });
+      }
     }
+  },
+
+  retryLoadCategories() {
+    this.setData({ categoryError: false });
+    this.loadCategories(true);
   },
 
   loadMoreCategories() {
@@ -2955,7 +2996,7 @@ Page({
       await this._setPriceCacheAndData(order, priceCacheKey, sorted);
     } catch (error) {
       console.error('[宝贝页面] 加载价格排序数据失败:', error);
-      this.setData({ showSkeleton: false });
+      this.setData({ showSkeleton: false, error: true, errorMessage: '商品加载失败，请稍后重试' });
     }
   },
 
@@ -3155,6 +3196,7 @@ Page({
     } catch (error) {
       console.error('[宝贝页面] 加载系列商品失败:', error);
       this.setData({ seriesLoadingMore: false });
+      wx.showToast({ title: '系列商品加载失败，请稍后重试', icon: 'none' });
     }
   },
 
@@ -3302,7 +3344,10 @@ Page({
         products: [], 
         originalProducts: [], 
         hasMore: true,
-        scrollTop: 0 
+        scrollTop: 0,
+        showSkeleton: true,
+        error: false,
+        errorMessage: ''
       });
       this.__cacheIndex = 0;
     }
@@ -3375,8 +3420,25 @@ Page({
       this.setData({ showSkeleton: false });
     } catch (err) {
       console.error('[宝贝页面] fetchProductsWithFilters 失败:', err);
+      this.setData({ error: true, errorMessage: '商品加载失败，请稍后重试' });
     } finally {
       wx.hideLoading();
+    }
+  },
+
+  /**
+   * 加载失败后重试（错误态「重试」按钮）
+   */
+  reload() {
+    const { searchKeyword, categories, inStock } = this.data;
+    const hasFilters = (searchKeyword && searchKeyword.trim() !== '') ||
+                       (categories && categories.length > 0) ||
+                       inStock !== null;
+
+    if (hasFilters) {
+      this.fetchProductsWithFilters(true);
+    } else {
+      this.fetchProductsFromDatabase(true);
     }
   },
 

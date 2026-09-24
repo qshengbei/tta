@@ -42,7 +42,7 @@
       
       <!-- 搜索建议 -->
       <view wx:if="{{searchKeyword && searchSuggestions.length > 0}}" class="search-filter-panel__search-suggestions">
-        <view wx:for="{{searchSuggestions}}" wx:key="{{index}}" class="search-filter-panel__search-suggestion-item" bindtap="useSearchSuggestion" data-keyword="{{item}}">
+        <view wx:for="{{searchSuggestions}}" wx:key="*this" class="search-filter-panel__search-suggestion-item" bindtap="useSearchSuggestion" data-keyword="{{item}}">
           <image class="search-filter-panel__search-suggestion-icon" src="../../images/icons/搜索.png" mode="aspectFit"/>
           <text class="search-filter-panel__search-suggestion-text">{{item}}</text>
         </view>
@@ -57,7 +57,7 @@
           </view>
         </view>
         <view wx:if="{{searchHistory.length > 0}}" class="search-filter-panel__search-history-tags">
-          <view wx:for="{{searchHistory}}" wx:key="{{index}}" class="search-filter-panel__search-history-tag" bindtap="useSearchHistory" data-keyword="{{item}}">
+          <view wx:for="{{searchHistory}}" wx:key="*this" class="search-filter-panel__search-history-tag" bindtap="useSearchHistory" data-keyword="{{item}}">
             <text>{{item}}</text>
           </view>
         </view>
