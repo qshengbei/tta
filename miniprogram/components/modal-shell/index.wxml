@@ -1,0 +1,20 @@
+<view
+  wx:if="{{visible}}"
+  class="modal-shell modal-shell--{{position}}"
+  style="z-index: {{zIndex}};"
+  catchtouchmove="preventTouchMove"
+>
+  <view class="modal-shell__mask" bindtap="onMaskTap"></view>
+  <view class="modal-shell__panel" style="{{position === 'bottom' && panelHeight ? 'height:' + panelHeight : ''}}">
+    <view
+      wx:if="{{title}}"
+      class="modal-shell__header modal-shell__header--{{titleAlign}}"
+    >
+      <text class="modal-shell__title">{{title}}</text>
+      <view wx:if="{{showClose}}" class="modal-shell__close" bindtap="onClose">×</view>
+    </view>
+    <view class="modal-shell__body">
+      <slot></slot>
+    </view>
+  </view>
+</view>

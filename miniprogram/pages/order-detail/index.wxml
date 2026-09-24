@@ -5,9 +5,9 @@
     <text class="order-detail__loading-text">加载中...</text>
   </view>
 
-  <view wx:elif="{{error}}" class="order-detail__error">
-    <text class="order-detail__error-text">{{errorMessage}}</text>
-    <button class="order-detail__error-button" bindtap="goBack">返回</button>
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="goBack">返回</button>
   </view>
 
   <view wx:else class="order-detail__content">
@@ -83,23 +83,11 @@
       </view>
         <!-- 同城配送地图信息 -->
         <view class="local-delivery-info__map">
-          <!-- 配送范围图例 -->
+          <!-- 配送范围图例（颜色与文案由 map-utils.buildDeliveryLegend 统一生成） -->
           <view class="local-delivery-info__legend">
-            <view class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: #00ff99"></view>
-              <text class="local-delivery-info__legend-text">0-2公里 免费</text>
-            </view>
-            <view class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: #ffff99"></view>
-              <text class="local-delivery-info__legend-text">2-5公里 5元</text>
-            </view>
-            <view class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: #ff9999"></view>
-              <text class="local-delivery-info__legend-text">5-10公里 10元</text>
-            </view>
-            <view class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: #999999"></view>
-              <text class="local-delivery-info__legend-text">＞10公里 不配送</text>
+            <view wx:for="{{deliveryLegend}}" wx:key="text" class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: {{item.color}}"></view>
+              <text class="local-delivery-info__legend-text">{{item.text}}</text>
             </view>
           </view>
           <view class="local-delivery-info__map-container">
@@ -456,14 +444,15 @@
   </view>
 
   <!-- 售后类型选择弹窗 -->
-  <view wx:if="{{showAfterSalesTypeModal}}" class="after-sales-modal">
-    <view class="after-sales-modal__mask" bindtap="closeAfterSalesTypeModal"></view>
-    <scroll-view class="after-sales-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
-      <view class="after-sales-modal__header">
-        <text class="after-sales-modal__title">
-              {{afterSalesStep === 1 ? '选择售后类型' : (afterSalesStep === 2 ? '选择售后原因' : (afterSalesStep === 3 ? '上传凭证/说明' : '确认售后信息'))}}
-            </text>
-      </view>
+  <modal-shell
+    visible="{{showAfterSalesTypeModal}}"
+    position="bottom"
+    titleAlign="center"
+    showClose="{{false}}"
+    panelHeight="70vh"
+    title="{{afterSalesStep === 1 ? '选择售后类型' : (afterSalesStep === 2 ? '选择售后原因' : (afterSalesStep === 3 ? '上传凭证/说明' : '确认售后信息'))}}"
+    bind:close="closeAfterSalesTypeModal">
+    <scroll-view class="order-detail__sheet" scroll-y enhanced show-scrollbar="{{false}}">
       <view class="after-sales-modal__body">
         <!-- 步骤1：选择售后类型 -->
         <view wx:if="{{afterSalesStep === 1}}">
@@ -818,16 +807,17 @@
         </view>
         <button wx:if="{{afterSalesStep === 1}}" class="after-sales-modal__btn-next" bindtap="nextAfterSalesStep" disabled="{{!selectedAfterSalesType}}">下一步</button>
       </view>
-    </scroll-view>
+  </scroll-view>
+</modal-shell>
 
     <!-- 查看凭证弹窗（上滑样式） -->
-      <view wx:if="{{showUploadInfoModal}}" class="upload-info-modal">
-        <view class="upload-info-modal__mask" bindtap="closeUploadInfoModal" catchtouchmove="preventTouchMove"></view>
-        <scroll-view class="upload-info-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
-          <view class="upload-info-modal__header">
-            <text class="upload-info-modal__title">凭证/说明</text>
-            <view class="upload-info-modal__close" bindtap="closeUploadInfoModal">×</view>
-          </view>
+    <modal-shell
+      visible="{{showUploadInfoModal}}"
+      position="bottom"
+      title="凭证/说明"
+      panelHeight="70vh"
+      bind:close="closeUploadInfoModal">
+        <scroll-view class="order-detail__sheet" scroll-y enhanced show-scrollbar="{{false}}">
           <view class="upload-info-modal__body">
             <!-- 图片/视频凭证（合并显示，按上传顺序） -->
             <view class="upload-info-modal__section">
@@ -858,82 +848,30 @@
             </view>
           </view>
         </scroll-view>
-      </view>
-    </view>
+    </modal-shell>
   </view>
 
-  <!-- 物流信息弹窗 -->
-  <view wx:if="{{showLogistics}}" class="logistics-modal">
-    <view class="logistics-modal__mask" bindtap="closeLogistics" catchtouchmove="preventTouchMove"></view>
-    <scroll-view class="logistics-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
-      <!-- 弹窗头部 -->
-      <view class="logistics-modal__header">
-        <text class="logistics-modal__title">物流信息</text>
-      </view>
-      
-      <!-- 物流基本信息 -->
-      <view class="logistics-modal__info">
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">快递公司：</text>
-          <text class="logistics-modal__info-value">{{logisticsMapData.companyName || logisticsData.com}}</text>
-        </view>
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">运单号：</text>
-          <text class="logistics-modal__info-value">{{logisticsData.nu || logisticsMapData.trackingNumber}}</text>
-        </view>
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">物流状态：</text>
-          <text class="logistics-modal__info-value" style="color: {{logisticsData.state === '3' ? '#52c41a' : logisticsData.state === '2' ? '#1890ff' : logisticsData.state === '1' ? '#faad14' : logisticsData.state === '4' ? '#ff4d4f' : '#999'}}">
-            {{logisticsData.displayStateText || logisticsData.stateName || (logisticsData.state === '0' ? '无轨迹' : logisticsData.state === '1' ? '已揽收' : logisticsData.state === '2' ? '在途中' : logisticsData.state === '3' ? '已签收' : logisticsData.state === '4' ? '问题件' : '待发货')}}
-          </text>
-        </view>
-      </view>
-      
-      <!-- 物流轨迹时间线 -->
-      <view class="logistics-modal__track">
-        <view class="logistics-modal__track-title">物流轨迹</view>
-        <view class="logistics-modal__track-list">
-          <view wx:for="{{logisticsData.data}}" wx:key="{{index}}" class="logistics-modal__track-item">
-            <view class="logistics-modal__track-dot" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
-            <view class="logistics-modal__track-line" wx:if="{{index < logisticsData.data.length - 1}}" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
-            <view class="logistics-modal__track-content">
-              <text class="logistics-modal__track-text">{{item.context}}</text>
-              <text class="logistics-modal__track-time">{{item.time}}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-      
-      <!-- 地图轨迹（如果启用了地图轨迹接口） -->
-      <view wx:if="{{logisticsTrackPoints.length > 0}}" class="logistics-modal__map-section">
-        <view class="logistics-modal__map-title">地图轨迹</view>
-        <view class="logistics-modal__map-container">
-          <map class="logistics-modal__map"
-               id="logisticsMap"
-               longitude="{{logisticsMapCenter.longitude}}"
-               latitude="{{logisticsMapCenter.latitude}}"
-               scale="{{logisticsMapScale}}"
-               markers="{{logisticsTrackPoints}}"
-               show-location="true"
-               style="width: 100%; height: 100%;">
-          </map>
-        </view>
-        <view class="logistics-modal__map-buttons">
-          <button class="logistics-modal__map-btn" bindtap="resetMap">重置地图</button>
-          <button class="logistics-modal__map-btn" bindtap="fullScreenMap">全屏</button>
-        </view>
-      </view>
-    </scroll-view>
-  </view>
+  <!-- 物流信息弹窗（展示组件，数据由本页传入） -->
+  <logistics-modal
+    visible="{{showLogistics}}"
+    title="物流信息"
+    showMap="{{true}}"
+    logisticsData="{{logisticsData}}"
+    mapData="{{logisticsMapData}}"
+    mapCenter="{{logisticsMapCenter}}"
+    mapScale="{{logisticsMapScale}}"
+    trackPoints="{{logisticsTrackPoints}}"
+    bind:close="closeLogistics"
+    bind:fullscreenmap="fullScreenMap"
+  />
 
 <!-- 视频录制建议弹窗 -->
-<view wx:if="{{showVideoTipsModal}}" class="video-tips-modal">
-  <view class="video-tips-modal__mask" bindtap="closeVideoTipsModal" catchtouchmove="preventTouchMove"></view>
-  <scroll-view class="video-tips-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
-    <view class="video-tips-modal__header">
-      <text class="video-tips-modal__title">视频录制建议</text>
-      <view class="video-tips-modal__close" bindtap="closeVideoTipsModal">×</view>
-    </view>
+<modal-shell
+  visible="{{showVideoTipsModal}}"
+  position="bottom"
+  title="视频录制建议"
+  bind:close="closeVideoTipsModal">
+  <view class="video-tips-modal__content">
     <view class="video-tips-modal__body">
       <view class="video-tips-modal__tip">
         <text class="video-tips-modal__tip-icon">📦</text>
@@ -955,17 +893,16 @@
     <view class="video-tips-modal__footer">
       <button class="video-tips-modal__btn" bindtap="closeVideoTipsModal">知道了</button>
     </view>
-  </scroll-view>
-</view>
+  </view>
+</modal-shell>
 
 <!-- 售后时限规则弹窗 -->
-<view wx:if="{{showAfterSalesRulesModal}}" class="after-sales-rules-modal">
-  <view class="after-sales-rules-modal__mask" bindtap="closeAfterSalesRulesModal" catchtouchmove="preventTouchMove"></view>
-  <scroll-view class="after-sales-rules-modal__content" scroll-y enhanced show-scrollbar="{{false}}">
-    <view class="after-sales-rules-modal__header">
-      <text class="after-sales-rules-modal__title">售后时限规则</text>
-      <view class="after-sales-rules-modal__close" bindtap="closeAfterSalesRulesModal">×</view>
-    </view>
+<modal-shell
+  visible="{{showAfterSalesRulesModal}}"
+  position="center"
+  title="售后时限规则"
+  bind:close="closeAfterSalesRulesModal">
+  <scroll-view class="order-detail__sheet" scroll-y enhanced show-scrollbar="{{false}}">
     <view class="after-sales-rules-modal__body">
       <view class="after-sales-rules-modal__section">
         <view class="after-sales-rules-modal__section-title">交易成功前（未确认收货）</view>
@@ -1014,4 +951,7 @@
       </view>
     </view>
   </scroll-view>
-</view>
+</modal-shell>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

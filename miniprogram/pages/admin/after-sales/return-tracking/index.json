@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "填写寄回单号",
-  "usingComponents": {}
+  "usingComponents": {
+    "modal-shell": "../../../../components/modal-shell/index"
+  }
 }

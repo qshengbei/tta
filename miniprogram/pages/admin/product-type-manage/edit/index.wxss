@@ -99,7 +99,7 @@ form {
   width: 36rpx;
   height: 36rpx;
   background-color: rgba(255, 255, 255, 0.9);
-  color: #e74c3c;
+  color: var(--color-danger);
   display: flex;
   align-items: center;
   justify-content: center;

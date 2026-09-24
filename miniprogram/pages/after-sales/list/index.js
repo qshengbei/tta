@@ -1,6 +1,7 @@
 // pages/after-sales/list/index.js
 import { getCollection } from "../../../utils/cloud";
 import watcherManager from '../../../utils/watcherManager';
+import { confirm } from '../../../utils/confirm';
 import {
   getAfterSalesStatusText,
   getAfterSalesTypeText
@@ -63,6 +64,8 @@ Page({
     currentProductIndex: null,
     loading: true,
     pageVisible: false,
+    // 加载失败标记（列表为空时显示可重试错误态，避免伪装成「暂无售后记录」）
+    error: false,
     // 分页相关
     loadingMore: false,
     hasMore: true,
@@ -165,7 +168,7 @@ Page({
 
   fetchAfterSalesList(reset = false) {
     if (reset) {
-      this.setData({ pageNum: 0, hasMore: true, afterSalesList: [] });
+      this.setData({ pageNum: 0, hasMore: true, afterSalesList: [], error: false });
     }
     this.setData({ loading: true });
     wx.showLoading({ title: '加载中...' });
@@ -207,37 +210,18 @@ Page({
         return getCollection("after_sales_cases").where({
           orderId: db.command.in(orderIds)
         }).orderBy('createdAt', 'desc').skip(skipNum).limit(pageSize).get().then((caseRes) => {
-          const newCases = (caseRes.data || []).map((item) => this.normalizeCaseRecord(item, false));
+          const newCases = (caseRes.data || []).map((item) => this.normalizeCaseRecord(item));
           const hasMore = newCases.length === pageSize;
-          
-          if (newCases.length > 0) {
-            const afterSalesList = pageNum === 0 ? newCases : [...this.data.afterSalesList, ...newCases];
-            this.setData({
-              afterSalesList,
-              loading: false,
-              loadingMore: false,
-              hasMore,
-              pageNum: pageNum + 1
-            });
-            return true;
-          }
+          const afterSalesList = pageNum === 0 ? newCases : [...this.data.afterSalesList, ...newCases];
 
-          return getCollection('afterSales').where({
-            orderId: db.command.in(orderIds)
-          }).orderBy('createdAt', 'desc').skip(skipNum).limit(pageSize).get().then((legacyRes) => {
-            const legacyItems = (legacyRes.data || []).map((item) => this.normalizeCaseRecord(item, true));
-            const hasMore = legacyItems.length === pageSize;
-            const afterSalesList = pageNum === 0 ? legacyItems : [...this.data.afterSalesList, ...legacyItems];
-            
-            this.setData({
-              afterSalesList,
-              loading: false,
-              loadingMore: false,
-              hasMore,
-              pageNum: pageNum + 1
-            });
-            return true;
+          this.setData({
+            afterSalesList,
+            loading: false,
+            loadingMore: false,
+            hasMore,
+            pageNum: pageNum + 1
           });
+          return true;
         });
       })
       .then(() => {
@@ -247,14 +231,19 @@ Page({
         wx.hideLoading();
         this.setData({ loading: false, loadingMore: false });
         console.error("获取售后记录失败", err);
-        wx.showToast({
-          title: '获取售后记录失败',
-          icon: 'none'
-        });
+        // 列表为空时显示可重试的错误态；已有旧数据时只是刷新失败，Toast 提示
+        if (this.data.afterSalesList.length === 0) {
+          this.setData({ error: true });
+        } else {
+          wx.showToast({
+            title: '获取售后记录失败',
+            icon: 'none'
+          });
+        }
       });
   },
 
-  normalizeCaseRecord(item, isLegacy) {
+  normalizeCaseRecord(item) {
     const type = item.primaryAfterSalesType || item.type || 'refund';
     const status = item.caseStatus || item.status || 'submitted';
     return {
@@ -271,12 +260,9 @@ Page({
       createdAtText: formatTime(item.createdAt),
       itemCount: Number(item.itemCount || 1) || 1,
       totalApplyQty: Number(item.totalApplyQty || 1) || 1,
-      isLegacy,
       canCancel: CAN_CANCEL_STATUSES.includes(status),
-      // 保留 items 字段用于商品级别筛选
-      items: item.items || item.itemsDetail || undefined,
-      // 保留旧版的 itemIndex 字段
-      itemIndex: item.itemIndex
+      // items 由商品级查询（fetchAfterSalesByOrderId）补充，用于商品维度筛选
+      items: item.items || undefined
     };
   },
 
@@ -312,7 +298,7 @@ Page({
           
           // 将商品信息关联到售后案件
           let list = caseRes.data.map((caseItem) => {
-            const normalized = this.normalizeCaseRecord(caseItem, false);
+            const normalized = this.normalizeCaseRecord(caseItem);
             normalized.items = itemsMap[caseItem._id] || [];
             return normalized;
           });
@@ -340,29 +326,19 @@ Page({
           this.setData({ afterSalesList: list, loading: false });
         });
       } else {
-        // 查询旧版本售后记录
-        getCollection('afterSales').where({
-          orderId: orderId
-        }).orderBy('createdAt', 'desc').get().then((legacyRes) => {
-          let list = (legacyRes.data || []).map((item) => this.normalizeCaseRecord(item, true));
-          
-          // 如果指定了商品索引，筛选出该商品的售后记录
-          if (currentProductIndex !== null) {
-            list = list.filter(item => {
-              // 旧版售后记录的 itemIndex 字段
-              return Number(item.itemIndex) === currentProductIndex;
-            });
-          }
-          
-          this.setData({ afterSalesList: list, loading: false });
-        }).catch(() => {
-          this.setData({ afterSalesList: [], loading: false });
-        });
+        this.setData({ afterSalesList: [], loading: false });
       }
-    }).catch(() => {
+    }).catch((err) => {
       wx.hideLoading();
-      this.setData({ afterSalesList: [], loading: false });
+      console.error("获取订单售后记录失败", err);
+      // 查询失败显示可重试的错误态，避免伪装成「暂无售后记录」
+      this.setData({ loading: false, error: true });
     });
+  },
+
+  // 加载失败后重试
+  retryLoadAfterSales() {
+    this.fetchAfterSalesList(true);
   },
 
   viewAfterSalesDetail(e) {
@@ -376,6 +352,10 @@ Page({
     if (this.data.loadingMore || !this.data.hasMore || this.data.currentOrderId) {
       return;
     }
+    // 首次加载失败（空列表 + 错误态）时不自动翻页重试，交由重试按钮触发
+    if (this.data.error && this.data.afterSalesList.length === 0) {
+      return;
+    }
     this.setData({ loadingMore: true });
     this.fetchAfterSalesList();
   },
@@ -383,7 +363,6 @@ Page({
   cancelAfterSales(e) {
     const id = e.currentTarget.dataset.id;
     const orderId = e.currentTarget.dataset.orderId;
-    const isLegacy = !!e.currentTarget.dataset.legacy;
     const canCancel = e.currentTarget.dataset.canCancel === 'true';
 
     if (!canCancel) {
@@ -394,37 +373,32 @@ Page({
       return;
     }
 
-    wx.showModal({
+    confirm({
       title: '取消售后',
-      content: '确定要取消售后申请吗？',
-      success: (res) => {
+      content: '确定要取消售后申请吗？'
+    }).then((res) => {
         if (res.confirm) {
-          this.performCancelAfterSales({ id, orderId, isLegacy });
+          this.performCancelAfterSales({ id, orderId });
         }
-      }
     });
   },
 
-  performCancelAfterSales({ id, orderId, isLegacy }) {
+  performCancelAfterSales({ id, orderId }) {
     wx.showLoading({ title: '取消中...' });
 
-    const request = isLegacy
-      ? this.cancelLegacyAfterSales(id)
-      : wx.cloud.callFunction({
-          name: 'updateOrderStatus',
-          data: {
-            orderId,
-            operation: 'cancelAfterSales',
-            params: {
-              caseId: id,
-              result: '用户取消售后申请',
-              operatorType: 'user'
-            }
-          }
-        });
-
-    request.then((res) => {
-      if (!isLegacy && (!res.result || !res.result.success)) {
+    wx.cloud.callFunction({
+      name: 'updateOrderStatus',
+      data: {
+        orderId,
+        operation: 'cancelAfterSales',
+        params: {
+          caseId: id,
+          result: '用户取消售后申请',
+          operatorType: 'user'
+        }
+      }
+    }).then((res) => {
+      if (!res.result || !res.result.success) {
         throw new Error(res.result?.error || '取消售后失败');
       }
       wx.hideLoading();
@@ -437,24 +411,6 @@ Page({
       console.error('取消售后失败', err);
       wx.showToast({ title: err.message || '取消售后失败', icon: 'none' });
     });
-  },
-
-  cancelLegacyAfterSales(id) {
-    const afterSales = getCollection('afterSales');
-    return afterSales.doc(id).update({
-      data: {
-        status: 'cancelled',
-        updatedAt: new Date()
-      }
-    }).then(() => afterSales.doc(id).get())
-      .then((res) => getCollection('orders').doc(res.data.orderId).update({
-        data: {
-          status: 'completed',
-          afterSalesStatus: 'cancelled',
-          updatedAt: new Date(),
-          updatedAtTs: Date.now()
-        }
-      }));
   },
 
   goBack() {

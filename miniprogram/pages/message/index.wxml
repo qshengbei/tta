@@ -30,24 +30,28 @@
           <view style="display: flex; align-items: flex-start; width: 100%; box-sizing: border-box;">
             <view style="flex: 1; box-sizing: border-box; overflow: hidden;">
               <view style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8rpx; width: 100%; box-sizing: border-box; overflow: hidden;">
-                <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{item.title || item.categoryTitle || item.type}}</text>
-                <text style="font-size: 18rpx; color: #9ca3af; white-space: nowrap;">{{item.formattedTime}}</text>
+                <text style="font-size: 26rpx; font-weight: 600; color: var(--color-text-main); flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{item.title || item.categoryTitle || item.type}}</text>
+                <text style="font-size: 18rpx; color: var(--color-text-muted); white-space: nowrap;">{{item.formattedTime}}</text>
               </view>
               <view style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; overflow: hidden;">
                 <view style="flex: 1; box-sizing: border-box; overflow: hidden; padding-right: 24rpx;">
-                  <text style="font-size: 22rpx; color: #6b7280; line-height: 32rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{item.content}}</text>
+                  <text style="font-size: 24rpx; color: var(--color-text-secondary); line-height: 34rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: break-word; display: block;">{{item.content}}</text>
                 </view>
-                <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: #ef4444; color: white; font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
+                <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: var(--color-danger); color: var(--color-text-inverse); font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
               </view>
               <view style="display: flex; justify-content: space-between; align-items: center; margin-top: 8rpx;">
-                <view wx:if="{{item.isAdminNotification}}" style="display: inline-block; padding: 4rpx 12rpx; background-color: #f3f4f6; color: #6b7280; font-size: 18rpx; border-radius: 12rpx;">管理员通知</view>
+                <view wx:if="{{item.isAdminNotification}}" style="display: inline-block; padding: 4rpx 12rpx; background-color: var(--color-bg-muted); color: var(--color-text-secondary); font-size: 18rpx; border-radius: 12rpx;">管理员通知</view>
               </view>
             </view>
           </view>
         </view>
       </view>
-      <view wx:if="{{notifications.length === 0}}" class="empty-message">
-        <text class="empty-text">暂无通知消息</text>
+      <view wx:if="{{notificationsError && notifications.length === 0}}" class="error-view">
+        <text class="error-view__text">消息加载失败，请稍后重试</text>
+        <button class="error-view__btn" bindtap="retryLoadNotifications">重试</button>
+      </view>
+      <view wx:elif="{{notifications.length === 0}}" class="empty-view">
+        <text class="empty-view__text">暂无通知消息</text>
       </view>
     </view>
   </view>
@@ -64,7 +68,7 @@
         class="session-item"
         data-session-id="{{item._id}}"
         bindtap="onSessionTap"
-        style="padding: 24rpx; background-color: #ffffff; margin: 0 24rpx 16rpx; border-radius: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05); position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; width: calc(100% - 48rpx);"
+        style="padding: 24rpx; background-color: var(--color-bg-elevated); margin: 0 24rpx 16rpx; border-radius: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05); position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; width: calc(100% - 48rpx);"
       >
         <view style="display: flex; align-items: flex-start; width: 100%; box-sizing: border-box;">
           <!-- 头像 -->
@@ -75,28 +79,21 @@
           <!-- 消息内容 -->
           <view style="flex: 1; box-sizing: border-box; overflow: hidden;">
             <view style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8rpx; width: 100%; box-sizing: border-box; overflow: hidden;">
-              <text style="font-size: 26rpx; font-weight: 600; color: #1f2937; flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{isCustomerService ? (item.userInfo && item.userInfo.nickName || '用户') : ('客服 - ' + item.customerServiceName)}}</text>
-              <text style="font-size: 18rpx; color: #9ca3af; white-space: nowrap;">{{item.lastMessageTime}}</text>
+              <text style="font-size: 26rpx; font-weight: 600; color: var(--color-text-main); flex: 1; margin-right: 16rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{isCustomerService ? (item.userInfo && item.userInfo.nickName || '用户') : ('客服 - ' + item.customerServiceName)}}</text>
+              <text style="font-size: 18rpx; color: var(--color-text-muted); white-space: nowrap;">{{item.lastMessageTime}}</text>
             </view>
             <view style="display: flex; justify-content: space-between; align-items: center; width: 100%; box-sizing: border-box; overflow: hidden;">
               <view style="flex: 1; box-sizing: border-box; overflow: hidden; padding-right: 24rpx;">
-                <text style="font-size: 22rpx; color: #6b7280; line-height: 32rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;">{{!item.lastMessage ? '[暂无消息]' : ((item.lastMessage.status === 'revoked' || item.lastMessage.type === 'revoked') ? ((item.lastMessage.openid && openid && item.lastMessage.openid === openid) ? '您撤回了一条消息' : '对方撤回了一条消息') : (item.lastMessage.type === 'image' ? '[图片]' : (item.lastMessage.type === 'video' ? '[视频]' : (item.lastMessage.type === 'product_card' ? '[商品卡片]' : (item.lastMessage.type === 'order_card' ? '[订单卡片]' : (item.lastMessage.type === 'location' ? '[位置]' : (item.lastMessage.content ? item.lastMessage.content : '[暂无消息]')))))))}}</text>
+                <text style="font-size: 24rpx; color: var(--color-text-secondary); line-height: 34rpx; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; word-break: break-word; display: block;">{{item.lastMessagePreview}}</text>
               </view>
-              <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: #ef4444; color: white; font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
+              <view wx:if="{{item.unreadCount > 0}}" style="display: inline-flex; align-items: center; justify-content: center; min-width: 32rpx; height: 32rpx; padding: 0 8rpx; background-color: var(--color-danger); color: var(--color-text-inverse); font-size: 18rpx; border-radius: 16rpx; margin-left: 16rpx;">{{item.unreadCount}}</view>
             </view>
           </view>
         </view>
       </view>
       
-      <view wx:if="{{loadingMoreSessions}}" class="loading-more">
-        <text class="loading-text">加载中...</text>
-      </view>
-      <view wx:elif="!hasMoreSessions && sessions.length > 0" class="no-more">
-        <text class="no-more-text">已加载全部会话</text>
-      </view>
-      
-      <view wx:if="{{sessions.length === 0 && isCustomerService}}" class="empty-session {{isCustomerService ? 'empty-session-cs' : ''}}">
-        <text class="empty-text">暂无用户消息</text>
+      <view wx:if="{{sessions.length === 0 && isCustomerService}}" class="empty-view">
+        <text class="empty-view__text">暂无用户消息</text>
       </view>
     </view>
   </view>

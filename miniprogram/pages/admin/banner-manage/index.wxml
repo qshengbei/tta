@@ -11,9 +11,9 @@
       <text>加载中...</text>
     </view>
     
-    <view wx:elif="{{bannerList.length === 0}}" class="empty">
-      <text class="empty-text">暂无轮播图</text>
-      <button class="empty-btn" bindtap="goToAddPage">添加轮播图</button>
+    <view wx:elif="{{bannerList.length === 0}}" class="empty-view">
+      <text class="empty-view__text">暂无轮播图</text>
+      <button class="empty-view__btn" bindtap="goToAddPage">添加轮播图</button>
     </view>
 
     <view wx:else class="list">
@@ -46,3 +46,6 @@
     </view>
   </view>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

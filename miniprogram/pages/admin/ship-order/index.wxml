@@ -54,9 +54,12 @@
   </view>
   
   <!-- 快递公司选择器 -->
-  <view class="ship-order__picker" wx:if="{{showCompanyPicker}}">
-    <view class="ship-order__picker-mask" bindtap="hideCompanyPicker"></view>
-    <view class="ship-order__picker-content">
+  <modal-shell
+    visible="{{showCompanyPicker}}"
+    position="bottom"
+    showClose="{{false}}"
+    bind:close="hideCompanyPicker"
+  >
       <view class="ship-order__picker-header">
         <text class="ship-order__picker-cancel" bindtap="hideCompanyPicker">取消</text>
         <text class="ship-order__picker-title">选择快递公司</text>
@@ -67,13 +70,15 @@
           <view wx:for="{{expressCompanies}}" wx:key="code" style="height: 50px; line-height: 50px; text-align: center;">{{item.name}}</view>
         </picker-view-column>
       </picker-view>
-    </view>
-  </view>
+  </modal-shell>
   
   <!-- 发货地址选择器 -->
-  <view class="ship-order__picker" wx:if="{{showAddressPicker}}">
-    <view class="ship-order__picker-mask" bindtap="hideAddressPicker"></view>
-    <view class="ship-order__picker-content">
+  <modal-shell
+    visible="{{showAddressPicker}}"
+    position="bottom"
+    showClose="{{false}}"
+    bind:close="hideAddressPicker"
+  >
       <view class="ship-order__picker-header">
         <text class="ship-order__picker-cancel" bindtap="hideAddressPicker">取消</text>
         <text class="ship-order__picker-title">选择发货地址</text>
@@ -84,6 +89,5 @@
           <view wx:for="{{deliveryAddresses}}" wx:key="index" style="height: 50px; line-height: 50px; text-align: center;">{{item.address}}</view>
         </picker-view-column>
       </picker-view>
-    </view>
-  </view>
+  </modal-shell>
 </view>

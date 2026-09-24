@@ -34,12 +34,22 @@
   </view>
 
   <!-- 顶部搜索和筛选组件 -->
-  <search-filter-panel pageType="products" searchKeyword="{{searchKeyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;"/>
+  <search-filter-panel pageType="products" historyScope="category" searchKeyword="{{searchKeyword}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;"/>
 
   <!-- 宝贝标签内容 -->
   <view hidden="{{activeTab !== 'products'}}" class="products-content">
+    <!-- 错误态 -->
+    <view wx:if="{{error && products.length === 0}}" class="error-view error-view--page">
+      <text class="error-view__text">{{errorMessage || '加载失败，请稍后重试'}}</text>
+      <button class="error-view__btn" bindtap="reload">重试</button>
+    </view>
+    <!-- 空态 -->
+    <view wx:elif="{{!showSkeleton && !loadingMore && products.length === 0}}" class="empty-view empty-view--page">
+      <text class="empty-view__text">暂无商品</text>
+    </view>
+
     <!-- 搜索筛选模式列表（使用 products 数据） -->
-    <scroll-view hidden="{{searchKeyword || (categories && categories.length > 0) || inStock !== null ? false : true}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+    <scroll-view hidden="{{products.length === 0 || (searchKeyword || (categories && categories.length > 0) || inStock !== null ? false : true)}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <view wx:for="{{products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
           <view class="product-image-container">
@@ -67,7 +77,7 @@
     </scroll-view>
     
     <!-- 普通列表 - 综合排序 -->
-    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'default')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+    <scroll-view hidden="{{products.length === 0 || !(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'default')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <block wx:if="{{sortDataCache['category_products'] && sortDataCache['category_products'].products}}">
           <view wx:for="{{sortDataCache['category_products'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
@@ -97,7 +107,7 @@
     </scroll-view>
     
     <!-- 普通列表 - 新品排序 -->
-    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'new')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+    <scroll-view hidden="{{products.length === 0 || !(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'new')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <block wx:if="{{sortDataCache['category_products_new'] && sortDataCache['category_products_new'].products}}">
           <view wx:for="{{sortDataCache['category_products_new'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
@@ -127,7 +137,7 @@
     </scroll-view>
     
     <!-- 普通列表 - 价格升序 -->
-    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'asc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+    <scroll-view hidden="{{products.length === 0 || !(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'asc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <block wx:if="{{sortDataCache['category_products_price_asc'] && sortDataCache['category_products_price_asc'].products}}">
           <view wx:for="{{sortDataCache['category_products_price_asc'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
@@ -157,7 +167,7 @@
     </scroll-view>
     
     <!-- 普通列表 - 价格降序 -->
-    <scroll-view hidden="{{!(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'desc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
+    <scroll-view hidden="{{products.length === 0 || !(!searchKeyword && (!categories || categories.length === 0) && inStock === null && sortType === 'price' && priceSortOrder === 'desc')}}" scroll-y="true" class="products-scroll" scroll-top="{{scrollTop}}" bindscroll="onProductsScroll" bindscrolltolower="loadMoreProducts" lower-threshold="50" style="height: {{scrollViewHeight}};" enable-flex="{{true}}" bounces="{{false}}">
       <view class="products-list">
         <block wx:if="{{sortDataCache['category_products_price_desc'] && sortDataCache['category_products_price_desc'].products}}">
           <view wx:for="{{sortDataCache['category_products_price_desc'].products}}" wx:key="_id" class="product-item" bindtap="goToProductDetail" data-id="{{item._id}}">
@@ -221,6 +231,12 @@
           </view>
         </view>
 
+        <!-- 分类加载失败 -->
+        <view wx:elif="{{categoryError}}" class="error-view error-view--page">
+          <text class="error-view__text">分类加载失败，请稍后重试</text>
+          <button class="error-view__btn" bindtap="retryLoadCategories">重试</button>
+        </view>
+
         <!-- 默认内容 -->
         <view wx:else class="default-content">
           <text class="default-text">请选择分类</text>
@@ -273,10 +289,19 @@
               <view class="loading-more__spinner"></view>
               <text class="loading-more__text">加载中...</text>
             </view>
-            <view wx:elif="!seriesHasMore && seriesProducts.length > 0" class="no-more">
+            <view wx:elif="{{!seriesHasMore && seriesProducts.length > 0}}" class="no-more">
               <text class="no-more-text">没有更多啦</text>
             </view>
+            <view wx:elif="{{seriesProducts.length === 0 && !seriesHasMore}}" class="empty-view">
+              <text class="empty-view__text">该系列暂无商品</text>
+            </view>
           </view>
+        </view>
+
+        <!-- 系列加载失败 -->
+        <view wx:elif="{{seriesError}}" class="error-view error-view--page">
+          <text class="error-view__text">系列加载失败，请稍后重试</text>
+          <button class="error-view__btn" bindtap="retryLoadSeries">重试</button>
         </view>
 
         <!-- 默认内容 -->

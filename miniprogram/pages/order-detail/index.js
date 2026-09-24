@@ -1,6 +1,8 @@
 import { getCollection } from "../../utils/cloud";
-import { generateMarkers, generateCircles, getAddressLocation } from "../../utils/map-utils";
+import { generateMarkers, generateCircles, getAddressLocation, buildDeliveryLegend } from "../../utils/map-utils";
 import watcherManager from "../../utils/watcherManager";
+import { confirm } from "../../utils/confirm";
+import { getOrderStatusText } from "../../utils/orderStatusText";
 
 const db = wx.cloud.database();
 const _ = db.command;
@@ -31,6 +33,7 @@ Page({
     pageVisible: false,
     markers: [], // 地图标记
     circles: [], // 地图圆形覆盖物
+    deliveryLegend: [], // 配送范围图例（颜色+文案，由 map-utils.buildDeliveryLegend 生成）
     mapHeight: 300, // 地图高度，默认300rpx
     isMapFullScreen: false, // 地图是否全屏
     pickupLocation: { // 自提点默认坐标（厦门园林博览苑附近）
@@ -467,79 +470,11 @@ Page({
             order.cancelTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
           }
 
-          // 处理订单状态文本
+          // 处理订单状态文本（唯一真源：utils/orderStatusText.js）
           const deliveryType = order.deliveryType || 'express'; // 默认快递运输
-          let statusText = "";
-          switch (order.status) {
-            case "pending":
-              statusText = "待支付";
-              break;
-            case "paid":
-              if (deliveryType === 'express') {
-                statusText = "待发货";
-              } else if (deliveryType === 'pickup') {
-                statusText = "待自提";
-              } else if (deliveryType === 'local') {
-                statusText = "待配送";
-              } else {
-                statusText = "已支付";
-              }
-              break;
-            case "shipping":
-              if (deliveryType === 'express') {
-                statusText = "待收货";
-              } else if (deliveryType === 'pickup') {
-                statusText = "待自提";
-              } else if (deliveryType === 'local') {
-                statusText = "配送中";
-              } else {
-                statusText = "已发货";
-              }
-              break;
-            case "delivered":
-              if (deliveryType === 'express') {
-                statusText = "已签收，待确认收货";
-              } else if (deliveryType === 'pickup') {
-                statusText = "待自提";
-              } else if (deliveryType === 'local') {
-                statusText = "已送达，待确认收货";
-              } else {
-                statusText = "已送达";
-              }
-              break;
-            case "completed":
-              // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
-              statusText = "已完成";
-              break;
-            case "refund":
-              statusText = "售后中";
-              break;
-            case "refund_completed":
-              // 根据售后结果显示更详细的状态
-              if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
-                statusText = "部分退款";
-              } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
-                statusText = "换货完成";
-              } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
-                statusText = "退款完成";
-              } else {
-                statusText = "售后完成";
-              }
-              break;
-            case "cancelled":
-              statusText = "已取消";
-              break;
-            default:
-              statusText = "未知状态";
-          }
-
-          // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
-          if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
-            statusText = `${statusText}（部分退款）`;
-          } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
-            // 拦截成功等整单退款场景：退款到账前显示"售后中（整单退款）"
-            statusText = `${statusText}（整单退款）`;
-          }
+          let statusText = getOrderStatusText(order.status, deliveryType, {
+            afterSalesResult: order.afterSalesResult
+          });
 
           order.statusText = statusText;
 
@@ -576,12 +511,21 @@ Page({
 
           // 生成地图标记和圆圈（同城配送）
           if (order.deliveryType === 'local') {
-            // 默认配送规则
-            const deliveryRules = [
+            // 配送规则优先取商家配置（与确认订单页同源），无配置时回退到默认三档
+            let deliveryRules = [
               { maxDistance: 2, fee: 0 },
               { maxDistance: 5, fee: 5 },
               { maxDistance: 10, fee: 10 }
             ];
+            try {
+              const cachedPickup = wx.getStorageSync('pickupLocation');
+              const cachedRules = cachedPickup && cachedPickup.data && cachedPickup.data.deliveryRules;
+              if (Array.isArray(cachedRules) && cachedRules.length > 0) {
+                deliveryRules = cachedRules;
+              }
+            } catch (error) {
+              console.error("读取配送规则缓存失败:", error);
+            }
 
             // 使用订单中保存的自提点坐标，如果没有则使用默认坐标
             const pickupLocation = {
@@ -621,7 +565,8 @@ Page({
             this.setData({
               pickupLocation,
               markers,
-              circles
+              circles,
+              deliveryLegend: buildDeliveryLegend(deliveryRules)
             });
           }
 
@@ -1468,10 +1413,10 @@ Page({
 
   confirmReceipt(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '确认收货',
-      content: '确认已收到商品吗？',
-      success: async (res) => {
+      content: '确认已收到商品吗？'
+    }).then(async (res) => {
         if (res.confirm) {
           try {
             await this.callUpdateOrderStatus(orderId, 'confirm');
@@ -1488,7 +1433,6 @@ Page({
             });
           }
         }
-      }
     });
   },
 
@@ -1498,10 +1442,10 @@ Page({
     const cancelContent = this.data.order && this.data.order.status === 'paid'
       ? '订单尚未发货，取消后将全额原路退款（含运费），确定要取消吗？'
       : '确定要取消这个订单吗？';
-    wx.showModal({
+    confirm({
       title: '取消订单',
-      content: cancelContent,
-      success: async (res) => {
+      content: cancelContent
+    }).then(async (res) => {
         if (res.confirm) {
           try {
             await this.callUpdateOrderStatus(orderId, 'cancel', {
@@ -1520,19 +1464,18 @@ Page({
             });
           }
         }
-      }
     });
   },
 
   // 催发货
   urgeShipping(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '催发货',
       content: '已提醒商家尽快发货，您可以在订单详情页查看发货进度',
       showCancel: false,
-      confirmText: '知道了',
-      success: async () => {
+      confirmText: '知道了'
+    }).then(async () => {
         try {
           await wx.cloud.callFunction({
             name: 'sendNotification',
@@ -1552,7 +1495,6 @@ Page({
             icon: 'none'
           });
         }
-      }
     });
   },
 
@@ -1842,10 +1784,11 @@ Page({
   // 删除订单
   deleteOrder(e) {
     const orderId = e.currentTarget.dataset.orderId;
-    wx.showModal({
+    confirm({
       title: '删除订单',
       content: '确定要删除这个订单吗？',
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           // 调用删除订单接口
           const orders = getCollection("orders");
@@ -1866,18 +1809,16 @@ Page({
               });
             });
         }
-      }
     });
   },
 
   // 联系客服
   contactService(e) {
-    wx.showModal({
+    confirm({
       title: '联系客服',
       content: '请联系客服处理您的订单问题',
-      confirmText: '拨打电话',
-      cancelText: '取消',
-      success: (res) => {
+      confirmText: '拨打电话'
+    }).then((res) => {
         if (res.confirm) {
           // 这里可以添加客服电话，或者跳转到客服页面
           wx.makePhoneCall({
@@ -1891,7 +1832,6 @@ Page({
             }
           });
         }
-      }
     });
   },
 
@@ -2350,11 +2290,6 @@ Page({
     });
   },
 
-  preventTouchMove(e) {
-    e.stopPropagation();
-    return false;
-  },
-
   onModalScroll(e) {
     const { scrollTop, scrollHeight, windowHeight } = e.detail;
     const isAtTop = scrollTop <= 0;
@@ -2669,7 +2604,7 @@ Page({
     this.updateCanSubmit();
   },
 
-  // 兼容多种时间格式：Date 对象、'YYYY-MM-DD HH[:mm:ss]' 字符串、云数据库 {_seconds} 结构
+  // 兼容多种时间格式：Date 对象、'YYYY-MM-DD HH[:mm[:ss]]' 字符串、云数据库 {_seconds} 结构
   parseAfterSalesDate(value) {
     if (!value) {
       return null;
@@ -2682,8 +2617,19 @@ Page({
       return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
     if (typeof value === 'string') {
-      const parsed = new Date(value.replace(' ', 'T'));
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
+      const text = value.trim();
+      if (!text) {
+        return null;
+      }
+      // 兼容 'YYYY-MM-DD HH'（缺分钟）等非标准 ISO 格式，与后端 parseFlexibleDate 保持一致
+      const m = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/);
+      if (m) {
+        const [, y, mo, d, h, mi, s] = m;
+        const parsed = new Date(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi) || 0, Number(s) || 0);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+      const fallback = new Date(text.replace(' ', 'T'));
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
     }
     if (typeof value === 'object') {
       if (value._seconds) {
@@ -2750,9 +2696,13 @@ Page({
       normalDays = 7;
       windowRestarted = true;
     } else if (isTransactionCompleted) {
-      // 交易成功后：优先使用签收时间，回退到确认收货时间
-      baseDate = this.parseAfterSalesDate(order?.logisticsState?.checkTime)
-        || this.parseAfterSalesDate(order?.receiptTime);
+      // 交易成功后：以签收时间为准（签收后7天/15天）；
+      // 签收时间缺失或早于发货时间（物流返回的脏数据）时回退确认收货时间
+      const checkDate = this.parseAfterSalesDate(order?.logisticsState?.checkTime);
+      const shippingDate = this.parseAfterSalesDate(order?.shippingTime);
+      baseDate = (checkDate && (!shippingDate || checkDate >= shippingDate))
+        ? checkDate
+        : this.parseAfterSalesDate(order?.receiptTime);
       normalDays = 7;
     } else {
       // 交易成功前：使用发货时间（发货后10天）

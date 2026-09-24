@@ -1,7 +1,8 @@
 {
   "navigationBarTitleText": "购物车",
   "usingComponents": {
-    "search-filter-panel": "../../components/search-filter-panel/index"
+    "search-filter-panel": "../../components/search-filter-panel/index",
+    "confirm-dialog": "../../components/confirm-dialog/index"
   },
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark"

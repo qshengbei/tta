@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -21,7 +21,7 @@
   padding: 10rpx 20rpx;
   border-radius: 24rpx;
   background: rgba(0, 0, 0, 0.45);
-  color: #ffffff;
+  color: var(--color-text-inverse);
   font-size: 22rpx;
   line-height: 1;
 }
@@ -75,7 +75,7 @@
 
 .message-action-text {
   font-size: 15px;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   line-height: 1;
   font-weight: 500;
 }
@@ -91,7 +91,7 @@
   margin: 0;
   padding: 0;
   padding-bottom: env(safe-area-inset-bottom);
-  background-color: #FFFFFF;
+  background-color: var(--color-bg-elevated);
   gap: 0;
 }
 
@@ -117,7 +117,7 @@
 .header-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #000000;
+  color: var(--color-text-main);
   max-width: 200rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -164,7 +164,7 @@
 
 .time-text {
   font-size: 24rpx;
-  color: #999999;
+  color: var(--color-text-muted);
   background-color: rgba(0, 0, 0, 0.05);
   padding: 5rpx 20rpx;
   border-radius: 20rpx;
@@ -181,13 +181,13 @@
 .revoked-center-text {
   font-size: 24rpx;
   line-height: 1.6;
-  color: #9A9A9A;
+  color: var(--color-text-muted);
 }
 
 .revoked-reedit-btn {
   font-size: 24rpx;
   line-height: 1.6;
-  color: #576B95;
+  color: var(--color-primary);
 }
 
 .message-item {
@@ -210,7 +210,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin: 0 20rpx;
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   flex-shrink: 0;
 }
 
@@ -221,7 +221,7 @@
 
 .message-content {
   max-width: 60%;
-  background-color: #FFFFFF;
+  background-color: var(--color-bg-elevated);
   border-radius: 20rpx;
   padding: 20rpx;
   box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
@@ -232,8 +232,8 @@
 }
 
 .user-message .message-content {
-  background-color: #1A3D8F;
-  color: #FFFFFF;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 /* 媒体消息（图片和视频）无边框样式 */
@@ -274,7 +274,7 @@
   position: absolute;
   border-radius: 10rpx;
   object-fit: cover;
-  background-color: #000000;
+  background-color: var(--color-bg-inverse);
 }
 
 .user-message .message-video {
@@ -293,7 +293,7 @@
 
 .message-nickname {
   font-size: 20rpx;
-  color: #999999;
+  color: var(--color-text-muted);
   margin-bottom: 8rpx;
   display: block;
 }
@@ -312,7 +312,7 @@
 
 .message-revoked {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
   padding: 8rpx 0;
 }
 
@@ -329,8 +329,8 @@
   flex-direction: row;
   gap: 16rpx;
   padding: 12rpx;
-  background: #ffffff;
-  border: 1rpx solid #e6ebf2;
+  background: var(--color-bg-elevated);
+  border: 1rpx solid var(--color-border-subtle);
   border-radius: 14rpx;
   box-shadow: 0 4rpx 12rpx rgba(15, 60, 143, 0.08);
   box-sizing: border-box;
@@ -345,7 +345,7 @@
   height: 120rpx;
   border-radius: 12rpx;
   flex-shrink: 0;
-  background: #f2f2f2;
+  background: var(--color-bg-muted);
 }
 
 .message-card-body {
@@ -357,7 +357,7 @@
 
 .message-card-title {
   font-size: 24rpx;
-  color: #333;
+  color: var(--color-text-main);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -366,13 +366,13 @@
 
 .message-card-price {
   font-size: 26rpx;
-  color: #0f3c8f;
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .message-card-desc {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -411,7 +411,7 @@
 
 .message-card-order-quantity {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -419,7 +419,7 @@
 .message-card-order-status {
   font-size: 22rpx;
   font-weight: 500;
-  color: #ef4444;
+  color: var(--color-danger);
   flex-shrink: 0;
   margin-left: 12rpx;
 }
@@ -433,7 +433,7 @@
 
 .message-time {
   font-size: 20rpx;
-  color: #999999;
+  color: var(--color-text-muted);
   text-align: right;
 }
 
@@ -442,7 +442,7 @@
 }
 
 .user-message .message-text text.emoji {
-  color: #FFFFFF;
+  color: var(--color-text-inverse);
   font-size: 50rpx;
   line-height: 1;
 }
@@ -514,7 +514,7 @@
   height: 100%;
   border-radius: 10rpx;
   object-fit: cover;
-  background-color: #000000;
+  background-color: var(--color-bg-inverse);
 }
 
 .message-video-fallback {
@@ -576,7 +576,7 @@
   height: 56rpx;
   line-height: 56rpx;
   font-size: 28rpx;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   background: rgba(0, 0, 0, 0.5);
   border-radius: 28rpx;
   padding: 0 28rpx;
@@ -594,7 +594,7 @@
   line-height: 56rpx;
   text-align: center;
   font-size: 24rpx;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   background: rgba(0, 0, 0, 0.5);
   border-radius: 28rpx;
   padding: 0 20rpx;
@@ -603,13 +603,13 @@
 /* 位置消息 */
 .message-location {
   padding: 15rpx;
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   border-radius: 10rpx;
   max-width: 300rpx;
 }
 
 .user-message .message-location {
-  background-color: #1A3D8F;
+  background-color: var(--color-primary);
 }
 
 .location-name {
@@ -620,12 +620,12 @@
 }
 
 .user-message .location-name {
-  color: #FFFFFF;
+  color: var(--color-text-inverse);
 }
 
 .location-address {
   font-size: 24rpx;
-  color: #666666;
+  color: var(--color-text-secondary);
   display: block;
   line-height: 1.4;
 }
@@ -640,8 +640,8 @@
   align-items: center;
   padding: 10rpx 20rpx;
   padding-bottom: 10rpx;
-  background-color: #FFFFFF;
-  border-top: 1rpx solid #F2F2F2;
+  background-color: var(--color-bg-elevated);
+  border-top: 1rpx solid var(--color-border-subtle);
   box-sizing: border-box;
   height: 100rpx;
   overflow: hidden;
@@ -666,7 +666,7 @@ button {
 
 .input-container {
   flex: 1;
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   border-radius: 40rpx;
   padding: 10rpx 20rpx;
   margin-right: 15rpx;
@@ -752,7 +752,7 @@ button {
 
 /* 表情面板 */
 .emoji-panel {
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   box-sizing: border-box;
   height: 540rpx;
   margin: -1rpx 0 0 0;
@@ -777,7 +777,7 @@ button {
   display: flex;
   justify-content: flex-end;
   padding: 10rpx 20rpx;
-  background-color: #F5F5F5;
+  background-color: var(--color-bg);
   z-index: 10;
   gap: 15rpx;
 }
@@ -785,8 +785,8 @@ button {
 .emoji-delete {
   width: 60rpx;
   height: 60rpx;
-  background: #FFFFFF;
-  border: 1rpx solid #EAEAEA;
+  background: var(--color-bg-elevated);
+  border: 1rpx solid var(--color-border-subtle);
   border-radius: 8rpx;
   font-size: 32rpx;
   display: flex;
@@ -800,8 +800,8 @@ button {
 .emoji-send {
   width: 120rpx;
   height: 60rpx;
-  background: #1A3D8F;
-  color: #FFFFFF;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   border: none;
   border-radius: 8rpx;
   font-size: 28rpx;
@@ -814,9 +814,9 @@ button {
 }
 
 .emoji-send:disabled {
-  background: #F5F5F5;
-  color: #999999;
-  border: 1rpx solid #EAEAEA;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  border: 1rpx solid var(--color-border-subtle);
 }
 
 
@@ -876,8 +876,8 @@ button.emoji-grid-item {
   justify-content: flex-end;
   align-items: center;
   padding: 14rpx 20rpx;
-  border-top: 1rpx solid #EAEAEA;
-  background-color: #FFFFFF;
+  border-top: 1rpx solid var(--color-border-subtle);
+  background-color: var(--color-bg-elevated);
   gap: 20rpx;
 }
 
@@ -886,14 +886,14 @@ button.emoji-grid-item {
   min-width: 120rpx;
   padding: 0 28rpx;
   border-radius: 32rpx;
-  border: 1rpx solid #EAEAEA;
+  border: 1rpx solid var(--color-border-subtle);
   font-size: 26rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  background: #F5F5F5;
-  color: #999999;
+  background: var(--color-bg);
+  color: var(--color-text-muted);
 }
 
 .emoji-action-btn--delete {
@@ -903,21 +903,21 @@ button.emoji-grid-item {
 }
 
 .emoji-action-btn--active {
-  background: #0066cc; /* 克莱因蓝 */
-  border-color: #0066cc;
-  color: #ffffff;
+  background: var(--color-primary); /* 克莱因蓝 */
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
 }
 
 .emoji-action-btn--disabled {
-  background: #F5F5F5;
-  border-color: #EAEAEA;
-  color: #999999;
+  background: var(--color-bg);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-muted);
 }
 
 /* 更多功能面板 */
 .more-panel {
-  background-color: #FFFFFF;
-  border-top: 1rpx solid #EAEAEA;
+  background-color: var(--color-bg-elevated);
+  border-top: 1rpx solid var(--color-border-subtle);
   box-sizing: border-box;
   max-height: 300rpx;
   overflow-y: auto;
@@ -958,35 +958,17 @@ button.emoji-grid-item {
 
 .more-text {
   font-size: 24rpx;
-  color: #333333;
+  color: var(--color-text-main);
 }
 
-.picker-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 10000;
-  display: flex;
-  align-items: flex-end;
-}
-
+/* 卡片选择器（外壳由 modal-shell 提供） */
 .picker-panel {
-  width: 100%;
-  height: 70vh;
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
+  flex: 1;
+  min-height: 0;
   padding: 24rpx;
-  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-}
-
-.picker-title {
-  text-align: center;
-  font-size: 30rpx;
-  font-weight: 600;
-  margin-bottom: 16rpx;
 }
 
 .picker-list {
@@ -996,12 +978,12 @@ button.emoji-grid-item {
 }
 
 .picker-order-item {
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 12rpx;
   margin: 0 0 18rpx 0;
   overflow: hidden;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-  border: 1rpx solid #f0f0f0;
+  border: 1rpx solid var(--color-border-subtle);
 }
 
 .picker-order-item__header {
@@ -1010,7 +992,7 @@ button.emoji-grid-item {
   align-items: center;
   gap: 12rpx;
   padding: 10rpx 20rpx;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
 }
 
 .picker-order-item__shop {
@@ -1018,7 +1000,7 @@ button.emoji-grid-item {
   min-width: 0;
   font-size: 26rpx;
   font-weight: 500;
-  color: #333;
+  color: var(--color-text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1026,7 +1008,7 @@ button.emoji-grid-item {
 
 .picker-order-item__status {
   font-size: 24rpx;
-  color: #ff6b6b;
+  color: var(--color-danger);
   font-weight: 500;
   flex-shrink: 0;
 }
@@ -1045,7 +1027,7 @@ button.emoji-grid-item {
   height: 96rpx;
   border-radius: 8rpx;
   margin-right: 14rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
   flex-shrink: 0;
 }
 
@@ -1058,7 +1040,7 @@ button.emoji-grid-item {
 
 .picker-order-item__name {
   font-size: 26rpx;
-  color: #333;
+  color: var(--color-text-main);
   line-height: 1.4;
   margin-bottom: 8rpx;
   overflow: hidden;
@@ -1075,13 +1057,13 @@ button.emoji-grid-item {
 .picker-order-item__price {
   font-size: 26rpx;
   font-weight: 600;
-  color: #0f3c8f;
+  color: var(--color-primary);
   line-height: 1.1;
 }
 
 .picker-order-item__quantity {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .picker-order-item__footer {
@@ -1089,20 +1071,20 @@ button.emoji-grid-item {
   justify-content: flex-start;
   align-items: center;
   padding: 2rpx 20rpx 14rpx 20rpx;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
 }
 
 .picker-order-item__total {
   display: flex;
   flex-direction: column;
   font-size: 22rpx;
-  color: #0f3c8f;
+  color: var(--color-primary);
 }
 
 .picker-order-item__total-price {
   font-size: 26rpx;
   font-weight: 600;
-  color: #0f3c8f;
+  color: var(--color-primary);
   line-height: 1;
 }
 
@@ -1118,18 +1100,18 @@ button.emoji-grid-item {
   align-items: center;
   padding: 10rpx 18rpx;
   border-radius: 999rpx;
-  border: 1rpx solid #e7ebf3;
-  background: #f8faff;
-  color: #5a6270;
+  border: 1rpx solid var(--color-border-subtle);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
   margin-right: 10rpx;
   font-size: 22rpx;
 }
 
 .picker-delivery-tab--active,
 .picker-status-tab--active {
-  border-color: #0f3c8f;
+  border-color: var(--color-primary);
   background: rgba(15, 60, 143, 0.1);
-  color: #0f3c8f;
+  color: var(--color-primary);
 }
 
 .picker-delivery-tab__label,
@@ -1143,8 +1125,8 @@ button.emoji-grid-item {
   height: 30rpx;
   padding: 0 8rpx;
   border-radius: 15rpx;
-  background: #0f3c8f;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
   font-size: 18rpx;
   line-height: 30rpx;
   text-align: center;
@@ -1170,7 +1152,7 @@ button.emoji-grid-item {
   display: flex;
   padding: 20rpx;
   box-sizing: border-box;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   align-items: center;
 }
 
@@ -1189,7 +1171,7 @@ button.emoji-grid-item {
 
 .picker-item-name {
   font-size: 28rpx;
-  color: #333;
+  color: var(--color-text-main);
   margin-bottom: 12rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1201,12 +1183,12 @@ button.emoji-grid-item {
 .picker-item-price {
   font-size: 28rpx;
   font-weight: 600;
-  color: #000;
+  color: var(--color-text-main);
 }
 
 .picker-item-quantity {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
   margin-left: 24rpx;
 }
 
@@ -1215,7 +1197,7 @@ button.emoji-grid-item {
   text-align: center;
   padding: 32rpx 0;
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .picker-empty {
@@ -1231,19 +1213,19 @@ button.emoji-grid-item {
 
 .picker-empty-text {
   font-size: 26rpx;
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .picker-browse-btn {
   min-width: 180rpx;
   height: 68rpx;
   border-radius: 34rpx;
-  background: #f3f3f3;
+  background: var(--color-bg-muted);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 26rpx;
-  color: #333;
+  color: var(--color-text-main);
 }
 
 .entry-card-draft {
@@ -1251,12 +1233,12 @@ button.emoji-grid-item {
   left: 20rpx;
   right: 20rpx;
   bottom: calc(104rpx + env(safe-area-inset-bottom));
-  background: #ffffff;
+  background: var(--color-bg-elevated);
   border-radius: 18rpx;
   box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.12);
   padding: 16rpx;
   z-index: 110;
-  border: 1rpx solid #e9edf6;
+  border: 1rpx solid var(--color-border-subtle);
 }
 
 .entry-card-draft__header {
@@ -1268,13 +1250,13 @@ button.emoji-grid-item {
 
 .entry-card-draft__title {
   font-size: 24rpx;
-  color: #333;
+  color: var(--color-text-main);
   font-weight: 600;
 }
 
 .entry-card-draft__close {
   font-size: 22rpx;
-  color: #8a8a8a;
+  color: var(--color-text-muted);
 }
 
 .entry-card-draft .message-card {
@@ -1301,20 +1283,20 @@ button.emoji-grid-item {
 }
 
 .entry-card-draft__btn--ghost {
-  background: #f3f3f3;
-  color: #666;
-  border: 1rpx solid #ececec;
+  background: var(--color-bg-muted);
+  color: var(--color-text-secondary);
+  border: 1rpx solid var(--color-border-subtle);
 }
 
 .entry-card-draft__btn--primary {
-  background: #0f3c8f;
-  color: #fff;
-  border: 1rpx solid #0f3c8f;
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border: 1rpx solid var(--color-primary);
 }
 
 /* 点击效果 */
 .send-btn:active:not(:disabled) {
-  background-color: #0F2A6B;
+  background-color: var(--color-primary-dark);
 }
 
 /* 新消息提示条 */
@@ -1342,7 +1324,7 @@ button.emoji-grid-item {
 
 .new-message-text {
   font-size: 24rpx;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   font-weight: 500;
   letter-spacing: 0.2rpx;
   white-space: nowrap;

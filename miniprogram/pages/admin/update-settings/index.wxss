@@ -1,12 +1,12 @@
 /* pages/admin/update-settings/index.wxss */
 .settings-page {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   min-height: 100vh;
 }
 
 /* 页面头部 */
 .admin-header {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
   padding: 45rpx 30rpx 30rpx;
   text-align: center;
@@ -67,7 +67,7 @@
 .setting-unit {
   margin-left: 20rpx;
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .service-time-field {
@@ -82,14 +82,15 @@
   display: block;
   margin-bottom: 10rpx;
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
-.service-time-field__hint {
+.service-time-field__hint,
+.setting-hint {
   display: block;
   margin-top: 8rpx;
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
   line-height: 1.5;
 }
 
@@ -100,7 +101,7 @@
 }
 
 .shipping-fee-rule-item {
-  background: #fff;
+  background: var(--color-bg-elevated);
   border-radius: 8rpx;
   padding: 16rpx 18rpx;
   margin-bottom: 12rpx;
@@ -130,7 +131,7 @@
 
 .shipping-fee-rule-switch-label {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 12rpx;
 }
 
@@ -145,7 +146,7 @@
   border: 2rpx solid #e0e0e0;
   border-radius: 12rpx;
   padding: 18rpx 20rpx;
-  background: #fff;
+  background: var(--color-bg-elevated);
 }
 
 .setting-picker-text {
@@ -155,43 +156,14 @@
 
 .setting-picker-arrow {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
-.selector-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 999;
-}
-
-.selector-sheet {
-  width: 100%;
-  background: #fff;
-  border-radius: 24rpx 24rpx 0 0;
-  overflow: hidden;
-}
-
-.selector-sheet__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.selector-sheet__title {
-  font-size: 28rpx;
-  color: #333;
-  font-weight: 600;
-}
-
-.selector-sheet__close {
-  font-size: 24rpx;
-  color: #666;
+/* 运费归属选择弹层（外壳由 modal-shell 提供） */
+.selector-sheet__options {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .selector-sheet__option {
@@ -199,12 +171,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 28rpx 30rpx;
-  border-bottom: 1rpx solid #f5f5f5;
+  border-bottom: 1rpx solid var(--color-bg);
 }
 
 .selector-sheet__option--active .selector-sheet__option-text,
 .selector-sheet__check {
-  color: #07c160;
+  color: var(--color-success);
 }
 
 .selector-sheet__option-text {
@@ -242,15 +214,15 @@
 
 .wechat-qrcode__placeholder-text {
   font-size: 22rpx;
-  color: #999;
+  color: var(--color-text-muted);
   text-align: center;
   padding: 0 20rpx;
 }
 
 .wechat-qrcode__button {
   background-color: #f0f7ff;
-  color: #1989fa;
-  border: 2rpx solid #1989fa;
+  color: var(--color-primary);
+  border: 2rpx solid var(--color-primary);
   border-radius: 20rpx;
   padding: 10rpx 20rpx;
   font-size: 24rpx;
@@ -279,7 +251,7 @@
 
 .admin-openid-text {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   flex: 1;
   white-space: nowrap;
   overflow: visible;
@@ -287,7 +259,7 @@
 }
 
 .admin-openid-remove {
-  background-color: #ff4d4f;
+  background-color: var(--color-danger);
   color: white;
   border-radius: 6rpx;
   padding: 8rpx 0;
@@ -321,7 +293,7 @@
 }
 
 .admin-openid-add-btn {
-  background-color: #07c160;
+  background-color: var(--color-success);
   color: white;
   border-radius: 6rpx;
   padding: 8rpx 0;
@@ -343,7 +315,7 @@
 
 .time-separator {
   font-size: 26rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -370,7 +342,7 @@
 
 .express-rule-provinces {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .express-rule-fields {
@@ -387,7 +359,7 @@
 
 .express-rule-field-label {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   width: 100rpx;
   white-space: nowrap;
 }
@@ -403,7 +375,7 @@
 
 .express-rule-field-unit {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
@@ -426,7 +398,7 @@
 
 .delivery-rule-field-label {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   width: 120rpx;
   white-space: nowrap;
 }
@@ -442,13 +414,13 @@
 
 .delivery-rule-field-unit {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 
 /* 保存按钮 */
 .save-item-button {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 20rpx;
@@ -472,7 +444,7 @@
 
 .express100-field-label {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   width: 120rpx;
   white-space: nowrap;
 }
@@ -519,7 +491,7 @@
 
 .express100-api-item-label {
   font-size: 24rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   flex: 1;
   margin-right: 20rpx;
 }
@@ -538,7 +510,7 @@
   border-radius: 12rpx;
   padding: 20rpx;
   margin-bottom: 15rpx;
-  border-left: 4rpx solid #1989fa;
+  border-left: 4rpx solid var(--color-primary);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -575,7 +547,7 @@
 
 .delivery-address-item.add:hover {
   background-color: #f0f7ff;
-  border-color: #1989fa;
+  border-color: var(--color-primary);
 }
 
 .delivery-address-action {
@@ -588,24 +560,24 @@
 
 .delivery-address-action:first-child {
   background-color: #f0f7ff;
-  color: #1989fa;
-  border: 1rpx solid #1989fa;
+  color: var(--color-primary);
+  border: 1rpx solid var(--color-primary);
 }
 
 .delivery-address-action:first-child:hover {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .delivery-address-action:last-child {
   background-color: #fff1f0;
-  color: #ff4d4f;
-  border: 1rpx solid #ff4d4f;
+  color: var(--color-danger);
+  border: 1rpx solid var(--color-danger);
 }
 
 .delivery-address-detail {
   font-size: 22rpx;
-  color: #666;
+  color: var(--color-text-secondary);
   line-height: 1.5;
   word-break: break-all;
 }
@@ -623,76 +595,15 @@
 
 .delivery-address-add-text {
   font-size: 24rpx;
-  color: #1989fa;
+  color: var(--color-primary);
   font-weight: bold;
 }
 
-/* 发货地址编辑表单样式 */
-.delivery-address-form-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: flex-end;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.delivery-address-form-container {
-  width: 100%;
-  background-color: white;
-  border-radius: 24rpx 24rpx 0 0;
-  box-sizing: border-box;
-  animation: slideUp 0.3s ease-out;
-}
-
-.delivery-address-form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 30rpx;
-  border-bottom: 1rpx solid #f0f0f0;
-}
-
-.delivery-address-form-title {
-  font-size: 28rpx;
-  font-weight: bold;
-  color: #333;
-}
-
-.delivery-address-form-close {
-  font-size: 32rpx;
-  color: #999;
-  cursor: pointer;
-  width: 40rpx;
-  height: 40rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.delivery-address-form-close:active {
-  background-color: #f0f0f0;
-  color: #333;
-}
-
+/* 发货地址编辑表单样式（外壳由 modal-shell 提供） */
 .delivery-address-form-body {
   padding: 30rpx;
-  max-height: 60vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -719,7 +630,7 @@
 }
 
 .form-input:focus {
-  border-color: #1989fa;
+  border-color: var(--color-primary);
   outline: none;
 }
 
@@ -741,11 +652,12 @@
 }
 
 .form-textarea:focus {
-  border-color: #1989fa;
+  border-color: var(--color-primary);
   outline: none;
 }
 
 .delivery-address-form-actions {
+  flex-shrink: 0;
   display: flex;
   gap: 15rpx;
   padding: 30rpx;
@@ -771,7 +683,7 @@
 
 .form-btn-cancel {
   background-color: #f0f0f0;
-  color: #666;
+  color: var(--color-text-secondary);
   border: 1rpx solid #e0e0e0;
 }
 
@@ -780,11 +692,11 @@
 }
 
 .form-btn-confirm {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
   border: none;
 }
 
 .form-btn-confirm:active {
-  background-color: #1872de;
+  background-color: var(--color-primary);
 }

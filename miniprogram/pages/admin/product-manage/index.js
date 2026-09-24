@@ -1,4 +1,6 @@
 // pages/admin/product-manage/index.js
+import { confirm } from "../../../utils/confirm";
+
 const db = wx.cloud.database()
 
 Page({
@@ -303,10 +305,10 @@ Page({
    */
   下架商品(e) {
     const productId = e.currentTarget.dataset.id
-    wx.showModal({
+    confirm({
       title: '确认下架',
-      content: '确定要下架该商品吗？',
-      success: (res) => {
+      content: '确定要下架该商品吗？'
+    }).then((res) => {
         if (res.confirm) {
           wx.cloud.callFunction({
             name: 'updateProduct',
@@ -319,7 +321,6 @@ Page({
             wx.showToast({ title: '操作失败', icon: 'none' })
           })
         }
-      }
     })
   },
 

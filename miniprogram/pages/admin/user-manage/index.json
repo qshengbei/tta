@@ -1,3 +1,6 @@
 {
-  "navigationBarTitleText": "用户管理"
+  "navigationBarTitleText": "用户管理",
+  "usingComponents": {
+    "confirm-dialog": "../../../components/confirm-dialog/index"
+  }
 }

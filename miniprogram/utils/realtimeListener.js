@@ -30,16 +30,6 @@ const listenerConfigs = {
     maxReconnectAttempts: 5
   },
   
-  // 售后单监听
-  afterSales: {
-    collectionName: 'after_sales',
-    dedupeKey: '_id',
-    batchSize: 10,
-    autoReconnect: true,
-    reconnectDelay: 2000,
-    maxReconnectAttempts: 5
-  },
-  
   // 消息监听
   messages: {
     collectionName: 'messages',

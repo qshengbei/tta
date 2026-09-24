@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "订单管理"
+  "navigationBarTitleText": "订单管理",
+  "usingComponents": {
+    "order-search-filter-panel": "../../../components/order-search-filter-panel/index",
+    "confirm-dialog": "../../../components/confirm-dialog/index",
+    "modal-shell": "../../../components/modal-shell/index"
+  }
 }

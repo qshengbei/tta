@@ -93,7 +93,8 @@ Page({
     sortedExpressRules: [], // 排序后的快递规则
     coverImageUrl: "", // 商品封面图的临时URL
     showCartPreview: false, // 购物车预览弹出层显示状态
-    buyTips: "", // 购买须知
+    buyTips: "", // 购买须知（全店文案，来自 settings）
+    noReasonReturnDays: 7, // 7天无理由退换货天数（来自 settings，用于购买须知政策行）
     customerServiceMethod: "official", // 客服方法：official=官方客服，custom=自定义客服
     pageVisible: false, // 页面可见性
     pendingRefresh: false, // 页面隐藏期间数据是否有变化
@@ -354,7 +355,7 @@ Page({
 
     // 如果有同布料商品，也需要刷新一下
     if (product.materialId) {
-      this.fetchSameMaterialProducts(product.materialId);
+      this.fetchSameMaterialProducts(product.materialId, product);
     }
   },
 
@@ -513,28 +514,41 @@ Page({
 
   // 获取购买须知
   fetchBuyTips() {
-    // 先尝试从缓存获取
-    const cachedBuyTips = wx.getStorageSync('buyTips');
-    if (cachedBuyTips) {
+    const TTL = 30 * 60 * 1000; // 与其他配置类缓存一致：30 分钟过期，避免管理端改后长期不生效
+
+    // 先尝试从缓存获取（新结构：{ value, noReasonReturnDays, timestamp }）
+    const cached = wx.getStorageSync('buyTips');
+    if (cached && cached.timestamp && (Date.now() - cached.timestamp < TTL)) {
       console.log('从缓存获取购买须知');
-      this.setData({ buyTips: this.formatBuyTips(cachedBuyTips) });
+      this.setData({
+        buyTips: this.formatBuyTips(cached.value || ''),
+        noReasonReturnDays: cached.noReasonReturnDays || 7
+      });
       return;
     }
+
+    const applySettings = (firstSetting) => {
+      const buyTips = (firstSetting && firstSetting.buyTips) || '';
+      // 天数与 payment/order-detail 的读取口径保持一致：afterSalesTimeConfig 优先，顶层兜底
+      const noReasonReturnDays = Number(
+        (firstSetting && firstSetting.afterSalesTimeConfig && firstSetting.afterSalesTimeConfig.noReasonReturnDays)
+        ?? (firstSetting && firstSetting.noReasonReturnDays)
+        ?? 7
+      ) || 7;
+
+      // 缓存原始文案与天数（带过期时间）
+      wx.setStorageSync('buyTips', { value: buyTips, noReasonReturnDays, timestamp: Date.now() });
+      this.setData({
+        buyTips: this.formatBuyTips(buyTips),
+        noReasonReturnDays
+      });
+    };
 
     const settings = getCollection("settings");
     settings
       .get()
       .then((res) => {
-        let buyTips = "";
-        if (res.data && res.data.length > 0) {
-          const firstSetting = res.data[0];
-          buyTips = firstSetting.buyTips || "";
-        }
-        // 处理购买须知文本，将空格转换为换行
-        const formattedBuyTips = this.formatBuyTips(buyTips);
-        // 缓存购买须知（保存原始内容）
-        wx.setStorageSync('buyTips', buyTips);
-        this.setData({ buyTips: formattedBuyTips });
+        applySettings(res.data && res.data.length > 0 ? res.data[0] : null);
       })
       .catch((err) => {
         console.error("获取购买须知失败", err);
@@ -734,7 +748,7 @@ Page({
         
         if (product.materialId && !this._sameMaterialFetched) {
           this._sameMaterialFetched = true;
-          this.fetchSameMaterialProducts(product.materialId);
+          this.fetchSameMaterialProducts(product.materialId, product);
         } else if (!product.materialId) {
           this.setData({
             groupedProducts: [{
@@ -792,7 +806,7 @@ Page({
         
         if (product.materialId && !this._sameMaterialFetched) {
           this._sameMaterialFetched = true;
-          this.fetchSameMaterialProducts(product.materialId);
+          this.fetchSameMaterialProducts(product.materialId, product);
         } else if (!product.materialId) {
           this.setData({
             groupedProducts: [{
@@ -1470,34 +1484,62 @@ Page({
   },
 
   // 获取同布料的商品
-  async fetchSameMaterialProducts(materialId) {
+  // currentProduct 必须由调用方显式传入：缓存命中分支是同步执行的，
+  // 而调用往往发生在 setData({ product }) 之前，读 this.data.product 会拿到旧值/空值
+  async fetchSameMaterialProducts(materialId, currentProduct) {
     const start = Date.now();
     console.log('[性能分析][商品详情页] 开始获取同布料商品，materialId:', materialId);
-    
-    // 检查缓存（30分钟有效）
+
+    // “当前商品”分组始终用本次详情页的商品现场拼接，绝不参与布料维度的缓存
+    // （缓存按 materialId 共享，若把 A 的快照存进去，同布料的 B 命中后弹窗会显示 A）
+    // 缓存是由“别人的详情页”写入的，其中可能包含本次的当前商品，
+    // 因此拼接前需从其他分组中递归剔除当前商品，避免同款列表与“当前商品”重复
+    const excludeCurrentProduct = (groups, currentId) => groups
+      .map(group => {
+        if (Array.isArray(group.subGroups)) {
+          return { ...group, subGroups: excludeCurrentProduct(group.subGroups, currentId) };
+        }
+        if (Array.isArray(group.products)) {
+          return { ...group, products: group.products.filter(p => p._id !== currentId) };
+        }
+        return group;
+      })
+      // 剔除商品后清空的分组/容器不再展示
+      .filter(group => {
+        if (Array.isArray(group.subGroups)) return group.subGroups.length > 0;
+        if (Array.isArray(group.products)) return group.products.length > 0;
+        return true;
+      });
+
+    const buildGroupedProducts = (otherGroups) => [{
+      type: '当前商品',
+      products: [currentProduct]
+    }, ...excludeCurrentProduct(otherGroups, currentProduct._id)];
+
+    // 检查缓存（30分钟有效）。缓存只含“其他商品分组”，不含当前商品
     const cacheKey = `same_material_${materialId}`;
     const cachedData = wx.getStorageSync(cacheKey);
     if (cachedData && cachedData.timestamp && (Date.now() - cachedData.timestamp < 30 * 60 * 1000)) {
       console.log('[性能分析][商品详情页] 同布料商品命中缓存');
-      this.setData({ groupedProducts: cachedData.data });
+      // 新缓存：otherGroups；旧缓存：data 中混有“当前商品”快照，需过滤
+      const cachedGroups = Array.isArray(cachedData.otherGroups)
+        ? cachedData.otherGroups
+        : (Array.isArray(cachedData.data) ? cachedData.data.filter(g => g.type !== '当前商品') : []);
+      this.setData({ groupedProducts: buildGroupedProducts(cachedGroups) });
       _logPerformance('fetchSameMaterialProducts(缓存)', start);
       return;
     }
-    
+
     try {
       // 递归分页加载全部，每次取 20 条（免费版单次上限）
       const sameMaterialProducts = await this._fetchAllByMaterial(materialId);
 
-      const currentProduct = this.data.product;
       const otherProducts = sameMaterialProducts.filter(p => p._id !== currentProduct._id);
 
-      const groupedProducts = [{
-        type: '当前商品',
-        products: [currentProduct]
-      }];
-
       if (otherProducts.length === 0) {
-        this.setData({ groupedProducts });
+        this.setData({ groupedProducts: buildGroupedProducts([]) });
+        // 无其他商品时也写入空分组缓存，避免同布料商品反复查库
+        wx.setStorageSync(cacheKey, { otherGroups: [], timestamp: Date.now() });
         return;
       }
 
@@ -1534,33 +1576,32 @@ Page({
       const subGroups = Object.values(typeGrouped);
       if (ungrouped.length > 0) subGroups.push({ type: '其他', products: ungrouped });
 
-      if (subGroups.length > 0) {
-        groupedProducts.push({ type: '布料同款', subGroups });
-      }
+      // otherGroups 仅包含“其他商品”分组；“布料同款”是包一层 subGroups 的容器
+      const otherGroups = subGroups.length > 0
+        ? [{ type: '布料同款', subGroups }]
+        : [];
+
+      const groupedProducts = buildGroupedProducts(otherGroups);
 
       console.log('[性能分析][商品详情页] 分组结果:', groupedProducts);
       _analyzeData(groupedProducts, '同布料商品分组数据');
       _logSetDataTime('同布料商品分组', () => {
         this.setData({ groupedProducts });
       });
-      
-      // 缓存同布料商品（30分钟有效）
-      const cacheKey = `same_material_${materialId}`;
+
+      // 缓存同布料的其他商品（30分钟有效），不含当前商品快照
       wx.setStorageSync(cacheKey, {
-        data: groupedProducts,
+        otherGroups,
         timestamp: Date.now()
       });
       console.log('[性能分析][商品详情页] 同布料商品已缓存');
-      
+
       _logPerformance('fetchSameMaterialProducts', start);
 
     } catch (err) {
       console.error("获取同布料商品失败", err);
       this.setData({
-        groupedProducts: [{
-          type: '当前商品',
-          products: [this.data.product]
-        }]
+        groupedProducts: buildGroupedProducts([])
       });
     }
   },
@@ -1661,11 +1702,6 @@ Page({
       current: previewImageUrls[currentIndex],
       urls: previewImageUrls
     });
-  },
-
-  // 阻止事件冒泡
-  stopPropagation() {
-    // 空方法，用于阻止事件冒泡
   },
 
   // 处理商品选择模态框顶部已选商品图片点击

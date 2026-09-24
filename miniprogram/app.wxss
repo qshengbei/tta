@@ -2,12 +2,15 @@
 
 @import "styles/variables.wxss";
 @import "styles/mixins.wxss";
+@import "styles/states.wxss";
 
+/* 设计 token 定义在 styles/variables.wxss 的 page 选择器下（WXSS 不支持 :root）。
+   页面底色沿用 token 生效前的实际值（--color-bg = #f5f5f5），基础字号不设，
+   避免 token 首次生效时全站跳变；如要改用 --font-size-body，需单独评估回归。 */
 page {
   background-color: var(--color-bg);
   color: var(--color-text-main);
   font-family: var(--font-family-base);
-  font-size: var(--font-size-body);
   box-sizing: border-box;
   margin: 0;
   padding: 0;

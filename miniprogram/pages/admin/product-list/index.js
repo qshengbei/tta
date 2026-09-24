@@ -1,6 +1,7 @@
 // pages/admin/product-list/index.js
 import PagePaginator from '../../../utils/pagePaginator';
 import productCacheStore from '../../../utils/productCacheStore';
+import { confirm } from '../../../utils/confirm';
 
 const db = wx.cloud.database();
 const _ = db.command;
@@ -404,10 +405,10 @@ Page({
   // 下架商品
   下架商品(e) {
     const { id } = e.currentTarget.dataset;
-    wx.showModal({
+    confirm({
       title: '确认下架',
-      content: '确定要下架这个商品吗？',
-      success: (res) => {
+      content: '确定要下架这个商品吗？'
+    }).then((res) => {
         if (res.confirm) {
           wx.cloud.callFunction({
             name: 'updateProduct',
@@ -445,17 +446,16 @@ Page({
             });
           });
         }
-      }
     });
   },
 
   // 上架商品
   上架商品(e) {
     const { id } = e.currentTarget.dataset;
-    wx.showModal({
+    confirm({
       title: '确认上架',
-      content: '确定要上架这个商品吗？',
-      success: (res) => {
+      content: '确定要上架这个商品吗？'
+    }).then((res) => {
         if (res.confirm) {
           wx.cloud.callFunction({
             name: 'updateProduct',
@@ -493,7 +493,6 @@ Page({
             });
           });
         }
-      }
     });
   },
 

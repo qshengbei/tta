@@ -1,4 +1,6 @@
 // pages/admin/dashboard/index.js
+import { getOrderStatusText } from "../../../utils/orderStatusText";
+
 const db = wx.cloud.database();
 Page({
 
@@ -114,44 +116,10 @@ Page({
         const createdAt = new Date(order.createdAt);
         const formattedDate = `${createdAt.getFullYear()}-${(createdAt.getMonth() + 1).toString().padStart(2, '0')}-${createdAt.getDate().toString().padStart(2, '0')} ${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
         
-        // 订单状态文本
-        let statusText = '';
-        switch (order.status) {
-          case 'pending':
-            statusText = '待支付';
-            break;
-          case 'paid':
-            statusText = '已支付';
-            break;
-          case 'shipping':
-            statusText = '配送中';
-            break;
-          case 'delivered':
-            statusText = '待收货';
-            break;
-          case 'completed':
-            statusText = '已完成';
-            break;
-          case 'cancelled':
-            statusText = '已取消';
-            break;
-          case 'refund':
-            statusText = '售后处理中';
-            break;
-          case 'refund_completed':
-            if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
-              statusText = '部分退款';
-            } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
-              statusText = '换货完成';
-            } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
-              statusText = '退款完成';
-            } else {
-              statusText = '退款完成';
-            }
-            break;
-          default:
-            statusText = '未知状态';
-        }
+        // 订单状态文本（唯一真源：utils/orderStatusText.js）
+        const statusText = getOrderStatusText(order.status, order.deliveryType, {
+          afterSalesResult: order.afterSalesResult
+        });
         
         return {
           ...order,

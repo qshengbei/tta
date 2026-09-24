@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "",
-  "usingComponents": {}
+  "usingComponents": {
+    "modal-shell": "../../../components/modal-shell/index"
+  }
 }

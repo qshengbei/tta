@@ -1,0 +1,388 @@
+当前 UI 架构问题，以下为程序事实，供下一阶段重做时参考。
+
+1、同一角色存在多套实现方式，但已注册页面却未使用对应组件。
+【已核实/部分解决】原文点名的 product-card、cart-item、order-card、product-list、image-preview 五个组件
+现已不在 components/ 中：product-card 是最后清理的孤儿组件（无任何页面引用），其余 4 个在更早的改动中已删除。
+原文另两处描述也已过时：首页 index.json 已不再注册 product-card，购物车 index.json 也不再注册
+quantity-selector（其 usingComponents 现仅 search-filter-panel 与 confirm-dialog）。
+当前 components/ 剩 8 个组件：cart-preview、confirm-dialog、express-rules-modal、logistics-modal、
+modal-shell、order-search-filter-panel、quantity-selector、search-filter-panel，逐一核实均被已注册页面引用，无孤儿。
+【当前未解决】剩下的是「首页商品、购物车行、订单卡仍在页面内手写」，属实现风格问题，
+是否抽成组件需另行评估（改动面大）。
+
+2、搜索筛选有 两个订单的已合并。
+
+3、物流弹层分别在订单列表、订单详情、售后详情中各有一份。运费规则弹层则分别出现在商品详情和确认订单中。
+【当前解决】都已合并。
+
+4、售后申请有两种实现方式：订单详情内的四步弹层（WXML 已绑定按钮），以及 pages/after-sales/apply 
+页面（order-list 的 afterSales 页面会跳转，但该页 WXML 没有绑定相应方法）。
+【当前解决】已删除无用的。
+
+5、弹层不统一：配送、分享、售后使用自绘遮罩；取消订单、确认收货、支付确认使用 wx.showModal；
+时间与分类使用原生 picker；图片使用 wx.previewImage，聊天功能另有自绘预览。
+【当前解决】已建立统一弹层基座 components/modal-shell（遮罩/圆角/标题栏/出现动画/safe-area），
+所有自绘遮罩弹层均已迁移复用：订单详情、确认订单、商品详情（4 处）、我的、消息服务、售后寄回，
+以及管理端订单管理、发货、售后详情、退货跟踪、通知管理、更新设置等页面。
+wx.showModal 已统一到 components/confirm-dialog（经 utils/confirm.js 调用）；
+管理端「同意售后」「拒绝售后」因需输入金额/理由，保留原生 showModal。
+时间与分类仍用原生 picker；图片仍用 wx.previewImage；
+聊天自绘全屏预览（media-preview-mask）因基座不支持全屏，暂未迁移。
+顺带清理了迁移后遗留的死样式：mixins.wxss、购物车筛选面板、售后详情自绘弹层等。
+待回归：基座根节点 catchtouchmove 是否影响内部 picker-view 的滑动。
+
+6、订单状态颜色：唯一真源为 utils/orderStatus.wxs 的 getOrderStatusColor；order-list、order-detail、
+admin/order-manage、admin/dashboard、message/service 均已通过它取色，未发现硬编码订单状态色，本项实际已统一。
+【当前解决】消息模块 UI 色已收敛到设计 token。过程中发现并修复了一个项目级问题：
+styles/variables.wxss 把全部 token 定义在 :root 下，而微信开发者工具不支持 :root 根元素选择器
+（官方社区明确说明，解法是改成 page），即这套设计 token 从未真正生效过。
+此前只有消息模块坚持硬编码色，是唯一渲染正确的模块；一旦改用 var() 会立即暴露——
+实测未读红点变透明、反白字变继承黑字、白底输入栏与页面背景同色融合。本轮已回退该迁移
+（消息模块 5 个文件 + variables.wxss 新增的 6 个 token 全部撤销）。
+其他页面虽也写了 var()，但失效被巧合掩盖：app.wxss 的 page 背景失效后回落到 app.json 的 #F5F5F5，
+文字色失效后回落为默认黑，几处 page 背景恰好等于 --color-bg-alt。
+待收敛现状：service.wxss 99 处、index.wxss 37 处、list.wxss 27 处、detail.wxss 10 处、
+index.wxml 11 处硬编码色，去重后 58 个色值（品牌蓝有 6 个近似值：#0f3c8f 9 次、#1a3d8f 4 次、
+#0f2a6b、#0066cc、#2563eb、#576b95）。
+已定方案：分阶段激活 token。
+第 1 步（已完成）：variables.wxss 的 3 处 :root 改为 page；app.wxss 的 page 规则校准为不跳变
+（background-color 改用 --color-bg-alt 保持 #f5f5f5、删除 font-size 保持当前继承字号）。
+第 2 步（进行中）：home 62 处 var() 首次生效——间距由 0 恢复为 24/32/40rpx、字号变为 26/28/24rpx、
+部分文字由继承黑变 #666/#999、品牌蓝出现。
+底色已统一：--color-bg 由 #ffffff 改为 #f5f5f5（页面底色为灰、卡片 --color-bg-elevated 为白，
+与 app.json 及各页现状一致），故 8 个 edit/publish 页与 product-detail 的 .page-root 都不会变白。
+字号经数据核对无需下调：全站页面 font-size 字面值中 24rpx 占 31.7%、28rpx 占 20.7%、26rpx 占 13.5%，
+token 的 26rpx 正处于主流行，home 原先继承的 32rpx 才是异类；另外把 .series-subtitle 的
+calc(var(--font-size-body) * 0.8)（约 20.8rpx）换成 --font-size-caption（22rpx）。
+已合并重复 token：删除 --color-bg-alt，home 的 10 处与 mixins 的 2 处引用改指 --color-bg。
+mixins.wxss 已清理死类：删除 8 条——.product-card / __image / __price 只用于 product-card 组件内部
+（app.wxss 对自定义组件无效，默认 isolated），.product-detail__gallery / __image / __info / __title-row / __price
+已被商品详情页完全覆盖；保留 5 条仍生效的 .page-root / .btn / .btn-primary / .btn-secondary / .bottom-bar。
+文件由 92 行缩减至 44 行。
+第 3 步（已完成）：消息模块 5 个文件共 182 处硬编码色按属性语义（color / background / border）
+映射为 var()，涉及 13 个 token；品牌蓝 6 个近似值统一取 #1a3d8f；#f8f8f8 并入 --color-bg（#f5f5f5）；
+仍保留 rgba() 的阴影/遮罩（33 处）与 1 处深色渐变未 token 化。
+本次为此新增 5 个 token：--color-primary-dark、--color-bg-muted、--color-bg-inverse、--color-border、--color-text-inverse。
+【当前解决】已删除死代码：getOrderStatusColorVar（零调用）、variables.wxss 中 8 个 --order-status-* 变量（零消费）。
+【当前解决】同城配送分区色已收敛为单一真源：map-utils.js 导出 DELIVERY_ZONE_COLORS / _FILL_COLORS /
+_OUT_OF_RANGE_COLOR，generateCircles 内部改用；新增 buildDeliveryLegend() 统一生成图例颜色与文案，
+order-confirm 与 order-detail 的图例均改为遍历 data.deliveryLegend。
+order-detail 原先 js 写死 3 条配送规则、wxml 写死 4 行图例，现改为优先读商家配置
+（wx.getStorageSync('pickupLocation') 的 deliveryRules，与 order-confirm 同源），
+无配置时回退默认三档，消除「商家改规则后图例失真」。
+
+7、【已核实，非问题】我的页面「待收货」角标 = orderCounts.shipping + orderCounts.delivered，
+与订单列表 shipping 标签的查询 _.in(['shipping','delivered']) 口径一致，是正确设计。
+shipping = 快递未签收的待收货，delivered = 已签收待确认收货，二者同属「待收货」。
+订单卡片按状态分两组按钮（shipping 仅「查看物流」、delivered 另有「确认收货」）亦为有意设计。
+【当前解决】(1) 状态文案表已抽出唯一真源 utils/orderStatusText.js（ESM：export function getOrderStatusText(status, deliveryType, options)），
+order-detail 与 order-list 均改为调用它，两处的 status × deliveryType switch 与「（部分退款）/（整单退款）」后缀逻辑一并删除。
+两处分歧的处理：express + shipping 属有意设计（列表展示物流节点名、详情显示主状态），保留为显式参数
+useLogisticsStateForShipping（列表传 true）；refund 文案按多数统一为「售后处理中」
+（详情原为「售后中」，本次唯一可见文案变化）。
+同类副本已全部接入：admin/order-manage、admin/dashboard、message/service 三处均改为调用真源。
+接入带来的可见变化：admin/order-manage 的 delivered 由「待确认收货」统一为「已签收，待确认收货」/「已送达，待确认收货」，
+其「已完成但售后进行中显示售后中」的分支保留为参数 afterSalesStatus；admin/dashboard 原先不考虑配送方式
+（paid 显示「已支付」、shipping 显示「配送中」、delivered 显示「待收货」），接入后按配送方式输出规范文案；
+message/service 原先缺 delivered 与自提的 shipping/delivered、回落到数据库 statusText，接入后补齐。
+root 目录僵尸副本 pages/order-manage、pages/dashboard 未改（未在 app.json 注册，属第 10 点）。
+另：admin/order-manage 的 getItemStatusText（售后单状态文案）属另一类映射，归第 8 点处理，未纳入本次。
+【已核实，非问题】(2) 原先怀疑「自提订单进入 shipping/delivered 后无法通过标签找到」——经查不成立。
+权威口径见根目录「订单状态.md」：上门自提只有 pending/paid/completed/cancelled 四个状态，不存在 shipping/delivered。
+代码三重印证：updateOrderStatus 发货时对自提订单直接抛错「上门自提订单不需要发货」；
+确认收货时 deliveryType === 'pickup' ? 'completed' : 'delivered'（自提跳过 delivered）；
+getOrderCounts 的 pickupCounts 只有 pending/paid/completed 三个键且会丢弃不在键集内的状态。
+据此已删除 utils/orderStatusText.js 中 pickup + shipping / pickup + delivered →「待自提」两条不可达分支，仅保留兜底。
+另：「订单状态.md」L53 写「待收货标签对应 status 为 shipping 的订单」，漏了 delivered（实际查询为 _in(['shipping','delivered'])），
+与该文档 L9 把 delivered 归入待收货的描述也不一致，待确认是否修订该文档。
+附带：本地 orderCounts 缓存链路属冗余——my/index.js 的 updateOrderCountCache 是死代码（无调用者），
+payment/index.js 的同名方法虽在调用但模型缺 delivered 键；全项目无任何展示消费这份缓存，可清理。
+
+8、【已核实】售后文案的单一来源早已存在：utils/afterSalesStatus.js（TYPE_TEXT_MAP / STATUS_TEXT_MAP /
+STATUS_DESC_MAP / STATUS_DESC_MAP_ADMIN + 换货覆盖函数），用户端 pages/after-sales/list 与 detail 均已接入。
+原文三条的现状：①「列表与详情 intercepting 文案不同」已不成立（两处都走真源）；
+②「详情有 buyer_receiving、列表没有」已不成立（真源三张表都有）；③「5 个状态无底部栏按钮组」现象属实，
+但其中 processing / intercepting / seller_reviewing 属用户无需操作的等待态，无按钮是合理的。
+【当前解决】已清理重复副本：admin/after-sales/detail 删除本地 TYPE_TEXT_MAP、STATUS_TEXT_MAP、STATUS_DESC_MAP、
+EXCHANGE_TYPES 及两个换货函数，改用真源（顺带修掉本地 STATUS_TEXT_MAP 缺 processing 键、
+导致该状态直接显示英文码 'processing' 的问题）；admin/order-manage 的 getItemStatusText 改为调真源。
+可见文案变化：admin/order-manage 的 submitted「待审核」→「待处理」、approved「已同意」→「已通过」、
+intercepting「拦截中」→「正在拦截快递」；admin/after-sales/detail 换货说明两处与真源对齐
+（「请填写物流信息」→「请填写寄回单号」、「已寄出换新商品」→「换新商品已寄出」）。
+【已核实，无需处理】三个「无按钮」状态经确认均属正常：
+- approved「已通过」是瞬时态，会立即流转到待买家寄回 / 待退款等；
+- seller_received 不会作为售后单主状态出现 —— updateOrderStatus 的聚合逻辑（约 L985-993）会把
+  「部分明细已收货」折回 waiting_seller_receive、「全部已收货」映射为 seller_reviewing，两者都有管理端按钮；
+  它只在明细级被写入（itemAction === 'confirm_receipt' → itemStatus = 'seller_received'）供明细文案使用，
+  故真源中该条保留、不能删；
+- pending_refund「待退款」由定时任务自动处理，schedule_refund 触发器为每 5 分钟一次（0 */5 * * * * *），
+  故不加「立即退款」按钮：收益仅省几分钟，代价是新增手动写路径并需处理与定时任务的幂等与并发（重复退款风险）。
+另：僵尸副本 pages/order-manage 与备份目录 temp_backup/after-sales/* 未改。
+
+9、【已核实】原文 5 条主张中 4 条已不成立或已被规避：
+- 「我的页面跳转 pages/admin/dashboard/index 但未注册」→ 不成立：app.json L23 已注册该页，
+  我的页 index.js L720 的跳转是有效的；
+- 「通知详情跳转 pages/order/detail/index（磁碟有、未注册）」→ 不成立：message/detail L161-165
+  跳的是 /pages/order-detail/index（带连字符的已注册页），代码注释还写明「已注册路由」；
+- 「通知详情跳转 pages/activity/detail/index（目录不存在）」→ 目录确实不存在，但已规避：
+  message/detail L171-176 对 activity 类型只弹 toast「活动详情暂不可用」，不做跳转；
+- 「售后列表使用 switchTab 打开非 Tab 的订单列表」→ 不成立：after-sales/list L403-404 已改用 navigateTo，
+  并注释说明「order-list 不是 TabBar 页面，不能用 switchTab」。
+【当前解决】孤儿页处理：pages/admin/index（9 行 js、1 行 wxss 的空壳，无任何入口）已删除，
+app.json 中的注册同步移除（pages 由 42 项变 41 项），空目录一并清理。
+【当前解决】三个孤儿页已完成功能对比并删除（app.json 注册同步移除，pages 41 → 38，空目录一并清理）：
+- category-products：唯一入口早已改指 product-list（category/index.js 跳 ?type=type&typeId=），
+  而 product-list 是严格超集——多取子分类、多过滤 status:'on'、带搜索/筛选/排序/上下架/发布入口；
+  category-products 自身漏了 status:'on'，会把已下架商品查出来。
+- search-result：查询未转义正则、无分页、无 status 过滤；product-list 支持 keyword 且已转义正则并加 status:'on'，
+  搜索面板本就内置于它。注意：当前无在线入口带 keyword 打开 product-list，搜索跳转以后需由它承接。
+- customer-service：必须外部传 wechatPicture，无人传则显示空图；「我的」页弹层读同一字段
+  （settings.wechatPicture）且用 show-menu-by-longpress，体验更好。
+  唯一差异：被删页面的提示文案「长按图片扫码添加客服微信」弹层没有；已确认不补该文案。
+三个页面均无任何 wxml / navigator 引用，也不存在能间接跳到它们的动态 URL（全项目不读 banner.link 做跳转）。
+【当前解决】pages/admin/init-notification-templates/ 已删除（该目录只有一个 index.js，miniprogram 与
+cloudfunctions 全局均无引用），空目录一并清理；其「初始化管理员通知模板」功能已由 notification-manage
+页面的按钮承担，故为废弃脚本。
+附带：pages/order/detail/ 是一份空壳（index.wxml 内容仅为一行占位文本）且未注册，
+可与第 10 点的僵尸目录一并清理；pages/activity/ 目录不存在。
+
+10、管理页面位于 pages/admin/ 和 pages/ 下，分别包含商品、订单、布料、系列、类型、发货、设置等模块。
+app.json 仅使用 pages/admin/，根目录的文件仍保存在磁盘上。
+【已核实】待清理的根目录僵尸目录共 10 个（dashboard、order-manage、product-manage、cloth-manage、
+series-manage、product-type-manage、update-settings、products-list、index、order/detail），
+外加同类的 pages/order/list。核实结论：全部不在 app.json（38 项逐条对照）、miniprogram 内除自身文件外
+零引用、无 '/pages/' + 变量 式动态拼接、也无从 banner.link 读链接跳转；
+其引用的组件 search-filter-panel / order-search-filter-panel 与工具 utils/cloud、utils/time-utils
+都另有已注册页在用，删除不会产生孤儿。其中 7 个文件头注释仍写着 // pages/admin/xxx/index.js，属迁移残留。
+【已核实】pages/order-manage 与 pages/admin/order-manage 的 wxml 差异已用 class 级 diff 确认：
+root 独有的 16 个 class 全是迁移前的旧自绘弹层外壳（admin 版已用 modal-shell 4 处 + confirm-dialog 1 处取代，
+标签数 modal-shell 0→4、confirm-dialog 0→1），admin 独有 after-sales-panel__meta--body 为阶段 4 迁移新增，
+故 admin 版是更新过而非缺东西。唯一真实差异：管理端「上门自提」状态筛选组 root 有 5 个按钮
+（待支付/待自提/已完成/售后中/已取消），admin 只有 4 个，缺「售后中」，待决定是否补回。
+另：pages/index 的删除需同步清理 cloudfunctions/quickstartFunctions/index.js 中
+path: "pages/index/index" 那一行（该云函数为云开发默认模板，在 miniprogram 内无调用者）。
+【当前解决】11 个僵尸目录已全部删除（56 个文件 + 11 个目录 + 3 个 edit 子目录 + 空父目录 pages/order/），
+quickstartFunctions 的无效 path 已清理；校验通过：app.json 解析正常（38 页）、全项目（含 cloudfunctions）
+零残留引用、search-filter-panel / order-search-filter-panel / utils/cloud / utils/time-utils
+均仍被已注册页引用，无新增孤儿。管理端「上门自提」筛选组已补回「售后中」按钮
+（该页 afterSales 的查询分支本已存在，无需改逻辑）。
+【附带】components/product-card 当前是孤儿（无任何页面用 usingComponents 引用它），
+但它由更早的改动（components/product-list 被删）造成，与本次清理无关，待决定去留。
+
+11、商品列表 pages/product-list 不仅是宝贝的分类结果页，还包含上架/下架和发布入口。
+【已核实，原描述需修正】用户端 pages/product-list 的 WXML 里**没有任何管理端入口**——对
+上架 / 下架 / 发布 / 编辑 / add-button / action-button 做全量搜索，该文件零命中；管理端按钮实际只存在于
+pages/admin/product-list（其 wxml 有 add-button 与上架/下架按钮，js 也有对应实现）。所以「用户端页面包含
+管理入口」并不成立。真正的问题是：用户端 pages/product-list/index.js 里**残留了 4 个无入口的管理端方法**，
+属死代码——goToAddProduct（L419）、下架商品（L425）、上架商品（L451）、以及 L479 跳
+/pages/admin/product-publish/index?id= 的编辑方法。
+【当前解决】已删除这 4 个死方法（约 62 行），并清理随之失效的引用：utils/confirm 的 import、
+wxml 中的 confirm-dialog 元素、json 中的 confirm-dialog 注册（该页 usingComponents 现仅 search-filter-panel）。
+校验通过：js 语法 OK、json 解析正常、三个文件对 confirm / confirm-dialog / product-publish / updateProduct
+零残留。清理后该页职责即纯粹为「宝贝分类结果页」。
+
+12、地址功能仅提供 wx.chooseAddress，程序中未实现地址列表的确认、编辑、删除及预设地址页。
+【已核实，非问题】与既定需求一致：地址选择就是直接调用微信原生 wx.chooseAddress，不在小程序内维护地址簿，
+所以没有地址列表 / 预设地址页是设计如此，不是缺失，无需处理。
+
+13、空态与错误态不共享组件。首页使用表情符号，购物车和订单使用图片，其余内容多为一行文字加 Toast。
+【已核实，描述基本准确】components/ 下现无任何空态/错误态组件（8 个组件逐一核对），
+「不共享组件」准确说是「压根没有共享组件」，全部空态/错误态由各页面内联手写。
+盘点约 27 处空态 + 约 15 处错误态，分为：emoji 仅首页（空态 📦 / 错误态 ⚠️）；
+图片 3 处（购物车「暂无商品.png」、订单列表「无订单.png」、售后列表「empty.png」）；
+纯文字 20+ 处（消息类、管理端 8 处、组件内 3 处、页内局部 4 处）。
+错误态两套并存：6 处整页错误态（首页/订单列表/商品详情/订单确认/物流为「重试」按钮，订单详情为「返回」按钮），
+14 处仅 wx.showToast（消息类、管理端、我的、售后列表）。此处的「两套」指整页错误态与 Toast 两种交互形态，
+与下文遗留待办中按类名统计的 5 套样式体系不是同一维度，勿混淆。
+【比样式不统一更严重】3 个高频页面完全没有空态/错误态：category（宝贝，空列表只剩「没有更多啦」，
+加载失败仅 console.error，用户毫无反馈）、product-list（空结果无提示，index.js 的 emptyText 是死代码，
+失败仅 console.error）、message/detail（只有 loading）；另 admin/product-manage 与两个售后详情页也无兜底。
+【确定 bug】pages/after-sales/list/index.wxml:54 引用的 /images/icons/empty.png 文件不存在，空态实际显示为空白。
+【当前解决/进行中】第一步已完成：category 与 product-list 已具备空态（「暂无商品」）与错误态
+（errorMessage + 重试按钮，类名 error-state*，样式复用已有 token）；after-sales/list 的空态图片由不存在的
+/images/icons/empty.png 改为存在的 /images/icons/无订单.png（与 order-list 空态同图），该 bug 已修。
+说明：经核实，category 与 product-list 的这两处实现在工作区中已存在（不在 HEAD 中，属未提交改动），
+本次只补齐了 product-list 空态条件（加 !loading，避免加载中误显空态）并修复图片路径，未重写已有实现。
+【已修】pages/category/index.wxml:286 的 wx:elif 缺少 {{ }}，已补上（原会被当成恒真字符串常量，
+导致系列列表的「没有更多啦」始终显示）。
+【同类问题已修】全项目扫描 `wx:(if|elif|for)` 未用 {{ }} 的写法，另发现 3 处同一缺陷，现已全部处理：
+1) pages/home/index.wxml:68 与 :75 的 wx:for="[1, 2, 3]"，字符串被按字符迭代 9 次而非 3 次，
+   骨架屏渲染成 9 个系列 / 81 个商品占位；已补 {{ }} 并把 wx:key 统一为 *this，
+   恢复为 3 系列 × 3 商品，与 index.js 中 categories.slice(0, 3)（L741）、
+   seriesProducts.slice(0, 3)（L749）的真实渲染量一致。
+2) pages/message/index.wxml:94 的 wx:elif 并非「补 {{ }} 就能修」。核实结论：该块的
+   hasMoreSessions / loadingMoreSessions 两个字段全项目不存在，该页 data 只有 sessions / loading /
+   refreshing，也没有 onReachBottom 或任何分页，整段是从 product-list 抄来的死脚手架，
+   补完括号仍是恒真的「已加载全部会话」。已删除 L91-96 两个块，并连带删除本目录 wxss 中
+   因此失效的 .loading-more / .loading-text / .no-more / .no-more-text 共 20 行
+   （message/list、message/detail 各有独立 wxss 副本，message/service 用 .picker-no-more，均不受影响）。
+现存命中全部为 wx:for-item / wx:for-index / wx:key 的合法写法（这三项本来就不包 {{ }}），该缺陷类已清零。
+【第二轮完成】上述【尚未处理】4 项全部处理（用户拍板：本轮只修用户端，admin 端不动；视觉收敛只记录不实施）：
+1) product-list「加载更多失败」：严重度比本条原文记载更高——不只是「仅 console.error」。分页 catch 返回空数组
+   会让失败被当成「已到末页」：误显「没有更多啦」且 hasMore:false 后触底永久拦死。已修：
+   productListBehavior._loadNextFromDB 的 catch 改返 null（与真空页区分），_loadProducts 判 null 时
+   仅 Toast「加载失败，请稍后重试」、不复位 hasMore，下次触底自动重试。
+2) category 分类/系列两个 tab 加载失败：补整块错误态 + 重试按钮（categoryError/seriesError，
+   retryLoadCategories/retryLoadSeries），并补「该系列暂无商品」空态。
+3) message/detail 加载失败或无 id 参数：补整页错误态 + 重试（error/errorMessage/retryLoad），
+   无 id 显示「消息不存在」，不再永远停在只有 loading 的白屏。
+4) Toast 式错误态甄别与修复：启发式扫描出 26 处「加载类 catch 弹失败 Toast」，逐页核对 WXML 渲染条件后，
+   锁定 4 处真正把「加载失败」渲染成空态/白壳的用户端页面并全部修复：
+   message/index 通知区（原失败显示「暂无通知消息」）、message/list（原失败显示「暂无X通知」）、
+   after-sales/list（原失败显示「暂无售后记录 + 去查看订单」）、after-sales/detail（原无任何 guard，
+   且失败 1 秒后强制 navigateBack——无返回栈时留下白屏，onShow/watch 刷新失败时把旧数据踢掉）。
+   统一两档策略：列表为空 → 错误态 + 重试；已有旧数据 → 仅 Toast、不吞内容、不复位 hasMore。
+   after-sales/detail 改为有数据仅 Toast、无数据整页错误态 + 重试；无 id 进入显示「售后记录不存在」。
+   after-sales/list 的 loadMoreAfterSales 与 message/list 的 loadMoreNotifications 均已加 error 守卫，
+   防首次加载失败后触底无限翻页重试。
+   附带发现并已修：message/list 的 loadMoreNotifications 原先「先自增 pageNum 再请求」，
+   而 after-sales/list 是成功后才自增。失败时 pageNum 停在未渲染的一页，下次成功翻页会整页跳过，
+   列表出现永久性数据缺口。已把自增挪进 loadNotifications 的成功分支（与 hasMore 合并为一次 setData），
+   loadMoreNotifications 不再预增；pageNum 语义由「当前已加载页号」变为「下一页序号」，
+   fetchNotificationsByType 的 skip = pageNum * pageSize 计算方式不变，重置路径（onLoad / 错误态重试）
+   仍先归零。失败后再次触底会重试同一页。
+   【更正】上一条回复中「删除通知后会 reset 回第 0 页、丢失滚动位置」的说法有误，核查后不成立：
+   onNotificationDelete 是纯本地 filter（js L353-354），markAllAsRead 是本地 map（L435-439），
+   两者都不重新请求；跳转详情前调的 markNotificationAsRead 固定传 skipReload: true（L216），
+   因此其内部 if (!skipReload) → loadNotifications(true) 是全项目唯一调用点都不会进入的
+   不可达分支（scroll-view 亦未绑定 scroll-top，不存在人为回滚）。已按不可达防御分支口径清理：
+   删掉 options/skipReload 形参与该分支，markNotificationAsRead 收敛为「云函数 + 本地更新状态」，
+   调用点同步去掉传参。清理后该页重置路径只剩 onLoad 与错误态重试两处。
+   遗留（非 bug、不建议改）：删掉视口上方某条时下方内容整体上移一行，属本地移除的必然结果，
+   scroll-view 无 scroll anchoring，要「视觉不动」需手动补偿 scroll-top，代价大于收益。
+   其余 22 处判定可接受（操作类失败提示、聊天页空会话本就是空态语义、页面已有错误态等），未改。
+   本条原文「另 admin/product-manage 与两个售后详情页也无兜底」中的用户端售后详情页现已有兜底。
+【曾为遗留待办（第二轮未做，第三轮已处理，结果见下方）】视觉体系统一（收敛前的基线现状）：空态观感实测 3 套（图片式 3 处 cart/order-list/after-sales-list、
+emoji 式 1 处 home、其余纯文字）；整页错误态类名经复核为 5 套并存（此前文中「4 套」及 order-detail 的
+归属描述有误，已更正），各页自带一份副本，未建共享组件：
+1) .error-state__* —— 7 页：product-list、category、message/index、message/list、message/detail、
+   after-sales/list、after-sales/detail（非此前所写「约 10 页」）；
+2) .error-container / .error-icon / .error-message / .error-button —— 1 页：home（唯一用 emoji ⚠️）；
+3) .error 容器 + .error__text —— 3 页：logistics、order-list、order-confirm；
+4) .order-detail__error / __error-text / __error-button —— 1 页：order-detail（此前误记为占
+   .error__text 与 .order-detail__error* 两套，实际只用后者）；
+5) .pd-error / .pd-error__text —— 1 页：product-detail。
+小问题：after-sales/list 的 .empty-state__btn 仍用硬编码 #1890ff（全项目同类硬编码 30+ 处，admin 系列居多）；
+admin/product-list 把「加载中」放进 empty-state 容器；admin 端 15 处 Toast 式错误态按决策未改；
+admin/product-manage 无兜底，按决策未改（用户端两个售后详情页已补）。
+功能性问题（加载失败伪装成空态/白壳）已全部处理完毕，本条剩余工作量仅视觉收敛一项。
+【第三轮完成】视觉收敛已实施（用户拍板口径：全局样式类 + 统一纯文字 + 仅覆盖用户端已注册页 +
+顺带删除未注册死页）。统一状态样式落在 miniprogram/styles/states.wxss（由 app.wxss 全局 import，
+页面 wxss 无需 @import），类名 .empty-view / .error-view，修饰符 --page（flex:1; min-height:60vh;
+padding:var(--space-xl) var(--space-md)）用于独占整页/整块的状态块，子元素为 __text / __subtext / __btn；
+按钮统一 64rpx 胶囊，错误态为描边次要按钮、空态为主色实心按钮，均 ::after{border:none}。
+类名刻意避开 admin 端当时在用的 .empty-state / .empty-text / .error-container，故第三轮 admin 端不受全局规则影响
+（第四轮已把 admin 端一并迁移，见下方【第四轮完成】）。
+已迁移（wxml 换类名 + wxss 删本地死副本）：
+- 空态 10 处：cart、order-list、after-sales/list、home、category(×2)、product-list、message/index(×2)、
+  message/list；另 message/service 聊天区空提示原类名 .empty-message/.empty-text 在 wxss 中无任何定义
+  （裸类名），迁移后才获得样式，观感变化属有意为之。
+- 错误态 14 处：product-list、category(×3)、message/index、message/list、message/detail、after-sales/list、
+  after-sales/detail、home、logistics、order-list、order-confirm、order-detail、product-detail。
+上文所列 5 套错误态类名现已全部归零，home 媒体查询内 .error-icon/.empty-icon 残留规则一并清除；
+3 套空态观感（图片式 3 处 / emoji 式 1 处 / 纯文字）已统一为纯文字，配图与 emoji 的移除属有意的视觉变化。
+校验：15 个改动 WXML 标签配平 [OK]、15 个改动 WXSS 花括号配平、全项目扫描用户端无旧类名残留、
+GetDiagnostics 无告警。
+【遗留待办（视觉收敛后）】
+1) 【第四轮已完成】admin 端 8 页（product-list、order-manage、product-type-manage、series-manage、
+   notification-manage、cloth-manage、user-manage、banner-manage）各带的 .empty-state / .empty 族本地副本已全部迁移删除，
+   结果见下方【第四轮完成】；
+2) 【第五轮已完成】admin 端硬编码色已按拍板口径统一，结果见下方【第五轮完成】。原登记「21 处（#1890ff 14 处、
+   #ff6b6b 7 处）」系第四轮只统计这两种色所致；第五轮全量复核为 586 处 / 61 种色值，本轮迁移品牌/语义色与
+   可映射灰阶共 312 处，余 274 处为口径外的近似灰阶（#333 71 处、#e0e0e0、#f0f0f0、#2c3e50、#95a5a6 等）按口径保留；
+3) message/service 的 .picker-empty / .picker-empty-text（卡片选择弹层内空态，纯文字 + 自绘「去逛逛」按钮）
+   属清单外同语义项，因与弹层 gap 布局耦合且已符合纯文字基线，本轮未迁；
+4) 本轮只用全局样式类，未新增空态/错误态共享组件，components/ 下依旧无同类组件。
+【说明】本轮执行中曾发生一次工具事故：对 pages/order-confirm/index.wxss 的编辑误传空匹配串，
+导致该文件被整体覆盖。已用 git show HEAD 版本完整恢复（1178 行），并确认恢复内容与 HEAD 逐行一致
+（.btn L959→现 L943、.btn-secondary L966→现 L950、.error/.error__text 已按预期删除），随后重做该删除，
+现文件 1163 行、花括号配平。
+【第四轮完成】admin 端空态收敛（用户拍板口径：banner-manage 的 .empty 族一并迁移；admin 空态按钮统一为品牌主色；
+product-list 的「加载中」顺带修正）。8 个页面 wxml 换用全局 .empty-view / .empty-view__text / .empty-view__btn，
+wxss 本地死副本全部删除；类名命名空间避让的原始动机随之消解，states.wxss 顶部注释已同步更新
+（.empty-state / .empty-text 现全站归零）。逐页处理：
+- product-list：空态为页面根 .products-list-page 的直接子级，故用 empty-view--page；「加载中...」原与空态共用
+  .empty-state 容器，现语义分离到新增的最小 .loading-state/.loading-state__text（该页与全局 styles 原先都无 loading 类），
+  并沿用原卡片式外观（height:400rpx、白底、margin:20rpx、圆角 12rpx）；
+- banner-manage：原 .empty 与 .loading 是共享选择器 `.loading, .empty {...}`，已拆为仅 .loading；删 .empty-text / .empty-btn；
+- product-type-manage、series-manage、cloth-manage：删 .empty-state / __text / __button / ::after（各页原有 .loading-state 保留）；
+- user-manage、order-manage：删 .empty-state / __text（原有 .loading-state 保留）；
+- notification-manage：删 .empty-state（该页文字样式原直接写在容器上，迁移后由 empty-view__text 承担）。
+有意视觉变化：admin 空态按钮由硬编码 #1890ff 蓝 / #ff6b6b 红统一为 --color-primary(#1a3d8f) 品牌深蓝；
+各页空态容器的高度/内边距/白底卡片/阴影被统一为全局 .empty-view 规格；product-list 的「加载中」不再复用空态容器。
+未加 --page 的 7 处（均位于列表区或 restock 标签面板内）保持原列表内排布，仅套用基础类。
+校验：8 个改动 WXML 标签配平 [OK]、8 个改动 WXSS 花括号配平、全项目扫描 .empty-state/.empty-text/.empty-btn
+与裸 .empty 命中归零（仅剩 states.wxss 说明注释与清单外的 message/service .picker-empty-text）、GetDiagnostics 无告警。
+顺带核实的硬编码色现状（本轮未处理，仅登记）：admin 端 #1890ff 共 14 处（product-type-manage ×4、after-sales/detail ×6、
+series-manage ×2、cloth-manage ×2）、#ff6b6b 共 7 处（order-manage ×3、banner-manage ×2、banner-manage/edit ×1、
+notification-manage ×1），合计 21 处。
+【第五轮完成】admin 端硬编码色统一（用户拍板口径：品牌色 + 可映射灰阶；wxml 内联一并改，json 不动）。
+全量复核（Grep `#[0-9a-fA-F]{3,8}\b` admin 全部 wxss）得候选 586 处 / 61 种色值，分布在 19 个 wxss 文件；
+本轮实际替 312 处（307 行变更，含 5 行 linear-gradient 单行 2 色），余 274 处为口径外近似灰阶未动。
+映射表（按属性感知，同一色值在不同属性可映射到不同 token）：
+- 品牌色：蓝系 #1890ff / #1989fa / #007aff / #1872de / #0958d9 → var(--color-primary)；
+  红系 #ff4d4f / #ff6b6b / #e74c3c / #cf1322 → var(--color-danger)；
+  绿系 #52c41a / #07c160 / #389e0d → var(--color-success)；
+  橙系 #faad14 / #fa8c16 / #d48806 / #d46b08 → var(--color-warning)；
+- 精确同值灰阶：#666 → --color-text-secondary；#999 → --color-text-muted；#f5f5f5 → --color-bg；
+- 需按属性分流（关键风险点，已按属性交叉统计后分支处理）：
+  #fff/#ffffff 作 background/background-color → --color-bg-elevated，作 color → --color-text-inverse；
+  #000/#000000 作 background/background-color → --color-bg-inverse，作 color → --color-text-main；
+  实测无 #fff/#000 出现在 border/box-shadow 等其它属性，无需兜底分支。
+按属性统计（312 处）：color 183、background-color 89、background 20、border-color 10、border 7、
+border-bottom-color 1、border-bottom 1、border-left 1。逐文件：after-sales/detail 63、order-manage 52、
+update-settings 40、product-manage 25、notification-manage 22、product-type-manage 18、series-manage 15、
+cloth-manage 12、after-sales/return-tracking 11、product-list 11、ship-order 11、banner-manage 10、
+dashboard 8、banner-manage/edit 5、user-manage 5、cloth-manage/edit 1、product-publish 1、
+product-type-manage/edit 1、series-manage/edit 1。
+有意视觉变化：admin 端原先散用的高饱和蓝（#1890ff/#1989fa/#007aff 等）、红（#ff4d4f/#ff6b6b/#e74c3c/#cf1322）、
+绿（#52c41a/#07c160）、橙（#faad14/#fa8c16）统一为品牌深蓝 --color-primary(#1a3d8f) 与 danger(#e34c4c) /
+success(#0ebc6c) / warning(#ff9f40) 语义色，饱和度与色相都有变化；
+特别地 5 处 linear-gradient(135deg, A 0%, B 100%)（均在 admin/after-sales/detail）的两个端点色初版被映射到
+同一 token，渐变退化为纯色；随后按用户指示「补全深色 token 恢复渐变层次」补做：variables.wxss 的 Feedback 组
+新增 --color-success-dark(#0c9f5b)、--color-warning-dark(#db6d00)、--color-danger-dark(#c31f1f)，
+命名沿用既有 --color-primary-dark 惯例，值取各语义色同色相、明度下调约 18 个百分点的深端
+（色彩 token 由 13 个增至 16 个）；上述 5 处渐变改为 var(--color-X) 0% → var(--color-X-dark) 100%，
+渐变层次恢复（含 .intercept-modal-btn--success/--warning/--danger、.compensation-modal-btn--primary、
+.inspect-fail__submit-btn）。
+零视觉变化：#666/#999/#f5f5f5/#fff/#000 与 token 精确同值（token 即 #666666/#999999/#f5f5f5/#ffffff/#000000），
+仅写法由字面量改为 var()。
+wxml 内联 2 处同步改：product-list/index.wxml:6 的 background-color:#fff → var(--color-bg-elevated)；
+product-type-manage/index.wxml:23 的 color:#666 → var(--color-text-secondary)（CSS 变量在 wxml 内联 style 中按页面作用域生效）。
+json 3 处保持不动（cloth-manage/edit、product-type-manage/edit、series-manage/edit 的
+navigationBarBackgroundColor:"#ffffff"）——json 不支持 CSS 变量，仅接受字面色值，故不纳入本轮。
+保留项（口径外，未动）：近似灰阶 #333(71)、#e0e0e0、#f0f0f0、#2c3e50、#95a5a6、#e5e5e5、#ccc、#f9f9f9、
+#fafafa、#e6e9ed、#fafbfc、#f0f7ff、#f8f9fa、#f8f8f8 等，共 274 处。
+校验：19 个改动 WXSS 花括号全部配平（新增脚本逐文件核对），与备份逐行 diff 得 307 行变更、花括号净变化 0、
+无行数错位；迁移色残留扫描（含 3/6 位大小写）命中 0；2 个改动 WXML 标签配平 [OK]；admin 全部 wxml 硬编码色
+扫描命中 0；GetDiagnostics 无告警。深色 token 与 5 处渐变补做后复验：variables.wxss、after-sales/detail 花括号
+配平，折叠渐变（两端点同 token）扫描归零，GetDiagnostics 无告警。
+
+14、商品详情购买须知：若后台无 buyTips，则 WXML 中硬编码四段发饰文案，同时需与「支持7天无理由」标签以及
+发布页「是否支持七天无理由退换货」并存。最终以哪条为准，需看单个商品的具体信息，不能仅凭单一界面判断。
+【判断结论】三套机制：① 商品字段 supportNoReasonReturn（发布页开关，默认 false，下单快照进 order item，
+order-detail 按它显示标签并过滤售后原因）——事实上的唯一真源；② 全店 settings.buyTips 纯文案；
+③ WXML 硬编码兜底。矛盾：兜底首句无条件宣称“不支持七天无理由”，对 supportNoReasonReturn=true 的商品构成
+前台承诺与实际售后规则冲突；且“发饰”文案在全品类展示；buyTips storage 缓存无 TTL 无失效标记，管理端改后
+老用户永久看旧文案。
+【当前解决】退换政策一律按单商品 supportNoReasonReturn 渲染：
+- product-detail/index.wxml 删除四段发饰硬编码；购买须知首行改为政策行，true 显示“支持N天无理由退换货
+（签收后N天内可申请）”绿色，false 显示“本商品不支持N天无理由退换货”灰色；其下仅在 settings.buyTips
+非空时追加全店须知文案。空态口径：仅显示政策行（用户已确认）。
+- 商品信息区补“支持7天无理由”绿色标签（20rpx/#52c41a，与 order-detail 商品卡完全一致），随弹窗内
+selectProduct 切换商品联动（WXML 直接绑定 product.supportNoReasonReturn，无需额外 setData）。
+- N 取 settings 的 afterSalesTimeConfig.noReasonReturnDays ?? noReasonReturnDays ?? 7，与 payment 页
+读取口径一致。
+- fetchBuyTips 缓存改为 { value, noReasonReturnDays, timestamp } 结构，TTL 30 分钟；旧的裸字符串缓存
+无 timestamp 自动判废重取并覆写（用户已确认选 TTL 方案，不另设管理端刷新标记）。
+- 同步删除 WXSS 孤儿类 .product-detail__notice-item，新增 .product-detail__tags/__product-tag/
+__notice-policy/--yes。
+
+15、导航栏背景色与系统主题默认色不一致时，切换 tab 会白闪。
+现象：切换 tabbar 时，顶部导航栏先显示白色，再变为配置色。
+原因：导航栏首帧渲染的是系统主题默认色（浅色主题即白），配置色是后套用的；
+全局 window.navigationBarBackgroundColor 原为 #F5F5F5，与默认白不同，这个时间差肉眼可见。
+排查过程：与 page 背景声明无关（用注释掉 background-color 做过 A/B 验证，白闪依旧）；
+为 5 个 tab 页 json 显式声明同色也无效（该试验已撤销，避免与全局值冲突）。
+【当前解决】将 app.json 的 window.navigationBarBackgroundColor 改为 #FFFFFF，与默认色一致，白闪消失。
+副作用（已确认接受）：导航栏纯白，与页面灰底 #f5f5f5 之间出现可见分界；不要改回灰色。

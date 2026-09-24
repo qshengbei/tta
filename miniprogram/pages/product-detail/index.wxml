@@ -3,9 +3,9 @@
     <view class="pd-loading__spinner"></view>
   </view>
 
-  <view wx:elif="{{error}}" class="pd-error">
-    <text class="pd-error__text">{{errorMessage}}</text>
-    <button class="btn btn-secondary" bindtap="reload">重试</button>
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="reload">重试</button>
   </view>
 
   <view wx:else class="pd-wrapper">
@@ -71,6 +71,11 @@
           <text class="product-detail__title {{isTitleExpanded ? 'product-detail__title--expanded' : ''}}" bindtap="toggleTitleExpanded">{{product.name}}</text>
         </view>
 
+        <!-- 商品服务标签：与订单详情页商品卡口径一致 -->
+        <view wx:if="{{product.supportNoReasonReturn}}" class="product-detail__tags">
+          <text class="product-detail__product-tag">支持7天无理由</text>
+        </view>
+
         <text class="product-detail__description-text {{isDescExpanded ? 'product-detail__description-text--expanded' : ''}}" bindtap="toggleDescExpanded">
           {{product.description || '这是一件为日常仪式感设计的 Aura 单品。'}}
         </text>
@@ -133,15 +138,13 @@
       <view class="product-detail__notice">
         <view class="product-detail__section-title">购买须知</view>
         <view class="product-detail__notice-content">
-          <block wx:if="{{buyTips}}">
-            <text class="product-detail__notice-text">{{buyTips}}</text>
-          </block>
-          <block wx:else>
-            <text class="product-detail__notice-item">亲爱的顾客，发饰属于私人物品，为保证卫生与品质，不支持七天无理由退换，还请理解</text>
-            <text class="product-detail__notice-item">若非质量问题，暂时无法为您办理退换，希望您能理解我们的用心</text>
-            <text class="product-detail__notice-item">每一件发饰均为手工制作，可能会有细微的手工痕迹，这是正常现象</text>
-            <text class="product-detail__notice-item">如果您对细节要求较高，建议购买前查看商品详情或随时咨询我，我会耐心为您解答</text>
-          </block>
+          <!-- 退换政策以单个商品的 supportNoReasonReturn 为准（下单快照、售后拦截均按此字段执行） -->
+          <text class="product-detail__notice-policy {{product.supportNoReasonReturn ? 'product-detail__notice-policy--yes' : ''}}">
+            <block wx:if="{{product.supportNoReasonReturn}}">支持{{noReasonReturnDays}}天无理由退换货（签收后{{noReasonReturnDays}}天内可申请）</block>
+            <block wx:else>本商品不支持{{noReasonReturnDays}}天无理由退换货</block>
+          </text>
+          <!-- 全店补充须知（后台 settings.buyTips 配置），不得硬编码具体品类与退换政策 -->
+          <text wx:if="{{buyTips}}" class="product-detail__notice-text">{{buyTips}}</text>
         </view>
       </view>
       
@@ -150,8 +153,12 @@
     </scroll-view>
     
     <!-- 商品选择弹窗 -->
-    <view wx:if="{{showProductSelectorModal}}" class="product-selector-modal">
-      <view class="product-selector-modal__overlay" bindtap="hideProductSelector"></view>
+    <modal-shell
+      visible="{{showProductSelectorModal}}"
+      position="bottom"
+      showClose="{{false}}"
+      bind:close="hideProductSelector"
+    >
       <view class="product-selector-modal__content">
         <!-- 已选商品信息 -->
         <view class="product-selector-modal__selected">
@@ -174,7 +181,7 @@
                 <view class="product-selector-modal__subsection-title">{{subItem.type}}</view>
                 <view class="product-selector-modal__options">
                   <view class="product-selector-modal__option {{product._id === productItem._id ? 'product-selector-modal__option--active' : ''}} {{!productItem.stock || productItem.stock <= 0 ? 'product-selector-modal__option--soldout' : ''}}" 
-                        wx:for="{{subItem.products}}" wx:key="{{productItem._id}}"
+                        wx:for="{{subItem.products}}" wx:key="_id"
                         wx:for-item="productItem"
                         bindtap="selectProduct" data-product="{{productItem}}">
                     <view catchtap="handleOptionImageTap" data-product="{{productItem}}" data-index="0">
@@ -190,7 +197,7 @@
             <!-- 处理普通分组 -->
             <view wx:else class="product-selector-modal__options">
               <view class="product-selector-modal__option {{product._id === productItem._id ? 'product-selector-modal__option--active' : ''}} {{!productItem.stock || productItem.stock <= 0 ? 'product-selector-modal__option--soldout' : ''}}" 
-                    wx:for="{{item.products}}" wx:key="{{productItem._id}}"
+                    wx:for="{{item.products}}" wx:key="_id"
                     wx:for-item="productItem"
                     bindtap="selectProduct" data-product="{{productItem}}">
                 <view catchtap="handleOptionImageTap" data-product="{{productItem}}" data-index="0">
@@ -234,7 +241,7 @@
           </button>
         </view>
       </view>
-    </view>
+    </modal-shell>
 
     <!-- 底部操作栏 -->
     <view class="bottom-bar pd-bottom-bar">
@@ -284,8 +291,12 @@
     </view>
 
     <!-- 分享选项弹窗 -->
-    <view wx:if="{{showShareModal}}" class="share-modal">
-      <view class="share-modal__overlay" bindtap="hideShareOptions"></view>
+    <modal-shell
+      visible="{{showShareModal}}"
+      position="bottom"
+      showClose="{{false}}"
+      bind:close="hideShareOptions"
+    >
       <view class="share-modal__content">
         <view class="share-modal__title">立即分享给好友</view>
         <view class="share-modal__options">
@@ -305,14 +316,18 @@
         </view>
         <view class="share-modal__cancel" bindtap="hideShareOptions">取消</view>
       </view>
-    </view>
+    </modal-shell>
     
     <!-- 海报生成画布 -->
     <canvas canvas-id="posterCanvas" width="{{posterCanvasWidthPx || 375}}" height="{{posterCanvasHeightPx || 667}}" style="width: {{posterCanvasWidth || 750}}rpx; height: {{posterCanvasHeight || 1334}}rpx; position: fixed; top: -9999rpx; left: -9999rpx;"></canvas>
     
     <!-- 海报预览弹窗 -->
-    <view wx:if="{{showPosterPreview}}" class="poster-preview-modal">
-      <view class="poster-preview-modal__overlay" bindtap="closePosterPreview"></view>
+    <modal-shell
+      visible="{{showPosterPreview}}"
+      position="bottom"
+      showClose="{{false}}"
+      bind:close="closePosterPreview"
+    >
       <view class="poster-preview-modal__content">
         <view class="poster-preview-modal__image-container">
           <image class="poster-preview-modal__image" src="{{posterImagePath}}" mode="widthFix"></image>
@@ -322,11 +337,15 @@
           <view class="poster-preview-modal__btn poster-preview-modal__btn--save" bindtap="savePosterToAlbum">保存到相册</view>
         </view>
       </view>
-    </view>
-    
+    </modal-shell>
+
     <!-- 位置选择弹窗 -->
-    <view wx:if="{{showLocationModal}}" class="location-modal">
-      <view class="location-modal__overlay" bindtap="hideLocationModal"></view>
+    <modal-shell
+      visible="{{showLocationModal}}"
+      position="bottom"
+      showClose="{{false}}"
+      bind:close="hideLocationModal"
+    >
       <view class="location-modal__content">
         <view class="location-modal__title">位置与规则</view>
         <view class="location-modal__options">
@@ -341,43 +360,14 @@
         </view>
         <view class="location-modal__cancel" bindtap="hideLocationModal">取消</view>
       </view>
-    </view>
+    </modal-shell>
 
     <!-- 快递计算规则弹窗 -->
-    <view wx:if="{{showExpressRulesModal}}" class="express-rules-modal">
-      <view class="express-rules-modal__overlay" bindtap="hideExpressRulesModal"></view>
-      <view class="express-rules-modal__content">
-        <view class="express-rules-modal__title">快递计算规则</view>
-        <scroll-view class="express-rules-modal__scroll" scroll-y="true">
-          <view class="express-rules-modal__rules">
-            <!-- 显示所有规则，当前地址规则已在第一位 -->
-            <view wx:for="{{sortedExpressRules || expressRules}}" wx:key="index" class="express-rule-item">
-              <view class="express-rule-item__region">
-                {{item.region}}
-                <text wx:if="{{item.isCurrentRegion}}"> (当前地区)</text>
-              </view>
-              <view class="express-rule-item__provinces">
-                <view wx:for="{{item.provinces || [item.province]}}" wx:key="province" class="express-rule-item__province">{{item}}</view>
-              </view>
-              <view class="express-rule-item__fee-free">
-                <view class="express-rule-item__fee">
-                  <view class="express-rule-item__fee-label">运费：</view>
-                  <view class="express-rule-item__fee-value">¥{{item.fee}}</view>
-                </view>
-                <view class="express-rule-item__free">
-                  <view class="express-rule-item__free-label">包邮条件：</view>
-                  <view class="express-rule-item__free-value">满{{item.freeShipping || item.freeShippingThreshold || item.freeshipping || 0}}元包邮</view>
-                </view>
-              </view>
-            </view>
-          </view>
-          <view class="express-rules-modal__tip">
-            运费根据发货地福建省到收货地址的实际距离计算，不同地区成本略有差异，感谢您的理解与支持。
-          </view>
-        </scroll-view>
-        <view class="express-rules-modal__cancel" bindtap="hideExpressRulesModal">关闭</view>
-      </view>
-    </view>
+    <express-rules-modal
+      visible="{{showExpressRulesModal}}"
+      rules="{{sortedExpressRules}}"
+      bind:close="hideExpressRulesModal"
+    />
   </view>
 
   <!-- 购物车预览组件 -->

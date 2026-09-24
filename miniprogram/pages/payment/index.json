@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "支付订单",
   "navigationBarBackgroundColor": "#F5F5F5",
-  "navigationBarTextStyle": "black"
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "confirm-dialog": "../../components/confirm-dialog/index"
+  }
 }

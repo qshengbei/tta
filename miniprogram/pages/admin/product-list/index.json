@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "商品列表",
   "usingComponents": {
-    "search-filter-panel": "../../../components/search-filter-panel/index"
+    "search-filter-panel": "../../../components/search-filter-panel/index",
+    "confirm-dialog": "../../../components/confirm-dialog/index"
   }
 }

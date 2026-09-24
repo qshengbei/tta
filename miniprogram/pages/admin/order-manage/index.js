@@ -1,4 +1,8 @@
 // pages/admin/order-manage/index.js
+import { confirm } from "../../../utils/confirm";
+import { getOrderStatusText } from "../../../utils/orderStatusText";
+import { getAfterSalesStatusText } from "../../../utils/afterSalesStatus";
+
 const db = wx.cloud.database();
 
 // 默认快递规则
@@ -35,6 +39,12 @@ Page({
       deliveryType: ['express', 'pickup', 'local']
     },
     searchKeyword: '', // 搜索关键词
+    // 搜索面板的高级筛选条件（时间范围 / 商品类别），与关键词一起在本地过滤生效；
+    // 与上方 filterOptions（状态、配送类型白名单）含义不同，故单独命名
+    searchFilterOptions: {
+      timeRange: null,
+      category: []
+    },
     afterSalesPanelVisible: false,
     selectedAfterSalesCase: null,
     selectedAfterSalesItems: [],
@@ -182,31 +192,8 @@ Page({
   },
 
   getItemStatusText(status, afterSalesType) {
-    const statusMap = {
-      submitted: '待审核',
-      reviewing: '审核中',
-      approved: '已同意',
-      rejected: '已拒绝',
-      processing: '处理中',
-      completed: '已完成',
-      cancelled: '已取消',
-      waiting_buyer_return: '待买家寄回',
-      waiting_seller_receive: '待商家收货',
-      seller_received: '商家验货中',
-      seller_reviewing: '商家验货中',
-      seller_returning: '商家寄回中',
-      buyer_receiving: '待买家收货',
-      pending_refund: '待退款',
-      intercepting: '拦截中'
-    };
-    let text = statusMap[status] || status || '待处理';
-    // 换货流程中 seller_returning/buyer_receiving 文案区分
-    const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
-    if (EXCHANGE_TYPES.includes(afterSalesType)) {
-      if (status === 'seller_returning') text = '待商家发新货';
-      if (status === 'buyer_receiving') text = '待买家收新货';
-    }
-    return text;
+    // 售后单状态文案（唯一真源：utils/afterSalesStatus.js）
+    return getAfterSalesStatusText(status, afterSalesType);
   },
 
   normalizeCaseItem(item) {
@@ -248,8 +235,6 @@ Page({
       url: url
     });
   },
-
-  preventPanelClose() {},
 
   refreshAfterSalesPanel(caseId, orderId) {
     return Promise.all([
@@ -400,83 +385,14 @@ Page({
         const createdAt = new Date(order.createdAt);
         const formattedDate = `${createdAt.getFullYear()}-${(createdAt.getMonth() + 1).toString().padStart(2, '0')}-${createdAt.getDate().toString().padStart(2, '0')} ${createdAt.getHours().toString().padStart(2, '0')}:${createdAt.getMinutes().toString().padStart(2, '0')}`;
         
-        // 订单状态文本
-        let statusText = '';
+        // 订单状态文本（唯一真源：utils/orderStatusText.js）
         const deliveryType = order.deliveryType || 'express'; // 默认快递运输
-        switch (order.status) {
-          case 'pending':
-            statusText = '待支付';
-            break;
-          case 'paid':
-            if (deliveryType === 'express') {
-              statusText = '待发货';
-            } else if (deliveryType === 'pickup') {
-              statusText = '待自提';
-            } else if (deliveryType === 'local') {
-              statusText = '待配送';
-            } else {
-              statusText = '已支付';
-            }
-            break;
-          case 'shipping':
-            if (deliveryType === 'express') {
-              statusText = order.logisticsState?.stateName || '已发货';
-            } else if (deliveryType === 'pickup') {
-              statusText = '待自提';
-            } else if (deliveryType === 'local') {
-              statusText = '配送中';
-            } else {
-              statusText = '已发货';
-            }
-            break;
-          case 'delivered':
-            if (deliveryType === 'express') {
-              statusText = '待确认收货';
-            } else if (deliveryType === 'pickup') {
-              statusText = '待自提';
-            } else if (deliveryType === 'local') {
-              statusText = '待确认收货';
-            } else {
-              statusText = '已送达';
-            }
-            break;
-          case 'completed':
-            // 检查是否有售后状态
-            if (order.afterSalesStatus === 'pending' || order.afterSalesStatus === 'processing') {
-              statusText = '售后中';
-            } else {
-              // 订单状态显示"已完成"，售后结果不覆盖主状态（淘宝做法）
-              statusText = '已完成';
-            }
-            break;
-          case 'cancelled':
-            statusText = '已取消';
-            break;
-          case 'refund':
-            statusText = '售后处理中';
-            break;
-          case 'refund_completed':
-            if (order.afterSalesResult && order.afterSalesResult.includes('部分')) {
-              statusText = '部分退款';
-            } else if (order.afterSalesResult && order.afterSalesResult.includes('换货')) {
-              statusText = '换货完成';
-            } else if (order.afterSalesResult && order.afterSalesResult.includes('退款')) {
-              statusText = '退款完成';
-            } else {
-              statusText = '售后完成';
-            }
-            break;
-          default:
-            statusText = '未知状态';
-        }
-
-        // 部分退款时在主状态后追加提示（订单可能恢复为 delivered/completed/shipping）
-        if (order.afterSalesResult && order.afterSalesResult.includes('部分') && order.status !== 'refund_completed') {
-          statusText = `${statusText}（部分退款）`;
-        } else if (order.afterSalesResult === '整单退款' && order.status === 'refund') {
-          // 拦截成功等整单退款场景：退款到账前显示"售后处理中（整单退款）"
-          statusText = `${statusText}（整单退款）`;
-        }
+        let statusText = getOrderStatusText(order.status, deliveryType, {
+          useLogisticsStateForShipping: true,
+          logisticsStateName: order.logisticsState && order.logisticsState.stateName,
+          afterSalesResult: order.afterSalesResult,
+          afterSalesStatus: order.afterSalesStatus
+        });
 
         // 配送类型文本
         let deliveryTypeText = '';
@@ -497,17 +413,20 @@ Page({
         return {
           ...order,
           createdAt: formattedDate,
+          // 展示用的 createdAt 已被格式化为字符串，单独保留时间戳供时间范围筛选使用
+          createdAtTs: createdAt.getTime(),
           statusText,
           deliveryTypeText
         };
       });
       
-      // 合并数据
-      const newOrders = this.data.page === 1 ? orders : [...this.data.orders, ...orders];
-      
+      // originalOrders 始终保存"服务端按状态 + 配送类型查出的完整列表"（分页累加），
+      // orders 在其上叠加本地搜索筛选；这样切换标签重新加载后搜索条件依然生效
+      const allOriginal = this.data.page === 1 ? orders : [...this.data.originalOrders, ...orders];
+
       this.setData({
-        orders: newOrders,
-        originalOrders: newOrders, // 保存当前筛选条件下的订单数据用于搜索筛选
+        originalOrders: allOriginal,
+        orders: this.applySearchFilter(allOriginal, this.data.searchKeyword, this.data.searchFilterOptions),
         hasMore: orders.length === limit,
         page: this.data.page + 1,
         loading: false
@@ -625,54 +544,102 @@ Page({
    * 处理搜索
    */
   handleSearch(e) {
-    const { keyword, filteredOrders } = e.detail;
-    this.setData({ searchKeyword: keyword, orders: filteredOrders });
+    const { keyword, filterOptions } = e.detail;
+    const options = filterOptions || { timeRange: null, category: [] };
+    this.setData({
+      searchKeyword: keyword,
+      searchFilterOptions: options,
+      orders: this.applySearchFilter(this.data.originalOrders, keyword, options)
+    });
   },
 
   /**
    * 处理筛选
    */
   handleFilter(e) {
-    const { filterOptions, filteredOrders } = e.detail;
-    this.setData({ orders: filteredOrders });
+    const options = e.detail.filterOptions || { timeRange: null, category: [] };
+    this.setData({
+      searchFilterOptions: options,
+      orders: this.applySearchFilter(this.data.originalOrders, this.data.searchKeyword, options)
+    });
   },
 
   /**
-   * 处理清除搜索
+   * 处理清除搜索（仅清关键词，已选的高级筛选条件保持不变）
    */
   handleClearSearch() {
-    this.setData({ searchKeyword: '', orders: this.data.originalOrders });
+    this.setData({
+      searchKeyword: '',
+      orders: this.applySearchFilter(this.data.originalOrders, '', this.data.searchFilterOptions)
+    });
   },
 
   /**
-   * 筛选订单
+   * 对订单列表应用本地搜索与高级筛选
+   * 服务端只按"状态 + 配送类型"查询，关键词、时间范围、商品类别在此叠加；
+   * 因此切换标签重新加载数据后，搜索条件仍会自动带上
+   * @param {Array} list 服务端查出的原始订单列表
+   * @param {String} keyword 搜索关键词
+   * @param {Object} options 高级筛选条件 { timeRange, category }
    */
-  filterOrders() {
-    const { originalOrders, searchKeyword, status, deliveryType } = this.data;
-    
-    let filteredOrders = [...originalOrders];
-    
-    // 搜索筛选
-    if (searchKeyword) {
-      const keyword = searchKeyword.toLowerCase();
-      filteredOrders = filteredOrders.filter(order => {
-        // 检查订单号、地址姓名、地址电话
-        const basicMatch = (
-          (order.orderNumber && order.orderNumber.toLowerCase().includes(keyword)) ||
-          (order.address && order.address.name && order.address.name.toLowerCase().includes(keyword)) ||
-          (order.address && order.address.phone && order.address.phone.includes(keyword))
-        );
-        
-        // 检查商品名称
-        const productMatch = order.products && order.products.some(product => {
-          return product.name && product.name.toLowerCase().includes(keyword);
-        });
-        
-        return basicMatch || productMatch;
+  applySearchFilter(list, keyword, options) {
+    let result = Array.isArray(list) ? [...list] : [];
+    const kw = (keyword || '').trim();
+    const opts = options || {};
+
+    // 关键词：命中订单号或任一商品名称
+    if (kw) {
+      result = result.filter(order => {
+        if (order.orderNumber && order.orderNumber.includes(kw)) {
+          return true;
+        }
+        if (order.products) {
+          for (let i = 0; i < order.products.length; i++) {
+            const product = order.products[i];
+            if (product.name && product.name.includes(kw)) {
+              return true;
+            }
+          }
+        }
+        return false;
       });
     }
-    
-    this.setData({ orders: filteredOrders });
+
+    // 时间范围：优先用加载时保留的 createdAtTs（展示用 createdAt 已格式化为字符串），
+    // 缺失时退化到 updatedAt
+    if (opts.timeRange) {
+      const rangeMap = {
+        '7days': 7 * 24 * 60 * 60 * 1000,
+        '30days': 30 * 24 * 60 * 60 * 1000,
+        '90days': 90 * 24 * 60 * 60 * 1000
+      };
+      const span = rangeMap[opts.timeRange];
+      if (span) {
+        const startTime = Date.now() - span;
+        result = result.filter(order => {
+          let ts = Number(order.createdAtTs) || 0;
+          if (!ts) {
+            const raw = order.updatedAt;
+            const parsed = raw instanceof Date ? raw : new Date(raw && raw.$date ? raw.$date : raw);
+            ts = isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+          }
+          // 取不到时间的订单视为不匹配，避免脏数据混入
+          return ts > startTime;
+        });
+      }
+    }
+
+    // 商品类别：命中任一商品（products / productsList）的 typeId
+    if (opts.category && opts.category.length > 0) {
+      const selected = opts.category;
+      result = result.filter(order => {
+        const hit = arr => Array.isArray(arr)
+          && arr.some(p => p && p.typeId && selected.includes(p.typeId));
+        return hit(order.products) || hit(order.productsList);
+      });
+    }
+
+    return result;
   },
 
   /**
@@ -680,7 +647,7 @@ Page({
    */
   editOrder(e) {
     const orderId = e.currentTarget.dataset.id;
-    wx.showModal({
+    confirm({
       title: '编辑订单',
       content: '此功能暂未实现，敬请期待',
       showCancel: false
@@ -714,10 +681,10 @@ Page({
   cancelOrder(e) {
     const orderId = e.currentTarget.dataset.id;
     
-    wx.showModal({
+    confirm({
       title: '取消订单',
-      content: '确定要取消这个订单吗？',
-      success: async (res) => {
+      content: '确定要取消这个订单吗？'
+    }).then(async (res) => {
         if (res.confirm) {
           try {
             await this.callUpdateOrderStatus(orderId, 'cancel', {
@@ -740,7 +707,6 @@ Page({
             });
           }
         }
-      }
     });
   },
 
@@ -752,7 +718,7 @@ Page({
     const order = this.data.orders.find(item => item._id === orderId);
     
     if (order.logisticsInfo && order.logisticsInfo.trackingNumber) {
-      wx.showModal({
+      confirm({
         title: '物流信息',
         content: `物流单号: ${order.logisticsInfo.trackingNumber}`,
         showCancel: false
@@ -771,10 +737,10 @@ Page({
   confirmReceipt(e) {
     const orderId = e.currentTarget.dataset.id;
     
-    wx.showModal({
+    confirm({
       title: '确认收货',
-      content: '确认已收到商品吗？',
-      success: async (res) => {
+      content: '确认已收到商品吗？'
+    }).then(async (res) => {
         if (res.confirm) {
           try {
             await this.callUpdateOrderStatus(orderId, 'confirm');
@@ -795,7 +761,6 @@ Page({
             });
           }
         }
-      }
     });
   },
 
@@ -803,7 +768,7 @@ Page({
    * 处理退款/售后
    */
   handleAfterSales(e) {
-    wx.showModal({
+    confirm({
       title: '提示',
       content: '请让用户在订单端发起售后申请，管理员在本页按商品明细处理。',
       showCancel: false

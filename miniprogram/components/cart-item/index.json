@@ -1,6 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "quantity-selector": "/components/quantity-selector/index"
-  }
-}

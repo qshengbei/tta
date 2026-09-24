@@ -1,0 +1,19 @@
+<modal-shell
+  visible="{{visible}}"
+  position="center"
+  showClose="{{false}}"
+  maskClosable="{{maskClosable}}"
+  bind:close="onCancel"
+>
+  <view class="confirm-dialog">
+    <view wx:if="{{title}}" class="confirm-dialog__title">{{title}}</view>
+    <view class="confirm-dialog__content">{{content}}</view>
+    <view class="confirm-dialog__actions">
+      <view wx:if="{{showCancel}}" class="confirm-dialog__btn" bindtap="onCancel">{{cancelText}}</view>
+      <view
+        class="confirm-dialog__btn confirm-dialog__btn--{{tone}}"
+        bindtap="onConfirm"
+      >{{confirmText}}</view>
+    </view>
+  </view>
+</modal-shell>

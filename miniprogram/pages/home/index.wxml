@@ -7,26 +7,29 @@
     <view class="skeleton-banner"></view>
   </view>
   
-  <!-- 真实轮播图 -->
-  <swiper 
-    wx:else
-    indicator-dots="{{true}}" 
-    autoplay="{{true}}" 
-    interval="5000" 
+  <!-- 真实轮播图：仅在有数据时渲染，空 swiper 在部分基础库会触发渲染层 $$ 异常 -->
+  <swiper
+    wx:elif="{{bannerList.length > 0}}"
+    indicator-dots="{{true}}"
+    autoplay="{{true}}"
+    interval="5000"
     duration="1000"
     circular="{{true}}"
     indicator-color="rgba(255, 255, 255, 0.5)"
     indicator-active-color="#ffffff"
   >
-    <swiper-item wx:for="{{bannerList}}" wx:key="{{item._id}}">
-      <image 
-        class="swiper-image" 
+    <swiper-item wx:for="{{bannerList}}" wx:key="_id">
+      <image
+        class="swiper-image"
         src="{{item.image}}"
         mode="aspectFill"
         lazy-load="true"
       />
     </swiper-item>
   </swiper>
+
+  <!-- 无轮播数据时的占位，保持区域高度但不渲染 swiper -->
+  <view wx:else class="banner-placeholder"></view>
 </view>
 
 <!-- 新品推荐 -->
@@ -35,7 +38,7 @@
     <text class="new-products-title">新品推荐</text>
   </view>
   <view class="new-products-container">
-    <block wx:for="{{newCarouselList}}" wx:key="{{item._id}}" wx:for-index="index">
+    <block wx:for="{{newCarouselList}}" wx:key="_id" wx:for-index="index">
       <view
         class="new-product-item {{index === 0 ? 'new-product-item--left' : index === 1 ? 'new-product-item--center' : 'new-product-item--right'}}"
         bindtap="goToProductDetail"
@@ -64,15 +67,15 @@
   <!-- 轮播图骨架 -->
   <view class="skeleton-banner"></view>
   
-  <!-- 系列骨架 -->
-  <view wx:for="[1, 2, 3]" wx:key="{{index}}" class="skeleton-series">
+  <!-- 系列骨架（与真实渲染对齐：3 个系列 × 每个 3 个商品） -->
+  <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-series">
     <view class="skeleton-series-header">
       <view class="skeleton-series-title"></view>
       <view class="skeleton-series-subtitle"></view>
     </view>
     <view class="skeleton-series-image"></view>
     <view class="skeleton-products">
-      <view wx:for="[1, 2, 3]" wx:key="{{subIndex}}" class="skeleton-product">
+      <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="skeleton-product">
         <view class="skeleton-product-image"></view>
         <view class="skeleton-product-name"></view>
         <view class="skeleton-product-price"></view>
@@ -83,26 +86,24 @@
 
 <view wx:if="{{error}}">
   <!-- 错误状态 -->
-  <view class="error-container">
-    <view class="error-icon">⚠️</view>
-    <text class="error-message">{{errorMessage}}</text>
-    <button class="error-button" bindtap="reloadData">重试</button>
+  <view class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="reloadData">重试</button>
   </view>
 </view>
 
 <view wx:elif="{{seriesList.length === 0}}">
   <!-- 空状态 -->
-  <view class="empty-container">
-    <view class="empty-icon">📦</view>
-    <text class="empty-title">暂无系列数据</text>
-    <text class="empty-subtitle">请稍后再来看看吧</text>
-    <button class="empty-button" bindtap="reloadData">刷新</button>
+  <view class="empty-view empty-view--page">
+    <text class="empty-view__text">暂无系列数据</text>
+    <text class="empty-view__subtext">请稍后再来看看吧</text>
+    <button class="empty-view__btn" bindtap="reloadData">刷新</button>
   </view>
 </view>
 
 <view wx:else>
   <!-- 系列展示 -->
-  <block wx:for="{{seriesList}}" wx:key="{{item.id}}">
+  <block wx:for="{{seriesList}}" wx:key="id">
     <view class="series-section">
       <view class="series-header">
         <text class="series-title">{{item.title}}</text>
@@ -118,7 +119,7 @@
       </view>
       
       <view class="series-products">
-        <block wx:for="{{item.products}}" wx:key="{{product._id}}" wx:for-item="product">
+        <block wx:for="{{item.products}}" wx:key="_id" wx:for-item="product">
           <view class="series-product-item" bindtap="goToProductDetail" data-id="{{product._id}}">
             <image class="series-product-image" src="{{product.coverImage}}" mode="aspectFill" />
             <text class="series-product-name">{{product.name}}</text>

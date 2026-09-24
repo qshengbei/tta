@@ -5,9 +5,9 @@
     <text class="loading__text">加载中...</text>
   </view>
 
-  <view wx:elif="{{error}}" class="error">
-    <text class="error__text">{{errorMessage}}</text>
-    <button class="btn btn-secondary" bindtap="reload">重试</button>
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="reload">重试</button>
   </view>
 
   <view wx:else class="order-confirm">
@@ -57,20 +57,11 @@
           <view wx:if="{{!isOutOfRange}}" class="local-delivery-info__fee">
             <text class="local-delivery-info__fee-text">配送费：{{deliveryFee || '计算中'}} 元</text>
           </view>
-          <!-- 配送范围图例 -->
+          <!-- 配送范围图例（颜色与文案由 map-utils.buildDeliveryLegend 统一生成） -->
           <view class="local-delivery-info__legend">
-            <view wx:for="{{deliveryRules}}" wx:key="{{index}}" class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: {{['#00ff99', '#ffff99', '#ff9999'][index % 3]}}"></view>
-              <text class="local-delivery-info__legend-text">
-                {{index === 0 ? '0-' : deliveryRules[index-1].maxDistance + '-'}}{{item.maxDistance}}公里{{item.fee === 0 ? ' 免费' : ' ' + item.fee + '元'}}
-              </text>
-            </view>
-            <!-- 超过最大配送范围 -->
-            <view class="local-delivery-info__legend-item">
-              <view class="local-delivery-info__legend-color" style="background-color: #999999"></view>
-              <text class="local-delivery-info__legend-text">
-                ＞{{deliveryRules.length > 0 ? deliveryRules[deliveryRules.length-1].maxDistance : '10'}}公里 不配送
-              </text>
+            <view wx:for="{{deliveryLegend}}" wx:key="text" class="local-delivery-info__legend-item">
+              <view class="local-delivery-info__legend-color" style="background-color: {{item.color}}"></view>
+              <text class="local-delivery-info__legend-text">{{item.text}}</text>
             </view>
           </view>
           <view class="local-delivery-info__map-container">
@@ -189,7 +180,7 @@
       </view>
       <!-- 多个商品 -->
       <view wx:elif="{{products && products.length > 0}}" class="product-list">
-        <view wx:for="{{products}}" wx:key="{{item._id}}" class="product-item">
+        <view wx:for="{{products}}" wx:key="_id" class="product-item">
           <image class="product-item__image" src="{{item.coverImage}}" mode="aspectFill"/>
           <view class="product-item__info">
             <text class="product-item__name">{{item.name}}</text>
@@ -249,13 +240,12 @@
     </view>
 
     <!-- 配送方式选择弹窗 -->
-    <view wx:if="{{showDeliverySelectorModal}}" class="delivery-selector-modal" catchtap="hideDeliverySelector">
-      <view class="delivery-selector-modal__content" catchtap="noop">
-        <view class="delivery-selector-modal__header">
-          <text class="delivery-selector-modal__title">选择配送方式</text>
-          <view class="delivery-selector-modal__close" bindtap="hideDeliverySelector">×</view>
-        </view>
-        
+    <modal-shell
+      visible="{{showDeliverySelectorModal}}"
+      position="bottom"
+      title="选择配送方式"
+      bind:close="hideDeliverySelector"
+    >
         <scroll-view class="delivery-selector-modal__scroll" scroll-y="true">
           <view class="delivery-selector-modal__options">
             <view class="delivery-selector-modal__option {{tempDeliveryType === 'express' ? 'delivery-selector-modal__option--active' : ''}}" bindtap="selectDeliveryType" data-type="express">
@@ -285,43 +275,13 @@
         <view class="delivery-selector-modal__footer">
           <button class="btn btn-primary" bindtap="confirmDeliveryType">确认选择</button>
         </view>
-      </view>
-    </view>
+    </modal-shell>
 
     <!-- 快递计算规则弹窗 -->
-    <view wx:if="{{showExpressRulesModal}}" class="express-rules-modal">
-      <view class="express-rules-modal__overlay" bindtap="hideExpressRulesModal"></view>
-      <view class="express-rules-modal__content">
-        <view class="express-rules-modal__title">快递计算规则</view>
-        <scroll-view class="express-rules-modal__scroll" scroll-y="true">
-          <view class="express-rules-modal__rules">
-            <!-- 显示所有规则，当前地址规则已在第一位 -->
-            <view wx:for="{{sortedExpressRules || expressRules}}" wx:key="index" class="express-rule-item">
-              <view class="express-rule-item__region">
-                {{item.region}}
-                <text wx:if="{{item.isCurrentRegion}}"> (当前地区)</text>
-              </view>
-              <view class="express-rule-item__provinces">
-                <view wx:for="{{item.provinces || [item.province]}}" wx:key="province" class="express-rule-item__province">{{item}}</view>
-              </view>
-              <view class="express-rule-item__fee-free">
-                <view class="express-rule-item__fee">
-                  <view class="express-rule-item__fee-label">运费：</view>
-                  <view class="express-rule-item__fee-value">¥{{item.fee}}</view>
-                </view>
-                <view class="express-rule-item__free">
-                  <view class="express-rule-item__free-label">包邮条件：</view>
-                  <view class="express-rule-item__free-value">满{{item.freeShipping || item.freeShippingThreshold || item.freeshipping || 0}}元包邮</view>
-                </view>
-              </view>
-            </view>
-          </view>
-          <view class="express-rules-modal__tip">
-            运费根据发货地福建省到收货地址的实际距离计算，不同地区成本略有差异，感谢您的理解与支持。
-          </view>
-        </scroll-view>
-        <view class="express-rules-modal__cancel" bindtap="hideExpressRulesModal">关闭</view>
-      </view>
-    </view>
+    <express-rules-modal
+      visible="{{showExpressRulesModal}}"
+      rules="{{sortedExpressRules}}"
+      bind:close="hideExpressRulesModal"
+    />
   </view>
 </view>

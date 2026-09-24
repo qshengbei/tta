@@ -951,6 +951,8 @@ Page({
       
       // 有缓存时，后台拉取数据库与缓存对比，有差异则静默更新
       this.refreshDataSilently();
+      // 缓存中的轮播图是 cloud 临时链接，可能已过期导致白屏，后台静默重取并转换
+      this.refreshBanner();
       return;
     }
 

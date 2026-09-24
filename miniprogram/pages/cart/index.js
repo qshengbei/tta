@@ -2,6 +2,7 @@ import { getCollection } from "../../utils/cloud";
 import { getProductsDetail, isProductSoldOut, calculateCartTotalPrice } from "../../utils/product";
 import { getCachedProducts } from "../../utils/cache";
 import { getGlobalProductWatcher } from '../../utils/globalProductWatcher';
+import { confirm } from "../../utils/confirm";
 
 const db = wx.cloud.database();
 
@@ -1924,14 +1925,14 @@ Page({
       return;
     }
     
-    wx.showModal({
+    confirm({
       title: '确认删除',
       content: `确定要删除选中的 ${selectedItems.length} 件商品吗？`,
-      success: (res) => {
+      tone: 'danger'
+    }).then((res) => {
         if (res.confirm) {
           this.performBatchDelete(selectedItems);
         }
-      }
     });
   },
 

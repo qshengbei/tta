@@ -134,12 +134,16 @@ Component({
     },
     
     // 处理搜索确认
+    // 只下发筛选条件，数据过滤由父页面负责：父页面在切换状态/配送类型标签后
+    // 会重新拉取数据，需要在页面上重新套用同一套条件
     handleSearchConfirm() {
       const keyword = this.data.searchKeyword.trim();
       if (keyword) {
         this.saveSearchHistory(keyword);
-        const { filterOptions } = this.data;
-        this.triggerEvent('search', { keyword, filterOptions });
+        this.triggerEvent('search', {
+          keyword,
+          filterOptions: this.data.filterOptions
+        });
         this.hideSearchPanel();
       }
     },
@@ -452,7 +456,9 @@ Component({
     },
     
     // 确认筛选
+    // 同 handleSearchConfirm：只下发条件，数据过滤由父页面负责
     confirmFilters() {
+      // 标记为已应用，供 hideFilterPanel 区分"取消"与"确定"
       this.setData({ applied: true });
       const { filterOptions } = this.data;
       this.triggerEvent('filter', { filterOptions });

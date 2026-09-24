@@ -213,39 +213,6 @@
   border: none;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 120rpx 0;
-  gap: 24rpx;
-}
-
-.empty-state__image {
-  width: 160rpx;
-  height: 160rpx;
-  opacity: 0.5;
-}
-
-.empty-state__text {
-  font-size: 28rpx;
-  color: #999;
-}
-
-.empty-state__btn {
-  padding: 12rpx 48rpx;
-  background-color: #1890ff;
-  color: #fff;
-  font-size: 24rpx;
-  border-radius: 8rpx;
-  margin-top: 20rpx;
-}
-
-.empty-state__btn::after {
-  border: none;
-}
-
 .loading {
   display: flex;
   flex-direction: column;

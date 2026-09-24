@@ -1,44 +1,5 @@
-.cart-preview {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.cart-preview__overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.cart-preview__content {
-  position: relative;
-  background-color: #fff;
-  border-top-left-radius: 24rpx;
-  border-top-right-radius: 24rpx;
-  max-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  animation: slide-up 0.3s ease-out;
-}
-
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
+/* 购物车预览弹层
+   外壳（遮罩/面板圆角/动画/滚动穿透）由 modal-shell 提供 */
 .cart-preview__header {
   display: flex;
   justify-content: space-between;
@@ -91,6 +52,7 @@
 
 .cart-preview__body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 

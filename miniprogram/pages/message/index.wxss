@@ -1,6 +1,6 @@
 .message-container {
   min-height: 100vh;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 顶部操作栏 */
@@ -9,52 +9,52 @@
   justify-content: flex-end;
   align-items: center;
   padding: 20rpx 32rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
   gap: 40rpx;
 }
 
 .message-title {
   font-size: 32rpx;
   font-weight: 600;
-  color: #333333;
+  color: var(--color-text-main);
 }
 
 .mark-all-read {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   transition: color 0.2s ease;
 }
 
 .mark-all-read:active {
-  color: #374151;
+  color: var(--color-text-main);
 }
 
 .enter-service {
   font-size: 24rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   transition: color 0.2s ease;
 }
 
 .enter-service:active {
-  color: #374151;
+  color: var(--color-text-main);
 }
 
 /* 区域容器 */
 .section-container {
   margin-top: 0rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 客服身份的区域容器 */
 .section-container-cs {
   margin-top: 0;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 分隔线 */
 .divider {
   height: 30rpx;
-  background-color: #f8f8f8;
+  background-color: var(--color-bg);
 }
 
 /* 通知消息列表 */
@@ -101,12 +101,12 @@
   justify-content: center;
   width: 132rpx;
   height: 100%;
-  color: #ffffff;
+  color: var(--color-text-inverse);
   font-size: 24rpx;
 }
 
 .swipe-action-read {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
 }
 
 .swipe-card {
@@ -125,7 +125,7 @@
   display: flex;
   align-items: flex-start;
   padding: 24rpx 32rpx;
-  background-color: #ffffff;
+  background-color: var(--color-bg-elevated);
   border-radius: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   position: relative;
@@ -140,7 +140,7 @@
 .unread-badge {
   width: 10rpx;
   height: 10rpx;
-  background-color: #ef4444;
+  background-color: var(--color-danger);
   border-radius: 50%;
   margin-right: 16rpx;
   margin-top: 12rpx;
@@ -148,7 +148,7 @@
 
 .message-item {
   padding: 24rpx 32rpx;
-  background-color: #ffffff;
+  background-color: var(--color-bg-elevated);
   border-radius: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
   position: relative;
@@ -181,7 +181,7 @@
 .message-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-main);
   flex: 1;
   margin-right: 16rpx;
   overflow: hidden;
@@ -192,7 +192,7 @@
 
 .message-time {
   font-size: 18rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
   white-space: nowrap;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -200,7 +200,7 @@
 
 .message-text {
   font-size: 22rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 32rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -214,8 +214,8 @@
 .message-role-tag {
   display: inline-block;
   padding: 4rpx 12rpx;
-  background-color: #f3f4f6;
-  color: #6b7280;
+  background-color: var(--color-bg-muted);
+  color: var(--color-text-secondary);
   font-size: 18rpx;
   border-radius: 12rpx;
   margin-top: 8rpx;
@@ -242,7 +242,7 @@
   display: flex;
   align-items: center;
   padding: 24rpx 32rpx;
-  background-color: #ffffff;
+  background-color: var(--color-bg-elevated);
   margin: 0 24rpx 16rpx;
   border-radius: 16rpx;
   box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
@@ -261,7 +261,7 @@
   border-radius: 50%;
   overflow: hidden;
   margin-right: 20rpx;
-  background-color: #f3f4f6;
+  background-color: var(--color-bg-muted);
   box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
 }
 
@@ -286,17 +286,17 @@
 .session-title {
   font-size: 26rpx;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--color-text-main);
 }
 
 .session-time {
   font-size: 18rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .session-last-message {
   font-size: 22rpx;
-  color: #6b7280;
+  color: var(--color-text-secondary);
   line-height: 32rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,7 +308,7 @@
 .unread-count {
   min-width: 36rpx;
   height: 36rpx;
-  background-color: #ef4444;
+  background-color: var(--color-danger);
   border-radius: 18rpx;
   display: flex;
   align-items: center;
@@ -319,84 +319,8 @@
 
 .unread-text {
   font-size: 18rpx;
-  color: #FFFFFF;
+  color: var(--color-text-inverse);
   font-weight: 500;
-}
-
-/* 空状态 */
-.empty-message,
-.empty-session {
-  padding: 120rpx 0;
-  text-align: center;
-  background-color: #f8f8f8;
-}
-
-.empty-session {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.empty-icon {
-  width: 140rpx;
-  height: 140rpx;
-  margin-bottom: 40rpx;
-  opacity: 0.4;
-}
-
-.empty-text {
-  font-size: 24rpx;
-  color: #9ca3af;
-  margin-bottom: 48rpx;
-}
-
-/* 客服身份的空状态 */
-.empty-session-cs {
-  background-color: #f8f8f8;
-}
-
-.enter-service-btn {
-  width: 200rpx;
-  height: 64rpx;
-  background-color: #ffffff;
-  color: #6b7280;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 32rpx;
-  font-size: 24rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-}
-
-.enter-service-btn:active {
-  background-color: #f3f4f6;
-  transform: translateY(2rpx);
-  box-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.05);
-}
-
-/* 加载更多 */
-.loading-more {
-  padding: 24rpx 0;
-  text-align: center;
-}
-
-.loading-text {
-  font-size: 22rpx;
-  color: #9ca3af;
-}
-
-/* 没有更多 */
-.no-more {
-  padding: 24rpx 0;
-  text-align: center;
-}
-
-.no-more-text {
-  font-size: 22rpx;
-  color: #9ca3af;
 }
 
 /* 底部提示 */
@@ -407,5 +331,5 @@
 
 .footer-text {
   font-size: 18rpx;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }

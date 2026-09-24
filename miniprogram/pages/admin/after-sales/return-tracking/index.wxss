@@ -1,7 +1,7 @@
 .return-tracking {
   width: 100%;
   min-height: 100vh;
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
 }
 
 .return-tracking__header {
@@ -43,13 +43,13 @@
   align-items: center;
   margin-bottom: 12px;
   padding: 12px;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 8px;
 }
 
 .return-tracking__order-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 8px;
   min-width: 80px;
 }
@@ -63,7 +63,7 @@
 .return-tracking__logistics-section {
   margin-top: 16px;
   padding: 16px;
-  background-color: #fff;
+  background-color: var(--color-bg-elevated);
   border-radius: 8px;
 }
 
@@ -82,7 +82,7 @@
 
 .return-tracking__form-label {
   font-size: 14px;
-  color: #666;
+  color: var(--color-text-secondary);
   margin-right: 12px;
   min-width: 80px;
 }
@@ -105,7 +105,7 @@
 
 .return-tracking__form-select-arrow {
   font-size: 12px;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .return-tracking__form-input {
@@ -122,8 +122,8 @@
   margin-top: 32px;
   width: 100%;
   height: 44px;
-  background-color: #07c160;
-  color: #fff;
+  background-color: var(--color-success);
+  color: var(--color-text-inverse);
   font-size: 16px;
   border-radius: 4px;
   display: flex;
@@ -135,36 +135,9 @@
   background-color: #ccc;
 }
 
-.return-tracking__picker {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1000;
-}
-
-.return-tracking__picker-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-}
-
-.return-tracking__picker-content {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  overflow: hidden;
-}
-
+/* 快递公司选择器（外壳由 modal-shell 提供） */
 .return-tracking__picker-header {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -175,7 +148,7 @@
 
 .return-tracking__picker-cancel {
   font-size: 14px;
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .return-tracking__picker-title {
@@ -186,12 +159,12 @@
 
 .return-tracking__picker-confirm {
   font-size: 14px;
-  color: #07c160;
+  color: var(--color-success);
   font-weight: bold;
 }
 
 .return-tracking__picker-view {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
 }
 
 .return-tracking__picker-view view {

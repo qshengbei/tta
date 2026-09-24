@@ -35,7 +35,9 @@ const productListBehavior = Behavior({
     loading: false,
     loadingMore: false,
     hasMore: true,
-    showSkeleton: true
+    showSkeleton: true,
+    error: false,
+    errorMessage: ''
   },
 
   // ========== 生命周期 ==========
@@ -135,6 +137,9 @@ const productListBehavior = Behavior({
       const useCache = this._shouldUseCache ? this._shouldUseCache() : true;
 
       if (reset) {
+        // 重新加载时清空上一次的错误态
+        this.setData({ error: false, errorMessage: '' });
+
         // 搜索/筛选模式：不走缓存，直接查 DB
         if (!useCache) {
           this.setData({ loading: true, hasMore: true });
@@ -214,6 +219,12 @@ const productListBehavior = Behavior({
       // 2. 缓存耗尽 → 走 DB
       console.log('[ProductListBehavior] 缓存耗尽，从 DB 加载更多');
       const data = await this._loadNextFromDB();
+
+      // null = 本次请求失败：保留 hasMore，用户再次触底即可重试，不显示「没有更多啦」
+      if (data === null) {
+        wx.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
+        return;
+      }
 
       if (data && data.length > 0) {
         // _id 去重
@@ -702,7 +713,13 @@ const productListBehavior = Behavior({
         }
       } catch (err) {
         console.error('[ProductListBehavior] 加载失败:', err);
-        this.setData({ loading: false, loadingMore: false, showSkeleton: false });
+        this.setData({
+          loading: false,
+          loadingMore: false,
+          showSkeleton: false,
+          error: true,
+          errorMessage: '商品加载失败，请稍后重试'
+        });
       }
     },
 
@@ -721,7 +738,9 @@ const productListBehavior = Behavior({
       } catch (err) {
         console.error('[ProductListBehavior] 加载更多失败:', err);
         this.setData({ loadingMore: false });
-        return [];
+        // 返回 null 表示「请求失败」，与空数组「确实没有更多数据」区分开，
+        // 否则调用方会把失败当终点，误显示「没有更多啦」并永久拦死后续触底
+        return null;
       }
     },
 

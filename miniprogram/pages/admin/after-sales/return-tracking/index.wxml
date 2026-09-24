@@ -38,9 +38,12 @@
     </button>
   </view>
 
-  <view class="return-tracking__picker" wx:if="{{showCompanyPicker}}">
-    <view class="return-tracking__picker-mask" bindtap="hideCompanyPicker"></view>
-    <view class="return-tracking__picker-content">
+  <modal-shell
+    visible="{{showCompanyPicker}}"
+    position="bottom"
+    showClose="{{false}}"
+    bind:close="hideCompanyPicker"
+  >
       <view class="return-tracking__picker-header">
         <text class="return-tracking__picker-cancel" bindtap="hideCompanyPicker">取消</text>
         <text class="return-tracking__picker-title">选择快递公司</text>
@@ -51,6 +54,5 @@
           <view wx:for="{{expressCompanies}}" wx:key="code" style="height: 50px; line-height: 50px; text-align: center;">{{item.name}}</view>
         </picker-view-column>
       </picker-view>
-    </view>
-  </view>
+  </modal-shell>
 </view>

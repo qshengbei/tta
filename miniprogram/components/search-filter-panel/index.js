@@ -26,6 +26,12 @@ Component({
       type: String,
       value: 'cart' // cart 或 products
     },
+    // 搜索历史存储域：各页面传各自的值，实现按页面独立存储；
+    // 留空时退化为 pageType（兼容未传参的页面）
+    historyScope: {
+      type: String,
+      value: ''
+    },
     searchKeyword: {
       type: String,
       value: '',
@@ -72,9 +78,14 @@ Component({
   },
   
   methods: {
+    // 搜索历史存储键：按页面隔离，避免购物车、商品页、管理端互相污染
+    getStorageKey() {
+      return `${this.properties.historyScope || this.properties.pageType}SearchHistory`;
+    },
+
     // 加载搜索历史
     loadSearchHistory() {
-      const searchHistory = wx.getStorageSync('cartSearchHistory') || [];
+      const searchHistory = wx.getStorageSync(this.getStorageKey()) || [];
       this.setData({ searchHistory });
     },
 
@@ -82,7 +93,7 @@ Component({
     saveSearchHistory(keyword) {
       if (!keyword.trim()) return;
       
-      let searchHistory = wx.getStorageSync('cartSearchHistory') || [];
+      let searchHistory = wx.getStorageSync(this.getStorageKey()) || [];
       // 移除重复的关键词
       searchHistory = searchHistory.filter(item => item !== keyword);
       // 添加到开头
@@ -92,13 +103,13 @@ Component({
         searchHistory = searchHistory.slice(0, 10);
       }
       // 保存到本地存储
-      wx.setStorageSync('cartSearchHistory', searchHistory);
+      wx.setStorageSync(this.getStorageKey(), searchHistory);
       this.setData({ searchHistory });
     },
 
     // 清除搜索历史
     clearSearchHistory() {
-      wx.removeStorageSync('cartSearchHistory');
+      wx.removeStorageSync(this.getStorageKey());
       this.setData({ searchHistory: [] });
     },
 

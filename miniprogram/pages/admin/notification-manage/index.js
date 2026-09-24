@@ -1,3 +1,5 @@
+import { confirm } from "../../../utils/confirm";
+
 Page({
   data: {
     activeTab: 'system', // 当前激活的标签：system, activity, restock
@@ -15,6 +17,7 @@ Page({
     restockList: [], // 补货提醒列表
     showUserList: false, // 是否显示用户列表
     currentRestockId: '', // 当前查看的补货记录ID
+    currentRestockUsers: [], // 当前查看的补货记录下的用户列表
     loading: false // 加载状态
   },
 
@@ -117,10 +120,10 @@ Page({
 
   // 初始化管理员通知模板
   initAdminTemplates() {
-    wx.showModal({
+    confirm({
       title: '确认初始化',
-      content: '确定要初始化管理员通知模板吗？已存在的模板将被更新。',
-      success: (res) => {
+      content: '确定要初始化管理员通知模板吗？已存在的模板将被更新。'
+    }).then((res) => {
         if (res.confirm) {
           this.setData({ loading: true });
 
@@ -150,7 +153,6 @@ Page({
             }
           });
         }
-      }
     });
   },
 
@@ -240,9 +242,11 @@ Page({
   // 显示用户列表
   showUserList(e) {
     const id = e.currentTarget.dataset.id;
+    const target = (this.data.restockList || []).find(item => item._id === id);
     this.setData({
       showUserList: true,
-      currentRestockId: id
+      currentRestockId: id,
+      currentRestockUsers: target ? target.users : []
     });
   },
 
@@ -250,7 +254,8 @@ Page({
   hideUserList() {
     this.setData({
       showUserList: false,
-      currentRestockId: ''
+      currentRestockId: '',
+      currentRestockUsers: []
     });
   },
 
@@ -267,10 +272,10 @@ Page({
       return;
     }
 
-    wx.showModal({
+    confirm({
       title: '确认补货',
-      content: `确定 ${restockItem.productData.name} 已补货并通知用户吗？`,
-      success: (res) => {
+      content: `确定 ${restockItem.productData.name} 已补货并通知用户吗？`
+    }).then((res) => {
         if (res.confirm) {
           this.setData({ loading: true });
 
@@ -370,7 +375,6 @@ Page({
               this.setData({ loading: false });
             });
         }
-      }
     });
   }
 });

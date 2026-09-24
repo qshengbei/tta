@@ -1,0 +1,39 @@
+<modal-shell
+  visible="{{visible}}"
+  position="bottom"
+  title="快递计算规则"
+  titleAlign="center"
+  showClose="{{false}}"
+  bind:close="onClose"
+>
+  <view class="express-rules-modal__content">
+    <scroll-view class="express-rules-modal__scroll" scroll-y="true">
+      <view class="express-rules-modal__rules">
+        <!-- 显示所有规则，当前地址规则已在第一位 -->
+        <view wx:for="{{rules}}" wx:key="index" class="express-rule-item">
+          <view class="express-rule-item__region">
+            {{item.region}}
+            <text wx:if="{{item.isCurrentRegion}}"> (当前地区)</text>
+          </view>
+          <view class="express-rule-item__provinces">
+            <view wx:for="{{item.provinces || [item.province]}}" wx:key="province" class="express-rule-item__province">{{item}}</view>
+          </view>
+          <view class="express-rule-item__fee-free">
+            <view class="express-rule-item__fee">
+              <view class="express-rule-item__fee-label">运费：</view>
+              <view class="express-rule-item__fee-value">¥{{item.fee}}</view>
+            </view>
+            <view class="express-rule-item__free">
+              <view class="express-rule-item__free-label">包邮条件：</view>
+              <view class="express-rule-item__free-value">满{{item.freeShipping || item.freeShippingThreshold || item.freeshipping || 0}}元包邮</view>
+            </view>
+          </view>
+        </view>
+      </view>
+      <view class="express-rules-modal__tip">
+        运费根据发货地福建省到收货地址的实际距离计算，不同地区成本略有差异，感谢您的理解与支持。
+      </view>
+    </scroll-view>
+    <view class="express-rules-modal__cancel" bindtap="onClose">关闭</view>
+  </view>
+</modal-shell>

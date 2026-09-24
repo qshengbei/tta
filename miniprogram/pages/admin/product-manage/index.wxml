@@ -15,7 +15,7 @@
       <!-- 左侧分类导航 -->
       <view class="categories-nav">
         <!-- 一级分类 -->
-        <view wx:for="{{level1Categories}}" wx:key="{{item._id}}" class="nav-item {{selectedCategory === item._id ? 'nav-item--active' : ''}}" bindtap="selectCategory" data-id="{{item._id}}">
+        <view wx:for="{{level1Categories}}" wx:key="_id" class="nav-item {{selectedCategory === item._id ? 'nav-item--active' : ''}}" bindtap="selectCategory" data-id="{{item._id}}">
           <text class="nav-text">{{item.name}}</text>
         </view>
       </view>
@@ -31,7 +31,7 @@
             </view>
           </view>
           <view class="level2-categories">
-            <view wx:for="{{level2Categories}}" wx:key="{{item._id}}" class="level2-category" bindtap="goToCategoryProducts" data-id="{{item._id}}">
+            <view wx:for="{{level2Categories}}" wx:key="_id" class="level2-category" bindtap="goToCategoryProducts" data-id="{{item._id}}">
               <image class="category-image" src="{{item.image}}" mode="aspectFill"/>
               <view class="category-overlay">
                 <text class="category-text">{{item.name}}</text>
@@ -53,7 +53,7 @@
     <view class="categories-container">
       <!-- 左侧系列导航 -->
       <view class="categories-nav">
-        <view wx:for="{{seriesList}}" wx:key="{{item._id}}" class="nav-item {{selectedSeries === item._id ? 'nav-item--active' : ''}}" bindtap="selectSeries" data-id="{{item._id}}">
+        <view wx:for="{{seriesList}}" wx:key="_id" class="nav-item {{selectedSeries === item._id ? 'nav-item--active' : ''}}" bindtap="selectSeries" data-id="{{item._id}}">
           <text class="nav-text">{{item.name}}</text>
         </view>
       </view>
@@ -73,7 +73,7 @@
             </view>
           </view>
           <view class="series-products">
-            <view wx:for="{{seriesProducts}}" wx:key="{{item._id}}" class="product-item">
+            <view wx:for="{{seriesProducts}}" wx:key="_id" class="product-item">
               <view class="product-content" bindtap="goToProductDetail" data-id="{{item._id}}">
                 <view class="product-image-container">
                   <image class="product-image" src="{{item.coverImage}}" mode="aspectFill"/>
@@ -114,3 +114,6 @@
 
 
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

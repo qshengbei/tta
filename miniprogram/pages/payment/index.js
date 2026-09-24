@@ -1,6 +1,7 @@
 import { getCollection } from "../../utils/cloud";
 import { getPickupLocation } from "../../utils/order-utils";
 import { calculateDistance, getAddressLocation } from "../../utils/map-utils";
+import { confirm } from "../../utils/confirm";
 const db = wx.cloud.database();
 const _ = db.command;
 
@@ -230,13 +231,14 @@ Page({
         wx.hideLoading();
         console.log('显示微信支付模态框');
         
-        // 模拟微信支付弹窗，这里用confirm代替
-        wx.showModal({
+        // 模拟微信支付弹窗（统一走 utils/confirm）
+        confirm({
           title: '微信支付',
           content: '请完成微信支付',
           confirmText: '支付成功',
           cancelText: '关闭支付',
-          success: (res) => {
+          maskClosable: false
+        }).then((res) => {
             console.log('微信支付模态框操作:', res);
             if (res.confirm) {
               // 模拟支付成功
@@ -291,10 +293,10 @@ Page({
             } else if (res.cancel) {
               // 模拟关闭支付弹窗
               // 显示确认弹窗
-              wx.showModal({
+              confirm({
                 title: '是否放弃支付',
-                content: '确定要放弃支付吗？订单将变为待支付状态。',
-                success: (res) => {
+                content: '确定要放弃支付吗？订单将变为待支付状态。'
+              }).then((res) => {
                   console.log('放弃支付确认:', res);
                   if (res.confirm) {
                     // 检查订单状态，只有当订单状态为已支付时才更新为待支付
@@ -333,10 +335,10 @@ Page({
                     }
                   }
                 }
-              });
+              );
             }
           }
-        });
+        );
       } catch (err) {
         console.error('获取订单信息失败:', err);
         wx.hideLoading();
@@ -356,13 +358,14 @@ Page({
       wx.hideLoading();
       console.log('显示微信支付模态框');
       
-      // 模拟微信支付弹窗，这里用confirm代替
-      wx.showModal({
+      // 模拟微信支付弹窗（统一走 utils/confirm）
+      confirm({
         title: '微信支付',
         content: '请完成微信支付',
         confirmText: '支付成功',
         cancelText: '关闭支付',
-        success: (res) => {
+        maskClosable: false
+      }).then((res) => {
           console.log('微信支付模态框操作:', res);
           if (res.confirm) {
               // 显示加载提示
@@ -376,10 +379,10 @@ Page({
             } else if (res.cancel) {
                 // 模拟关闭支付弹窗
                 // 显示确认弹窗
-                wx.showModal({
+                confirm({
                   title: '是否放弃支付',
-                  content: '确定要放弃支付吗？订单将变为待支付状态。',
-                  success: (res) => {
+                  content: '确定要放弃支付吗？订单将变为待支付状态。'
+                }).then((res) => {
                     console.log('放弃支付确认:', res);
                     if (res.confirm) {
                       // 显示加载提示
@@ -391,10 +394,10 @@ Page({
                       this.createOrder('pending');
                     }
                   }
-                });
+                );
               }
         }
-      });
+      );
     }
   },
 
@@ -826,17 +829,16 @@ Page({
   // 监听页面返回
   onBackPress() {
     // 显示确认弹窗
-    wx.showModal({
+    confirm({
       title: '是否放弃支付',
-      content: '确定要放弃支付吗？订单将变为待支付状态。',
-      success: (res) => {
+      content: '确定要放弃支付吗？订单将变为待支付状态。'
+    }).then((res) => {
         if (res.confirm) {
           // 跳转到订单管理页面的待支付标签页
           wx.redirectTo({
             url: '/pages/order-list/index?status=pending'
           });
         }
-      }
     });
     // 返回true表示阻止默认返回行为
     return true;

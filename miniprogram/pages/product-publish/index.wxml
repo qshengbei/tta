@@ -139,7 +139,7 @@
       <text class="form-item__label">商品图片</text>
       <view class="image-uploader">
         <view class="uploaded-images">
-          <view wx:for="{{product.images}}" wx:key="{{index}}" class="uploaded-image">
+          <view wx:for="{{product.images}}" wx:key="*this" class="uploaded-image">
             <image src="{{item}}" mode="aspectFill" />
             <view class="delete-image" bindtap="deleteImage" data-index="{{index}}">×</view>
           </view>

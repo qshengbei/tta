@@ -3,29 +3,36 @@
 /* ===== 设计 Token：色彩、字体、间距 ===== */
 
 /* 色彩 */
-:root {
+page {
   /* Brand */
   --color-primary: #1a3d8f;
+  --color-primary-dark: #0f2a6b;
   --color-primary-soft: #e5ecfa;
 
   /* Neutrals */
-  --color-bg: #ffffff;
-  --color-bg-alt: #f5f5f5;
+  --color-bg: #f5f5f5;
+  --color-bg-muted: #f3f4f6;
   --color-bg-elevated: #ffffff;
+  --color-bg-inverse: #000000;
   --color-border-subtle: #eaeaea;
+  --color-border: #e5e7eb;
 
   --color-text-main: #111111;
   --color-text-secondary: #666666;
   --color-text-muted: #999999;
+  --color-text-inverse: #ffffff;
 
   /* Feedback */
   --color-success: #0ebc6c;
+  --color-success-dark: #0c9f5b;
   --color-warning: #ff9f40;
+  --color-warning-dark: #db6d00;
   --color-danger: #e34c4c;
+  --color-danger-dark: #c31f1f;
 }
 
 /* 字体 */
-:root {
+page {
   --font-family-base: -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial,
     sans-serif;
@@ -39,22 +46,10 @@
 }
 
 /* 间距 */
-:root {
+page {
   --space-xs: 8rpx;
   --space-sm: 16rpx;
   --space-md: 24rpx;
   --space-lg: 32rpx;
   --space-xl: 40rpx;
-}
-
-/* 订单状态颜色 */
-:root {
-  --order-status-pending: #FF9800;   /* 待支付 - 橙色 */
-  --order-status-paid: #2196F3;       /* 待发货/待自提/待配送 - 蓝色 */
-  --order-status-shipping: #9C27B0;   /* 配送中 - 紫色 */
-  --order-status-completed: #4CAF50; /* 已完成 - 绿色 */
-  --order-status-cancelled: #9E9E9E; /* 已取消 - 灰色 */
-  --order-status-refund: #FF9800;    /* 售后中/退款中 - 橙色 */
-  --order-status-refund-completed: #4CAF50; /* 售后完成/退款完成 - 绿色 */
-  --order-status-default: #9E9E9E;    /* 默认 - 灰色 */
 }

@@ -1,6 +1,6 @@
 <view class="cart">
   <!-- 搜索和筛选组件（固定在顶部） -->
-  <search-filter-panel pageType="cart" cartItems="{{cartItems}}" loading="{{loading}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;" />
+  <search-filter-panel pageType="cart" historyScope="cart" cartItems="{{cartItems}}" loading="{{loading}}" bind:search="handleSearch" bind:filter="handleFilter" style="position: fixed; top: 0; left: 0; right: 0; z-index: 10000;" />
 
   <!-- 加载状态 -->
   <view wx:if="{{loading}}" class="cart__loading">
@@ -102,10 +102,9 @@
       </view>
       
       <!-- 空购物车状态 -->
-      <view wx:if="{{cartItems.length === 0}}" class="cart__empty">
-        <image class="cart__empty-image" src="../../images/icons/暂无商品.png" mode="aspectFit"/>
-        <text class="cart__empty-text">购物车为空</text>
-        <button class="cart__empty-btn" bindtap="goToHome">去逛逛</button>
+      <view wx:if="{{cartItems.length === 0}}" class="empty-view empty-view--page">
+        <text class="empty-view__text">购物车为空</text>
+        <button class="empty-view__btn" bindtap="goToHome">去逛逛</button>
       </view>
     </view>
   </scroll-view>
@@ -133,8 +132,11 @@
       </view>
       <text wx:if="{{selectedCount > 0}}" class="cart__selected-count">已选择 {{selectedCount}} 件商品</text>
     </view>
-    <button class="cart__checkout" bindtap="goToCheckout" disabled="{{selectedCount === 0}}">
-      去结算 ({{selectedCount}})
-    </button>
+ <button class="cart__checkout" bindtap="goToCheckout" disabled="{{selectedCount === 0}}">
+        去结算 ({{selectedCount}})
+      </button>
+    </view>
   </view>
-</view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

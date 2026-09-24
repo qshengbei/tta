@@ -1,15 +1,11 @@
 // pages/admin/after-sales/detail/index.js
 import { getCollection } from "../../../../utils/cloud";
-
-const TYPE_TEXT_MAP = {
-  refund: '退款',
-  refund_received: '退款（已收到货）',
-  refund_not_received: '退款（未收到货）',
-  return_refund: '退货退款',
-  exchange: '换货',
-  mixed: '混合售后',
-  not_received_refund: '未收到货退款'
-};
+import { confirm } from "../../../../utils/confirm";
+import {
+  getAfterSalesStatusText,
+  getAfterSalesStatusDesc,
+  getAfterSalesTypeText
+} from "../../../../utils/afterSalesStatus";
 
 const QUALITY_REASONS = [
   'size_mismatch',
@@ -42,41 +38,6 @@ function getShippingResponsibilityByReason(reasonCode) {
   return 'buyer';
 }
 
-const STATUS_TEXT_MAP = {
-  submitted: '待处理',
-  reviewing: '审核中',
-  waiting_buyer_return: '待买家寄回',
-  waiting_seller_receive: '待商家收货',
-  seller_received: '商家验货中',
-  pending_refund: '待退款',
-  rejected: '已拒绝',
-  completed: '已完成',
-  cancelled: '已取消',
-  pending: '待处理',
-  approved: '已通过',
-  seller_reviewing: '商家验货中',
-  seller_returning: '商家寄回中',
-  buyer_receiving: '待买家收货',
-  intercepting: '正在拦截快递'
-};
-
-const STATUS_DESC_MAP = {
-  submitted: '请及时处理该售后申请',
-  reviewing: '售后单正在审核中，请继续关注',
-  waiting_buyer_return: '已通过审核，等待买家寄回商品',
-  waiting_seller_receive: '商品寄回中，请留意物流信息并及时确认收货',
-  pending_refund: '待退款，请留意退款进度',
-  rejected: '售后申请已拒绝',
-  completed: '售后申请已完成',
-  cancelled: '售后申请已取消',
-  pending: '请及时处理该售后申请',
-  approved: '售后申请已通过，请继续处理后续流程',
-  seller_reviewing: '正在验货，请及时完成验货',
-  seller_returning: '正在将商品寄回，请留意物流信息',
-  buyer_receiving: '商品已寄回，等待买家确认收货',
-  intercepting: '正在拦截快递，请根据拦截结果进行后续处理'
-};
-
 const STATUS_CLASS_MAP = {
   submitted: 'status-section__status--pending',
   reviewing: 'status-section__status--pending',
@@ -96,23 +57,6 @@ const STATUS_CLASS_MAP = {
 
 const CAN_CANCEL_STATUSES = ['pending', 'submitted', 'reviewing', 'waiting_buyer_return', 'pending_refund', 'approved'];
 const AUTO_PROCESS_TIMEOUT_HOURS = 48;
-const EXCHANGE_TYPES = ['exchange', 'quality_exchange'];
-
-// 换货流程中 seller_returning/buyer_receiving 文案区分
-function getExchangeStatusText(status, type, defaultText) {
-  if (!EXCHANGE_TYPES.includes(type)) return defaultText;
-  if (status === 'seller_returning') return '待商家发新货';
-  if (status === 'buyer_receiving') return '待买家收新货';
-  return defaultText;
-}
-
-function getExchangeStatusDesc(status, type, defaultDesc) {
-  if (!EXCHANGE_TYPES.includes(type)) return defaultDesc;
-  if (status === 'seller_returning') return '即将寄出换新商品，请填写物流信息';
-  if (status === 'buyer_receiving') return '已寄出换新商品，等待买家确认收货';
-  return defaultDesc;
-}
-
 function parseDate(value) {
   if (!value) {
     return null;
@@ -165,7 +109,6 @@ Page({
   data: {
     afterSales: {},
     afterSalesItems: [],
-    isLegacy: false,
     remainingTime: 0,
     isExpired: false,
     processingExpired: false,
@@ -211,10 +154,6 @@ Page({
 
     getCollection('after_sales_cases').doc(id).get()
       .then((res) => {
-        if (!res.data) {
-          return this.fetchLegacyAfterSalesDetail(id);
-        }
-
         console.log('[管理员售后详情] 数据库原始记录 proofImages:', res.data.proofImages);
         console.log('[管理员售后详情] 数据库原始记录 proofVideos:', res.data.proofVideos);
         console.log('[管理员售后详情] 数据库原始记录 proofVideoThumbs:', res.data.proofVideoThumbs);
@@ -271,7 +210,6 @@ Page({
             this.setData({
               afterSales: afterSales,
               afterSalesItems: items,
-              isLegacy: false,
               combinedMediaList: combinedMediaList
             });
             console.log('[管理员售后详情] setData完成，combinedMediaList长度:', combinedMediaList.length);
@@ -279,7 +217,12 @@ Page({
             this.fetchOperationLogs(id);
           });
       })
-      .catch(() => this.fetchLegacyAfterSalesDetail(id));
+      .catch((err) => {
+        wx.hideLoading();
+        console.error('获取售后详情失败', err);
+        wx.showToast({ title: '获取售后详情失败', icon: 'none' });
+        setTimeout(() => wx.navigateBack(), 1000);
+      });
   },
 
   async _convertCloudUrls(afterSales) {
@@ -410,31 +353,6 @@ Page({
     }
   },
 
-  fetchLegacyAfterSalesDetail(id) {
-    return getCollection('afterSales').doc(id).get()
-      .then((res) => {
-        wx.hideLoading();
-        if (res.data) {
-          this.setData({
-            afterSales: this.normalizeLegacyCaseRecord(res.data),
-            afterSalesItems: [],
-            isLegacy: true,
-            combinedMediaList: []
-          });
-          return;
-        }
-
-        wx.showToast({ title: '售后记录不存在', icon: 'none' });
-        setTimeout(() => wx.navigateBack(), 1000);
-      })
-      .catch((err) => {
-        wx.hideLoading();
-        console.error('获取售后详情失败', err);
-        wx.showToast({ title: '获取售后详情失败', icon: 'none' });
-        setTimeout(() => wx.navigateBack(), 1000);
-      });
-  },
-
   normalizeCaseRecord(record) {
     const status = record.caseStatus || 'submitted';
     const type = record.primaryAfterSalesType || 'refund';
@@ -451,11 +369,11 @@ Page({
       orderNo: record.orderNumber || record.orderId,
       type,
       isExchange: type === 'exchange' || type === 'quality_exchange',
-      typeText: TYPE_TEXT_MAP[type] || type,
+      typeText: getAfterSalesTypeText(type),
       status,
       caseStatus: status,
-      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
-      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
+      statusText: getAfterSalesStatusText(status, type),
+      statusDesc: getAfterSalesStatusDesc(status, type, true),
       statusClass: STATUS_CLASS_MAP[status] || '',
       refundAmount: Number(record.refundSummary?.approvedAmount || record.totalApplyAmount || 0) || 0,
       applyReturnShippingCompensationAmount: Math.round((Number(record.applyReturnShippingCompensationAmount) || 0) * 100) / 100,
@@ -499,37 +417,6 @@ Page({
     };
   },
 
-  normalizeLegacyCaseRecord(record) {
-    const status = record.status || 'pending';
-    const type = record.type || 'refund';
-    return {
-      ...record,
-      orderNo: record.orderNo || record.orderId,
-      type,
-      typeText: TYPE_TEXT_MAP[type] || type,
-      status,
-      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
-      statusDesc: getExchangeStatusDesc(status, type, STATUS_DESC_MAP[status] || ''),
-      statusClass: STATUS_CLASS_MAP[status] || '',
-      refundAmount: Number(record.refundAmount || 0) || 0,
-      reason: record.reason || '',
-      proofImages: Array.isArray(record.proofImages) ? record.proofImages : [],
-      proofVideos: Array.isArray(record.proofVideos) ? record.proofVideos : [],
-      proofVideoThumbs: Array.isArray(record.proofVideoThumbs) ? record.proofVideoThumbs : [],
-      processInfo: record.processInfo
-        ? {
-            opinion: record.processInfo.opinion || '',
-            processTimeText: formatTime(record.processInfo.processTime)
-          }
-        : null,
-      createdAtText: formatTime(record.createdAt),
-      updatedAtText: formatTime(record.updatedAt),
-      itemCount: 1,
-      totalApplyQty: 1,
-      shippingResponsibilityText: ''
-    };
-  },
-
   normalizeCaseItem(item) {
     const type = item.afterSalesType || 'refund';
     const status = item.itemStatus || 'submitted';
@@ -539,7 +426,7 @@ Page({
       name: item.productNameSnapshot || '商品',
       skuName: item.skuNameSnapshot || '',
       image: item.coverImageSnapshot || '',
-      typeText: TYPE_TEXT_MAP[type] || type,
+      typeText: getAfterSalesTypeText(type),
       applyQty: Number(item.applyQty || 0) || 0,
       refundAmount: Number(item.applyRefundAmount || 0) || 0,
       unitPrice: Number(item.unitPriceSnapshot || 0) || 0,
@@ -553,7 +440,7 @@ Page({
         || item.approvedReturnShippingCompensationAmount === '')
         ? null
         : Math.round((Number(item.approvedReturnShippingCompensationAmount) || 0) * 100) / 100,
-      statusText: getExchangeStatusText(status, type, STATUS_TEXT_MAP[status] || status),
+      statusText: getAfterSalesStatusText(status, type),
       shippingResponsibilityText: getShippingResponsibilityText(item.shippingResponsibility),
       productSupports7DayReturn: item.productSupports7DayReturn || false,
       canApprove: !['approved', 'completed', 'rejected', 'cancelled'].includes(status),
@@ -575,37 +462,32 @@ Page({
       return;
     }
 
-    wx.showModal({
+    confirm({
       title: '取消售后',
-      content: '确定要取消售后申请吗？',
-      success: (res) => {
+      content: '确定要取消售后申请吗？'
+    }).then((res) => {
         if (res.confirm) {
           this.performCancelAfterSales();
         }
-      }
     });
   },
 
   performCancelAfterSales() {
     wx.showLoading({ title: '取消中...' });
 
-    const request = this.data.isLegacy
-      ? this.cancelLegacyAfterSales()
-      : wx.cloud.callFunction({
-          name: 'updateOrderStatus',
-          data: {
-            orderId: this.data.afterSales.orderId,
-            operation: 'cancelAfterSales',
-            params: {
-              caseId: this.data.afterSales._id,
-              result: '用户取消售后申请',
-              operatorType: 'user'
-            }
-          }
-        });
-
-    request.then((res) => {
-      if (!this.data.isLegacy && (!res.result || !res.result.success)) {
+    wx.cloud.callFunction({
+      name: 'updateOrderStatus',
+      data: {
+        orderId: this.data.afterSales.orderId,
+        operation: 'cancelAfterSales',
+        params: {
+          caseId: this.data.afterSales._id,
+          result: '用户取消售后申请',
+          operatorType: 'user'
+        }
+      }
+    }).then((res) => {
+      if (!res.result || !res.result.success) {
         throw new Error(res.result?.error || '取消售后失败');
       }
       wx.hideLoading();
@@ -616,23 +498,6 @@ Page({
       console.error('取消售后失败', err);
       wx.showToast({ title: err.message || '取消售后失败', icon: 'none' });
     });
-  },
-
-  cancelLegacyAfterSales() {
-    const afterSales = getCollection('afterSales');
-    return afterSales.doc(this.data.afterSales._id).update({
-      data: {
-        status: 'cancelled',
-        updatedAt: new Date()
-      }
-    }).then(() => getCollection('orders').doc(this.data.afterSales.orderId).update({
-      data: {
-        status: 'completed',
-        afterSalesStatus: 'cancelled',
-        updatedAt: new Date(),
-        updatedAtTs: Date.now()
-      }
-    }));
   },
 
   previewImage(e) {
@@ -880,15 +745,14 @@ Page({
 
   handleConfirmReceipt(e) {
     const itemId = e.currentTarget.dataset.itemId;
-    wx.showModal({
+    confirm({
       title: '确认收货',
       content: '确认已收到买家退回的商品？确认后将进入验货环节。',
-      confirmColor: '#1890ff',
-      success: (res) => {
+      tone: 'info'
+    }).then((res) => {
         if (res.confirm) {
           this.processAfterSales('confirm_receipt', '确认收货', {}, itemId);
         }
-      }
     });
   },
 
@@ -900,15 +764,14 @@ Page({
   },
 
   handleInspectPass() {
-    wx.showModal({
+    confirm({
       title: '验货通过',
       content: '确认商品完好，同意退款？',
-      confirmColor: '#52c41a',
-      success: (res) => {
+      tone: 'success'
+    }).then((res) => {
         if (res.confirm) {
           this.processAfterSales('inspect_pass', '验货通过');
         }
-      }
     });
   },
 
@@ -1405,10 +1268,6 @@ Page({
     this.setData({ showInterceptOptions: false });
   },
 
-  preventModalClose() {
-    // 阻止点击内容区域不关闭
-  },
-
   handleStartIntercepting() {
     if (this.data.processing) return;
     
@@ -1466,11 +1325,11 @@ Page({
 
     const actionText = action === 'approve' ? '同意申请' : '拒绝申请';
     
-    wx.showModal({
+    confirm({
       title: '确认操作',
       content: `确定要${actionText}吗？\n\n处理原因：${reason}`,
-      confirmColor: '#1890ff',
-      success: (res) => {
+      tone: 'info'
+    }).then((res) => {
         if (res.confirm) {
           that.hideInterceptOptions();
           wx.showLoading({ title: '处理中...' });
@@ -1508,7 +1367,6 @@ Page({
             wx.showToast({ title: errorMsg, icon: 'none', duration: 3000 });
           });
         }
-      }
     });
   },
 
@@ -1520,12 +1378,12 @@ Page({
     if (this.data.processing) return;
     const that = this;
 
-    wx.showModal({
+    confirm({
       title: '买家拒签，同意退款',
       content: '请先确认物流轨迹已显示"拒收/退回"。确认后本订单全部商品将一并退款，无需等待包裹退回入库。是否继续？',
       confirmText: '确认退款',
-      confirmColor: '#1890ff',
-      success: (res) => {
+      tone: 'info'
+    }).then((res) => {
         if (!res.confirm) return;
         that.setData({ processing: true });
         wx.showLoading({ title: '处理中...' });
@@ -1555,7 +1413,6 @@ Page({
           console.error('拒签同意退款失败:', err);
           wx.showToast({ title: err.message || '处理失败', icon: 'none', duration: 3000 });
         });
-      }
     });
   },
 

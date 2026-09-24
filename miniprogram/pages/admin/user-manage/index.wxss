@@ -1,12 +1,12 @@
 /* pages/admin/user-manage/index.wxss */
 .user-manage {
-  background-color: #f5f5f5;
+  background-color: var(--color-bg);
   min-height: 100vh;
 }
 
 /* 页面头部 */
 .admin-header {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
   padding: 45rpx 30rpx 30rpx;
   text-align: center;
@@ -53,12 +53,12 @@
 
 .user-item__created {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
   display: block;
 }
 
 .user-item__action-button {
-  background-color: #1989fa;
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 20rpx;
@@ -67,19 +67,7 @@
   min-width: 120rpx;
 }
 
-/* 空状态 */
-.empty-state {
-  background-color: white;
-  border-radius: 16rpx;
-  padding: 80rpx 30rpx;
-  text-align: center;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
-}
-
-.empty-state__text {
-  font-size: 28rpx;
-  color: #999;
-}
+/* 空状态已统一为全局 .empty-view */
 
 /* 加载状态 */
 .loading-state {
@@ -89,5 +77,5 @@
 
 .loading-state__text {
   font-size: 24rpx;
-  color: #999;
+  color: var(--color-text-muted);
 }

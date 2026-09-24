@@ -19,7 +19,13 @@
   </view>
   
   <!-- 加载中 -->
-  <view wx:if="{{loading}}" class="loading-container">
+  <view wx:elif="{{loading}}" class="loading-container">
     <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 加载失败 -->
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage || '加载失败，请稍后重试'}}</text>
+    <button class="error-view__btn" bindtap="retryLoad">重试</button>
   </view>
 </view>

@@ -31,7 +31,7 @@
 .skeleton-banner {
   width: 100%;
   height: 100%;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
 
@@ -71,7 +71,7 @@
   width: 240rpx;
   height: 240rpx;
   border-radius: 16rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   transition: transform 0.6s ease-in-out, box-shadow 0.6s ease-in-out, opacity 0.6s ease-in-out;
 }
 
@@ -146,6 +146,13 @@
   object-fit: cover;
 }
 
+/* 无轮播数据时的占位（不渲染空 swiper，避免渲染层异常） */
+.banner-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg);
+}
+
 /* 轮播指示器样式 */
 swiper {
   --swiper-pagination-color: rgba(255, 255, 255, 0.5);
@@ -200,7 +207,7 @@ swiper {
 .skeleton-banner {
   width: 100%;
   height: 750rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 8rpx;
   margin-bottom: 40rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite;
@@ -218,7 +225,7 @@ swiper {
 .skeleton-series-title {
   width: 50%;
   height: 64rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 4rpx;
   margin: 0 auto 16rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite 0.2s;
@@ -227,7 +234,7 @@ swiper {
 .skeleton-series-subtitle {
   width: 30%;
   height: 20rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 4rpx;
   margin: 0 auto;
   animation: skeleton-loading 1.5s ease-in-out infinite 0.4s;
@@ -236,7 +243,7 @@ swiper {
 .skeleton-series-image {
   width: 100%;
   height: 400rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 8rpx;
   margin-bottom: 20rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite 0.6s;
@@ -261,7 +268,7 @@ swiper {
 .skeleton-product-image {
   width: 100%;
   height: 240rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 8rpx;
   margin-bottom: 16rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite 0.8s;
@@ -270,7 +277,7 @@ swiper {
 .skeleton-product-name {
   width: 80%;
   height: 24rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 4rpx;
   margin-bottom: 8rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite 1s;
@@ -279,7 +286,7 @@ swiper {
 .skeleton-product-price {
   width: 60%;
   height: 24rpx;
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
   border-radius: 4rpx;
   animation: skeleton-loading 1.5s ease-in-out infinite 1.2s;
 }
@@ -294,78 +301,6 @@ swiper {
 }
 
 /* 错误状态 */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xl) 0;
-  min-height: 600rpx;
-  text-align: center;
-}
-
-.error-icon {
-  font-size: 100rpx;
-  margin-bottom: var(--space-lg);
-}
-
-.error-message {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-  margin-bottom: var(--space-lg);
-  padding: 0 var(--space-lg);
-}
-
-.error-button {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8rpx;
-  padding: 12rpx 40rpx;
-  font-size: var(--font-size-body);
-  margin-top: var(--space-md);
-}
-
-/* 空状态 */
-.empty-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xl) 0;
-  min-height: 600rpx;
-  text-align: center;
-}
-
-.empty-icon {
-  font-size: 120rpx;
-  margin-bottom: var(--space-lg);
-}
-
-.empty-title {
-  color: var(--color-text-main);
-  font-size: var(--font-size-h2);
-  font-weight: 500;
-  margin-bottom: var(--space-sm);
-}
-
-.empty-subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-body);
-  margin-bottom: var(--space-lg);
-  padding: 0 var(--space-lg);
-}
-
-.empty-button {
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 8rpx;
-  padding: 12rpx 40rpx;
-  font-size: var(--font-size-body);
-  margin-top: var(--space-md);
-}
-
 /* 响应式设计 */
 @media screen and (max-width: 375px) {
   .swiper-container {
@@ -395,10 +330,6 @@ swiper {
   
   .skeleton-product-image {
     height: 200rpx;
-  }
-  
-  .error-icon, .empty-icon {
-    font-size: 80rpx;
   }
 }
 
@@ -431,10 +362,6 @@ swiper {
   .skeleton-product-image {
     height: 280rpx;
   }
-  
-  .error-icon, .empty-icon {
-    font-size: 140rpx;
-  }
 }
 
 /* 系列展示 */
@@ -459,7 +386,7 @@ swiper {
 }
 
 .series-subtitle {
-  font-size: calc(var(--font-size-body) * 0.8);
+  font-size: var(--font-size-caption);
   color: var(--color-text-secondary);
   display: block;
 }
@@ -534,7 +461,7 @@ swiper {
   height: 240rpx;
   border-radius: 8rpx;
   margin-bottom: var(--space-sm);
-  background-color: var(--color-bg-alt);
+  background-color: var(--color-bg);
 }
 
 .series-product-name {
@@ -561,33 +488,6 @@ swiper {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
-}
-
-/* 空状态 */
-.empty-state {
-  grid-column: 1 / -1;
-  padding: var(--space-xl) 0;
-  text-align: center;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-body);
-}
-
-.empty-icon {
-  width: 160rpx;
-  height: 160rpx;
-  margin-bottom: var(--space-md);
-  opacity: 0.5;
-}
-
-.empty-text {
-  font-size: var(--font-size-body);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-xs);
-}
-
-.empty-subtext {
-  font-size: var(--font-size-body-sm);
-  color: var(--color-text-muted);
 }
 
 /* 商品遮罩 - 与宝贝页面保持一致 */

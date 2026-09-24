@@ -2,7 +2,7 @@
 <!-- pages/admin/order-manage/index.wxml -->
 <view class="order-manage">
   <!-- 订单搜索筛选组件 -->
-  <admin-order-search-filter-panel pageType="adminOrder" orders="{{originalOrders}}" bind:search="handleSearch" bind:filter="handleFilter" bind:clearSearch="handleClearSearch" />
+  <order-search-filter-panel pageType="adminOrder" orders="{{originalOrders}}" bind:search="handleSearch" bind:filter="handleFilter" bind:clearSearch="handleClearSearch" />
   
   <!-- 固定部分 -->
   <view class="fixed-header">
@@ -33,6 +33,7 @@
             <view class="filter-button-item"><view class="filter-button {{status === 'pending' ? 'active' : ''}}" data-status="pending" bindtap="filterStatus">待支付</view></view>
             <view class="filter-button-item"><view class="filter-button {{status === 'paid' ? 'active' : ''}}" data-status="paid" bindtap="filterStatus">待自提</view></view>
             <view class="filter-button-item"><view class="filter-button {{status === 'completed' ? 'active' : ''}}" data-status="completed" bindtap="filterStatus">已完成</view></view>
+            <view class="filter-button-item"><view class="filter-button {{status === 'afterSales' ? 'active' : ''}}" data-status="afterSales" bindtap="filterStatus">售后中</view></view>
             <view class="filter-button-item"><view class="filter-button {{status === 'cancelled' ? 'active' : ''}}" data-status="cancelled" bindtap="filterStatus">已取消</view></view>
           </view>
           
@@ -109,8 +110,8 @@
       </view>
       
       <!-- 空状态 -->
-      <view wx:if="{{orders.length === 0 && !loading}}" class="empty-state">
-        <text class="empty-state__text">暂无订单</text>
+      <view wx:if="{{orders.length === 0 && !loading}}" class="empty-view">
+        <text class="empty-view__text">暂无订单</text>
       </view>
       
       <!-- 加载状态 -->
@@ -121,13 +122,12 @@
   </view>
 
   <!-- 编辑订单弹窗 -->
-  <view wx:if="{{editOrderPanelVisible}}" class="edit-order-panel-mask" bindtap="closeEditOrderPanel">
-    <view class="edit-order-panel" catchtap="preventPanelClose">
-      <view class="edit-order-panel__header">
-        <text class="edit-order-panel__title">编辑订单</text>
-        <view class="edit-order-panel__close" bindtap="closeEditOrderPanel">关闭</view>
-      </view>
-
+  <modal-shell
+    visible="{{editOrderPanelVisible}}"
+    position="bottom"
+    title="编辑订单"
+    bind:close="closeEditOrderPanel"
+  >
       <view class="edit-order-panel__body">
         <!-- 订单号 -->
         <view class="edit-order-section">
@@ -208,17 +208,15 @@
         <button class="edit-order-btn edit-order-btn--cancel" bindtap="closeEditOrderPanel">取消</button>
         <button class="edit-order-btn edit-order-btn--confirm" bindtap="confirmEditOrder">保存修改</button>
       </view>
-    </view>
-  </view>
+  </modal-shell>
 
   <!-- 地址编辑弹窗 -->
-  <view wx:if="{{addressEditVisible}}" class="edit-order-panel-mask" bindtap="closeAddressEdit">
-    <view class="edit-order-panel" catchtap="preventPanelClose">
-      <view class="edit-order-panel__header">
-        <text class="edit-order-panel__title">编辑收货地址</text>
-        <view class="edit-order-panel__close" bindtap="closeAddressEdit">关闭</view>
-      </view>
-
+  <modal-shell
+    visible="{{addressEditVisible}}"
+    position="bottom"
+    title="编辑收货地址"
+    bind:close="closeAddressEdit"
+  >
       <view class="edit-order-panel__body">
         <view class="address-edit-form">
           <view class="address-edit-item">
@@ -240,20 +238,16 @@
         <button class="edit-order-btn edit-order-btn--cancel" bindtap="closeAddressEdit">取消</button>
         <button class="edit-order-btn edit-order-btn--confirm" bindtap="confirmAddressEdit">保存地址</button>
       </view>
-    </view>
-  </view>
+  </modal-shell>
 
-  <view wx:if="{{afterSalesCaseListVisible}}" class="after-sales-panel-mask" bindtap="closeAfterSalesCaseList">
-    <view class="after-sales-panel" catchtap="preventPanelClose">
-      <view class="after-sales-panel__header">
-        <view class="after-sales-panel__title-wrap">
-          <text class="after-sales-panel__title">选择售后单</text>
-          <text class="after-sales-panel__meta">该订单有{{afterSalesCases.length}}个售后申请</text>
-        </view>
-        <view class="after-sales-panel__close" bindtap="closeAfterSalesCaseList">关闭</view>
-      </view>
-
+  <modal-shell
+    visible="{{afterSalesCaseListVisible}}"
+    position="bottom"
+    title="选择售后单"
+    bind:close="closeAfterSalesCaseList"
+  >
       <view class="after-sales-panel__body">
+        <text class="after-sales-panel__meta after-sales-panel__meta--body">该订单有{{afterSalesCases.length}}个售后申请</text>
         <view class="after-sales-case-list">
           <view wx:for="{{afterSalesCases}}" wx:key="_id" class="after-sales-case-item" catchtap="selectAfterSalesCase" data-case-doc="{{item}}">
             <view class="after-sales-case-item__header">
@@ -268,20 +262,16 @@
           </view>
         </view>
       </view>
-    </view>
-  </view>
+  </modal-shell>
 
-  <view wx:if="{{afterSalesPanelVisible}}" class="after-sales-panel-mask" bindtap="closeAfterSalesPanel">
-    <view class="after-sales-panel" catchtap="preventPanelClose">
-      <view class="after-sales-panel__header">
-        <view class="after-sales-panel__title-wrap">
-          <text class="after-sales-panel__title">售后明细处理</text>
-          <text class="after-sales-panel__meta">售后单号：{{selectedAfterSalesCase.caseNo || selectedAfterSalesCase._id}}</text>
-        </view>
-        <view class="after-sales-panel__close" bindtap="closeAfterSalesPanel">关闭</view>
-      </view>
-
+  <modal-shell
+    visible="{{afterSalesPanelVisible}}"
+    position="bottom"
+    title="售后明细处理"
+    bind:close="closeAfterSalesPanel"
+  >
       <view class="after-sales-panel__body">
+        <text class="after-sales-panel__meta after-sales-panel__meta--body">售后单号：{{selectedAfterSalesCase.caseNo || selectedAfterSalesCase._id}}</text>
         <view class="after-sales-item-card" wx:for="{{selectedAfterSalesItems}}" wx:key="_id" wx:for-item="caseItem" catchtap="viewAfterSalesDetail" data-case-id="{{selectedAfterSalesCase._id}}" data-item-id="{{caseItem._id}}">
           <view class="after-sales-item-card__top">
             <image wx:if="{{caseItem.coverImageSnapshot}}" src="{{caseItem.coverImageSnapshot}}" class="after-sales-item-card__image" mode="aspectFill"></image>
@@ -301,6 +291,8 @@
           </view>
         </view>
       </view>
-    </view>
-  </view>
+  </modal-shell>
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

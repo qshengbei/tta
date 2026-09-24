@@ -89,15 +89,14 @@
     <text class="loading__text">加载中...</text>
   </view>
 
-  <view wx:elif="{{error}}" class="error">
-    <text class="error__text">{{errorMessage}}</text>
-    <button class="btn btn-secondary" bindtap="reload">重试</button>
+  <view wx:elif="{{error}}" class="error-view error-view--page">
+    <text class="error-view__text">{{errorMessage}}</text>
+    <button class="error-view__btn" bindtap="reload">重试</button>
   </view>
 
   <view wx:else class="order-list">
-    <view wx:if="{{orders.length === 0}}" class="empty">
-      <image class="empty__image" src="../../images/icons/无订单.png" mode="aspectFit" />
-      <text class="empty__text">暂无相关订单</text>
+    <view wx:if="{{orders.length === 0}}" class="empty-view empty-view--page">
+      <text class="empty-view__text">暂无相关订单</text>
     </view>
     
     <scroll-view wx:else class="orders" scroll-y bindscrolltolower="loadMoreOrders" lower-threshold="50">
@@ -200,62 +199,20 @@
     </scroll-view>
   </view>
 
-  <view wx:if="{{showLogistics}}" class="logistics-modal">
-    <view class="logistics-modal__mask" bindtap="closeLogistics"></view>
-    <view class="logistics-modal__content">
-      <view class="logistics-modal__header">
-        <text class="logistics-modal__title">物流信息</text>
-      </view>
-
-      <view class="logistics-modal__info">
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">快递公司：</text>
-          <text class="logistics-modal__info-value">{{logisticsMapData.companyName || logisticsData.com}}</text>
-        </view>
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">运单号：</text>
-          <text class="logistics-modal__info-value">{{logisticsData.nu || logisticsMapData.trackingNumber}}</text>
-        </view>
-        <view class="logistics-modal__info-item">
-          <text class="logistics-modal__info-label">物流状态：</text>
-          <text class="logistics-modal__info-value" style="color: {{logisticsData.state === '3' ? '#52c41a' : logisticsData.state === '2' ? '#1890ff' : logisticsData.state === '1' ? '#faad14' : logisticsData.state === '4' ? '#ff4d4f' : '#999'}}">
-            {{logisticsData.displayStateText || logisticsData.stateName || (logisticsData.state === '0' ? '无轨迹' : logisticsData.state === '1' ? '已揽收' : logisticsData.state === '2' ? '在途中' : logisticsData.state === '3' ? '已签收' : logisticsData.state === '4' ? '问题件' : '待发货')}}
-          </text>
-        </view>
-      </view>
-
-      <view class="logistics-modal__track">
-        <view class="logistics-modal__track-title">物流轨迹</view>
-        <view class="logistics-modal__track-list">
-          <view wx:for="{{logisticsData.data}}" wx:key="{{index}}" class="logistics-modal__track-item">
-            <view class="logistics-modal__track-dot" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
-            <view class="logistics-modal__track-line" wx:if="{{index < logisticsData.data.length - 1}}" style="background-color: {{index === 0 ? '#1890ff' : '#d9d9d9'}}"></view>
-            <view class="logistics-modal__track-content">
-              <text class="logistics-modal__track-text">{{item.context}}</text>
-              <text class="logistics-modal__track-time">{{item.time}}</text>
-            </view>
-          </view>
-        </view>
-      </view>
-
-      <view wx:if="{{logisticsTrackPoints.length > 0}}" class="logistics-modal__map-section">
-        <view class="logistics-modal__map-title">地图轨迹</view>
-        <view class="logistics-modal__map-container">
-          <map class="logistics-modal__map"
-               id="logisticsMap"
-               longitude="{{logisticsMapCenter.longitude}}"
-               latitude="{{logisticsMapCenter.latitude}}"
-               scale="{{logisticsMapScale}}"
-               markers="{{logisticsTrackPoints}}"
-               show-location="true"
-               style="width: 100%; height: 100%;">
-          </map>
-        </view>
-        <view class="logistics-modal__map-buttons">
-          <button class="logistics-modal__map-btn" bindtap="resetMap">重置地图</button>
-          <button class="logistics-modal__map-btn" bindtap="fullScreenMap">全屏</button>
-        </view>
-      </view>
-    </view>
-  </view>
+  <!-- 物流信息弹窗（展示组件，数据由本页传入） -->
+  <logistics-modal
+    visible="{{showLogistics}}"
+    title="物流信息"
+    showMap="{{true}}"
+    logisticsData="{{logisticsData}}"
+    mapData="{{logisticsMapData}}"
+    mapCenter="{{logisticsMapCenter}}"
+    mapScale="{{logisticsMapScale}}"
+    trackPoints="{{logisticsTrackPoints}}"
+    bind:close="closeLogistics"
+    bind:fullscreenmap="fullScreenMap"
+  />
 </view>
+
+<!-- 统一确认弹窗（由 utils/confirm 驱动，放最后保证层级在最上） -->
+<confirm-dialog id="confirm-dialog" />

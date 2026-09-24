@@ -67,35 +67,7 @@
   color: #666;
 }
 
-/* 错误状态 */
-.error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100rpx 0;
-}
-
-.error__text {
-  font-size: 28rpx;
-  color: #666;
-  margin-bottom: 30rpx;
-  text-align: center;
-  padding: 0 30rpx;
-}
-
-.btn {
-  padding: 15rpx 40rpx;
-  border-radius: 20rpx;
-  font-size: 26rpx;
-  font-weight: bold;
-}
-
-.btn-secondary {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 2rpx solid #e0e0e0;
-}
+/* 错误状态已统一为全局 .error-view */
 
 /* 内容区域 */
 .content {
